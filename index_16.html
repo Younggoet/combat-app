@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Combat — Mock Draft</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#0E0F11;
+    --panel:#17181B;
+    --panel-2:#1E2024;
+    --border:#2A2C31;
+    --text:#EDEDED;
+    --text-dim:#8A8A8A;
+    --text-faint:#4E4F53;
+    --gold:#D4AF37;
+    --gold-dim:#8A7327;
+    --red:#E24333;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Inter","Helvetica Neue",Arial,sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px;}
+
+  /* ---------- top bar ---------- */
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+  .brand{font-size:15px;font-weight:600;letter-spacing:0.02em;color:var(--text);}
+  .brand span{color:var(--gold);}
+  .status-pill{background:rgba(226,67,51,0.12);color:var(--red);font-size:11px;font-weight:500;padding:4px 11px;border-radius:100px;}
+
+  /* ---------- setup screen ---------- */
+  .setup-card{
+    max-width:460px;margin:60px auto;background:var(--panel);border:1px solid var(--border);
+    border-radius:14px;padding:32px;
+  }
+  .setup-card h1{font-size:20px;margin:0 0 6px;font-weight:600;}
+  .setup-card p.sub{color:var(--text-dim);font-size:13.5px;margin:0 0 26px;line-height:1.5;}
+  .field{margin-bottom:20px;}
+  .field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:8px;}
+  .stepper{display:flex;align-items:center;gap:14px;}
+  .stepper button{
+    width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--panel-2);
+    color:var(--text);font-size:16px;cursor:pointer;
+  }
+  .stepper button:hover{border-color:var(--gold-dim);}
+  .stepper .val{font-size:17px;font-weight:600;min-width:26px;text-align:center;}
+  .start-btn{
+    width:100%;padding:13px;border-radius:9px;border:none;background:var(--gold);color:#141414;
+    font-size:14px;font-weight:600;cursor:pointer;margin-top:6px;
+  }
+  .start-btn:disabled{background:#3A3A3A;color:#777;cursor:not-allowed;}
+  .setup-note{font-size:12px;color:var(--text-faint);margin-top:16px;line-height:1.5;}
+
+  /* ---------- draft screen ---------- */
+  .draft-head{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:16px;
+  }
+  .draft-head .picking{font-size:15px;font-weight:500;}
+  .draft-head .picking .team{color:var(--gold);}
+  .draft-head .sub{color:var(--text-dim);font-size:12px;margin-top:2px;}
+  .warn-banner{
+    background:rgba(226,67,51,0.1);border:1px solid rgba(226,67,51,0.3);color:#F0897D;
+    font-size:12.5px;padding:10px 14px;border-radius:8px;margin-bottom:16px;
+  }
+
+  .draft-grid{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start;}
+
+  .pool-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;}
+  .pool-panel .panel-title{color:var(--text-dim);font-size:11px;letter-spacing:0.03em;padding:2px 8px 10px;}
+  .fighter-row{
+    display:flex;align-items:center;gap:12px;background:var(--panel-2);border-radius:9px;
+    padding:10px 12px;margin-bottom:7px;
+  }
+  .fighter-photo{
+    width:38px;height:38px;border-radius:8px;background:#2A2C31;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:14px;font-weight:600;
+    overflow:hidden;
+  }
+  .fighter-photo img{width:100%;height:100%;object-fit:cover;}
+  .fighter-info{flex:1;min-width:0;}
+  .fighter-info .name{font-size:13.5px;font-weight:500;}
+  .fighter-info .meta{font-size:11.5px;color:var(--text-dim);margin-top:2px;}
+  .pick-btn{
+    background:transparent;border:1px solid var(--gold);color:var(--gold);font-size:12px;font-weight:500;
+    border-radius:7px;padding:6px 14px;cursor:pointer;flex-shrink:0;
+  }
+  .pick-btn:hover{background:rgba(212,175,55,0.1);}
+  .pick-btn:disabled{border-color:var(--text-faint);color:var(--text-faint);cursor:not-allowed;background:none;}
+
+  .side-col{display:flex;flex-direction:column;gap:16px;}
+  .slip-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;}
+  .slip-panel .panel-title{color:var(--text-dim);font-size:11px;letter-spacing:0.03em;padding:2px 8px 10px;}
+  .slip-row{
+    display:flex;justify-content:space-between;align-items:center;border-left:2px solid var(--gold);
+    padding:6px 0 6px 10px;margin-bottom:2px;
+  }
+  .slip-row.empty{border-left-color:var(--border);color:var(--text-faint);font-size:12.5px;}
+  .slip-row .n{font-size:13px;}
+  .slip-row .p{font-size:11px;color:var(--text-faint);}
+
+  .other-teams{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;}
+  .other-teams .panel-title{color:var(--text-dim);font-size:11px;letter-spacing:0.03em;padding:2px 8px 10px;}
+  .team-block{margin-bottom:12px;}
+  .team-block .team-name{font-size:12.5px;font-weight:500;color:var(--text-dim);margin-bottom:5px;padding:0 8px;}
+  .team-block .roster-line{font-size:12px;color:var(--text);padding:2px 8px;}
+  .team-block .roster-line.empty{color:var(--text-faint);}
+
+  /* ---------- complete screen ---------- */
+  .complete-wrap{max-width:640px;margin:40px auto;}
+  .complete-wrap h1{font-size:22px;margin-bottom:4px;}
+  .complete-wrap p.sub{color:var(--text-dim);font-size:13.5px;margin-bottom:24px;}
+  .final-roster{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:20px;}
+  .final-roster .r{display:flex;justify-content:space-between;padding:8px 4px;border-bottom:1px solid var(--border);font-size:14px;}
+  .final-roster .r:last-child{border-bottom:none;}
+  .reset-btn{
+    background:transparent;border:1px solid var(--gold);color:var(--gold);padding:11px 22px;
+    border-radius:9px;font-size:14px;cursor:pointer;
+  }
+
+  .loading{text-align:center;color:var(--text-dim);padding:60px 0;font-size:14px;}
+
+  @media (max-width:820px){
+    .draft-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">COMBAT <span>MOCK DRAFT</span></div>
+    <div class="status-pill">practice</div>
+  </div>
+
+  <div id="app"></div>
+</div>
+
+<script>
+/* ============ CONFIG ============ */
+const SUPABASE_URL = "https://cguenfdcrqbduluscsel.supabase.co";
+const SUPABASE_KEY = "sb_publishable_51D_xE2j1vYOWl_0nNc4XQ_r7iAYn8x";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* Common column names to try for a fighter photo, in priority order.
+   The fighters table's actual photo column hasn't been confirmed — this
+   checks each row for whichever of these keys is present and has a value. */
+const PHOTO_KEYS = ["photo_url", "image_url", "headshot_url", "photo", "avatar_url"];
+
+/* ============ STATE ============ */
+let state = {
+  screen: "setup",       // setup | drafting | complete
+  numTeams: 8,
+  rosterSize: 5,
+  fighters: [],          // available pool
+  teams: [],             // [{ id, isUser, name, roster: [] }]
+  pickOrder: [],         // array of team indices, snake order, full length
+  currentPickIndex: 0,
+  poolWarning: null,
+};
+
+const root = document.getElementById("app");
+
+/* ============ HELPERS ============ */
+function getPhoto(fighter){
+  for (const key of PHOTO_KEYS){
+    if (fighter[key]) return fighter[key];
+  }
+  return null;
+}
+
+function initials(name){
+  return (name || "?").split(" ").map(p => p[0]).join("").slice(0,2).toUpperCase();
+}
+
+function buildSnakeOrder(numTeams, rounds){
+  const order = [];
+  for (let r = 0; r < rounds; r++){
+    const roundOrder = [...Array(numTeams).keys()];
+    if (r % 2 === 1) roundOrder.reverse();
+    order.push(...roundOrder);
+  }
+  return order;
+}
+
+function currentTeamIndex(){
+  return state.pickOrder[state.currentPickIndex];
+}
+
+function isDraftDone(){
+  return state.currentPickIndex >= state.pickOrder.length;
+}
+
+/* ============ DATA LOADING ============ */
+async function loadFighters(){
+  let { data, error } = await sb
+    .from("fighters")
+    .select("*")
+    .ilike("announced_weight_class", "%heavyweight%");
+
+  if (error){
+    console.error(error);
+    return { fighters: [], warning: "Couldn't reach the fighter database. Check your connection and refresh." };
+  }
+
+  if (!data || data.length === 0){
+    // Fallback: show full pool with a warning if the heavyweight filter matched nothing
+    const fallback = await sb.from("fighters").select("*");
+    return {
+      fighters: fallback.data || [],
+      warning: "No fighters matched the Heavyweight filter — showing the full roster pool instead."
+    };
+  }
+
+  return { fighters: data, warning: null };
+}
+
+/* ============ DRAFT LOGIC ============ */
+function makeBotPick(team){
+  const pool = state.fighters;
+  if (pool.length === 0) return null;
+
+  const rated = pool.filter(f => f.current_rating != null);
+  let pick;
+  if (rated.length > 0){
+    pick = rated.reduce((best, f) => (f.current_rating > best.current_rating ? f : best), rated[0]);
+  } else {
+    pick = pool[Math.floor(Math.random() * pool.length)];
+  }
+  return pick;
+}
+
+function draftFighter(fighter){
+  const teamIdx = currentTeamIndex();
+  const team = state.teams[teamIdx];
+  team.roster.push(fighter);
+  state.fighters = state.fighters.filter(f => f.id !== fighter.id);
+  state.currentPickIndex++;
+  render();
+
+  if (!isDraftDone()){
+    const nextTeam = state.teams[currentTeamIndex()];
+    if (!nextTeam.isUser){
+      setTimeout(() => {
+        const botPick = makeBotPick(nextTeam);
+        if (botPick) draftFighter(botPick);
+      }, 550);
+    }
+  }
+}
+
+/* ============ RENDER: SETUP ============ */
+function renderSetup(){
+  root.innerHTML = `
+    <div class="setup-card">
+      <h1>Set up your mock draft</h1>
+      <p class="sub">Heavyweight division only. Snake draft order, bots fill every seat but yours.</p>
+
+      <div class="field">
+        <label>Number of teams</label>
+        <div class="stepper">
+          <button id="teamsDown">−</button>
+          <div class="val" id="teamsVal">${state.numTeams}</div>
+          <button id="teamsUp">+</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Roster size (per team)</label>
+        <div class="stepper">
+          <button id="rosterDown">−</button>
+          <div class="val" id="rosterVal">${state.rosterSize}</div>
+          <button id="rosterUp">+</button>
+        </div>
+      </div>
+
+      <button class="start-btn" id="startBtn">Start draft</button>
+      <p class="setup-note">You'll draft 1st in every odd round and last in every even round — standard snake order. Bots auto-pick by current rating.</p>
+    </div>
+  `;
+
+  document.getElementById("teamsDown").onclick = () => { state.numTeams = Math.max(2, state.numTeams - 1); renderSetup(); };
+  document.getElementById("teamsUp").onclick = () => { state.numTeams = Math.min(12, state.numTeams + 1); renderSetup(); };
+  document.getElementById("rosterDown").onclick = () => { state.rosterSize = Math.max(1, state.rosterSize - 1); renderSetup(); };
+  document.getElementById("rosterUp").onclick = () => { state.rosterSize = Math.min(10, state.rosterSize + 1); renderSetup(); };
+  document.getElementById("startBtn").onclick = startDraft;
+}
+
+async function startDraft(){
+  root.innerHTML = `<div class="loading">Loading Heavyweight roster…</div>`;
+
+  const { fighters, warning } = await loadFighters();
+  state.fighters = fighters;
+  state.poolWarning = warning;
+
+  state.teams = Array.from({ length: state.numTeams }, (_, i) => ({
+    id: i,
+    isUser: i === 0,
+    name: i === 0 ? "Your team" : `Team ${i + 1}`,
+    roster: [],
+  }));
+
+  state.pickOrder = buildSnakeOrder(state.numTeams, state.rosterSize);
+  state.currentPickIndex = 0;
+  state.screen = "drafting";
+
+  render();
+
+  // if a bot has the very first pick (shouldn't happen since user is index 0, but just in case)
+  const firstTeam = state.teams[currentTeamIndex()];
+  if (!firstTeam.isUser){
+    const botPick = makeBotPick(firstTeam);
+    if (botPick) draftFighter(botPick);
+  }
+}
+
+/* ============ RENDER: DRAFTING ============ */
+function renderDrafting(){
+  if (isDraftDone()){
+    state.screen = "complete";
+    renderComplete();
+    return;
+  }
+
+  const teamIdx = currentTeamIndex();
+  const team = state.teams[teamIdx];
+  const round = Math.floor(state.currentPickIndex / state.numTeams) + 1;
+  const pickNo = state.currentPickIndex + 1;
+
+  const warningHtml = state.poolWarning
+    ? `<div class="warn-banner">${state.poolWarning}</div>`
+    : "";
+
+  root.innerHTML = `
+    ${warningHtml}
+    <div class="draft-head">
+      <div>
+        <div class="picking">On the clock: <span class="team">${team.name}</span></div>
+        <div class="sub">Round ${round} of ${state.rosterSize} · Pick ${pickNo} of ${state.pickOrder.length}</div>
+      </div>
+    </div>
+
+    <div class="draft-grid">
+      <div class="pool-panel">
+        <div class="panel-title">AVAILABLE FIGHTERS</div>
+        <div id="poolList"></div>
+      </div>
+
+      <div class="side-col">
+        <div class="slip-panel">
+          <div class="panel-title">YOUR SLIP</div>
+          <div id="slipList"></div>
+        </div>
+        <div class="other-teams">
+          <div class="panel-title">OTHER TEAMS</div>
+          <div id="otherTeams"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const poolList = document.getElementById("poolList");
+  if (state.fighters.length === 0){
+    poolList.innerHTML = `<div style="color:var(--text-faint);font-size:13px;padding:10px 6px;">No fighters left in the pool.</div>`;
+  }
+  state.fighters.forEach(f => {
+    const row = document.createElement("div");
+    row.className = "fighter-row";
+    const photo = getPhoto(f);
+    row.innerHTML = `
+      <div class="fighter-photo">${photo ? `<img src="${photo}" alt="">` : initials(f.full_name)}</div>
+      <div class="fighter-info">
+        <div class="name">${f.full_name || "Unnamed fighter"}</div>
+        <div class="meta">${f.record || "—"}${f.current_rating != null ? " · rating " + f.current_rating : ""}</div>
+      </div>
+      <button class="pick-btn" ${team.isUser ? "" : "disabled"}>${team.isUser ? "draft" : "…"}</button>
+    `;
+    if (team.isUser){
+      row.querySelector(".pick-btn").onclick = () => draftFighter(f);
+    }
+    poolList.appendChild(row);
+  });
+
+  const slipList = document.getElementById("slipList");
+  const userTeam = state.teams[0];
+  slipList.innerHTML = "";
+  for (let i = 0; i < state.rosterSize; i++){
+    const f = userTeam.roster[i];
+    const row = document.createElement("div");
+    if (f){
+      row.className = "slip-row";
+      row.innerHTML = `<span class="n">${f.full_name}</span><span class="p">R${Math.floor(userTeam.roster.indexOf(f) )+ 1}</span>`;
+    } else {
+      row.className = "slip-row empty";
+      row.textContent = "empty slot";
+    }
+    slipList.appendChild(row);
+  }
+
+  const otherTeams = document.getElementById("otherTeams");
+  otherTeams.innerHTML = "";
+  state.teams.slice(1).forEach(t => {
+    const block = document.createElement("div");
+    block.className = "team-block";
+    const rosterLines = t.roster.length > 0
+      ? t.roster.map(f => `<div class="roster-line">${f.full_name}</div>`).join("")
+      : `<div class="roster-line empty">no picks yet</div>`;
+    block.innerHTML = `<div class="team-name">${t.name}</div>${rosterLines}`;
+    otherTeams.appendChild(block);
+  });
+}
+
+/* ============ RENDER: COMPLETE ============ */
+function renderComplete(){
+  const userTeam = state.teams[0];
+  root.innerHTML = `
+    <div class="complete-wrap">
+      <h1>Draft complete</h1>
+      <p class="sub">Here's your final Heavyweight roster.</p>
+      <div class="final-roster">
+        ${userTeam.roster.map((f, i) => `<div class="r"><span>${f.full_name}</span><span style="color:var(--text-dim);">pick ${state.pickOrder.slice(0, state.pickOrder.indexOf(0)).length >= 0 ? "" : ""}#${i + 1}</span></div>`).join("")}
+      </div>
+      <button class="reset-btn" id="resetBtn">Draft again</button>
+    </div>
+  `;
+  document.getElementById("resetBtn").onclick = () => {
+    state = {
+      screen: "setup",
+      numTeams: state.numTeams,
+      rosterSize: state.rosterSize,
+      fighters: [],
+      teams: [],
+      pickOrder: [],
+      currentPickIndex: 0,
+      poolWarning: null,
+    };
+    render();
+  };
+}
+
+/* ============ ROOT RENDER ============ */
+function render(){
+  if (state.screen === "setup") renderSetup();
+  else if (state.screen === "drafting") renderDrafting();
+  else if (state.screen === "complete") renderComplete();
+}
+
+render();
+</script>
+</body>
+</html>
