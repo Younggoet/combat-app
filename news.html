@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Combat — News</title>
+<style>
+  :root{
+    --bg:#0E0F11;
+    --panel:#17181B;
+    --panel-2:#1E2024;
+    --border:#2A2C31;
+    --text:#EDEDED;
+    --text-dim:#8A8A8A;
+    --text-faint:#4E4F53;
+    --gold:#D4AF37;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Inter","Helvetica Neue",Arial,sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:28px 20px 60px;}
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
+  .brand{font-size:15px;font-weight:600;letter-spacing:0.02em;}
+  .brand span{color:var(--gold);}
+
+  h1{font-size:20px;margin:0 0 4px;font-weight:600;}
+  p.sub{color:var(--text-dim);font-size:13px;margin:0 0 24px;}
+
+  .article{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    padding:16px 18px;margin-bottom:12px;text-decoration:none;display:block;
+    transition:border-color 0.15s;
+  }
+  .article:hover{border-color:var(--gold);}
+  .article .meta{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
+  .article .source{
+    color:var(--gold);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.03em;
+  }
+  .article .sport{
+    color:var(--text-dim);font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:0.03em;
+    background:var(--panel-2);border:1px solid var(--border);border-radius:100px;padding:2px 8px;
+  }
+  .article .date{color:var(--text-faint);font-size:11px;}
+  .article h2{
+    color:var(--text);font-size:15.5px;font-weight:500;margin:0 0 6px;line-height:1.4;
+  }
+  .article p{
+    color:var(--text-dim);font-size:13px;line-height:1.5;margin:0;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+
+  .loading, .empty{text-align:center;color:var(--text-dim);padding:60px 0;font-size:14px;}
+  .error{
+    background:rgba(226,67,51,0.1);border:1px solid rgba(226,67,51,0.3);color:#F0897D;
+    font-size:13px;padding:14px 16px;border-radius:8px;margin-bottom:16px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">COMBAT <span>NEWS</span></div>
+  </div>
+
+  <h1>Latest combat sports news</h1>
+  <p class="sub">MMA, wrestling, BJJ, and boxing — pulled live from real news sources, nothing stored, refreshed on every visit.</p>
+
+  <div id="feed"></div>
+</div>
+
+<script>
+const NEWS_ENDPOINT = "https://combat-sync.netlify.app/.netlify/functions/get-news";
+
+function timeAgo(dateStr){
+  const date = new Date(dateStr);
+  if (isNaN(date)) return "";
+  const diffMs = Date.now() - date.getTime();
+  const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+  if (diffHrs < 1) return "just now";
+  if (diffHrs < 24) return `${diffHrs}h ago`;
+  const diffDays = Math.floor(diffHrs / 24);
+  return `${diffDays}d ago`;
+}
+
+async function loadNews(){
+  const feed = document.getElementById("feed");
+  feed.innerHTML = `<div class="loading">Loading latest news…</div>`;
+
+  try{
+    const res = await fetch(NEWS_ENDPOINT);
+    const data = await res.json();
+
+    if (data.error){
+      feed.innerHTML = `<div class="error">Couldn't load news right now: ${data.error}</div>`;
+      return;
+    }
+
+    if (!data.items || data.items.length === 0){
+      feed.innerHTML = `<div class="empty">No articles found.</div>`;
+      return;
+    }
+
+    feed.innerHTML = "";
+    data.items.forEach(item => {
+      const a = document.createElement("a");
+      a.className = "article";
+      a.href = item.link;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.innerHTML = `
+        <div class="meta">
+          <span class="source">${item.source}</span>
+          ${item.sport ? `<span class="sport">${item.sport}</span>` : ""}
+          <span class="date">${timeAgo(item.pubDate)}</span>
+        </div>
+        <h2>${item.title}</h2>
+        <p>${item.description}</p>
+      `;
+      feed.appendChild(a);
+    });
+  } catch(e){
+    feed.innerHTML = `<div class="error">Couldn't reach the news service. Check your connection and refresh.</div>`;
+  }
+}
+
+loadNews();
+</script>
+</body>
+</html>
