@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Combat — League Chat</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0E0F11">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
@@ -87,6 +90,7 @@
       <a href="index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;">Mock Draft</a>
       <a href="news.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;">News</a>
       <a href="settings.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;">League Settings</a>
+      <a href="notifications.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;">Notifications</a>
       <div class="live-pill"><span class="live-dot"></span> LIVE</div>
     </div>
   </div>
@@ -114,6 +118,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Single league for now — Combat doesn't have multi-league support yet.
 const LEAGUE_ID = "a18edea0-2355-45c7-a175-f880597aa86e";
+const FN_BASE = "https://combat-sync.netlify.app/.netlify/functions";
 
 const nameInput = document.getElementById("nameInput");
 const nameSaved = document.getElementById("nameSaved");
@@ -206,14 +211,24 @@ async function sendMessage(){
   if (!body) return;
 
   sendBtn.disabled = true;
-  const { error } = await sb.from("chat_messages").insert({
-    league_id: LEAGUE_ID,
-    display_name: name,
-    body: body,
-  });
+  // Routed through a server function (instead of inserting with the anon
+  // key directly) so a new message can also trigger a push notification
+  // to subscribed devices. Realtime still delivers it live to every open
+  // tab, including this one, the instant it's inserted.
+  let ok = true;
+  try {
+    const res = await fetch(`${FN_BASE}/send-chat-message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ league_id: LEAGUE_ID, display_name: name, body: body }),
+    });
+    ok = res.ok;
+  } catch (err) {
+    ok = false;
+  }
   sendBtn.disabled = false;
 
-  if (error){
+  if (!ok){
     showError("Message didn't send — try again.");
     return;
   }
