@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Combat — Real Draft</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B0B0D">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0B0D; --panel:#141417; --panel-2:#1A1A1E; --border:#242428;
+    --text:#F5F2EA; --text-dim:#9A9AA2; --text-faint:#5A5A62; --gold:#D4AF37; --red:#E2283C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Barlow',-apple-system,sans-serif; min-height:100vh;
+  }
+  a{color:inherit;}
+  .h-font{font-family:'Oswald',sans-serif;text-transform:uppercase;}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 20px 60px;}
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:10px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .name{font-size:19px;font-weight:700;letter-spacing:1px;color:var(--gold);}
+  .brand .sub{font-size:13px;letter-spacing:2px;color:var(--text-dim);}
+  .nav{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .nav a{font-size:12px;color:var(--text-dim);text-decoration:none;}
+
+  .loading, .msg{text-align:center;color:var(--text-dim);padding:60px 0;font-size:14px;}
+  .error{
+    background:rgba(226,40,60,0.1);border:1px solid rgba(226,40,60,0.3);color:#F0897D;
+    font-size:13px;padding:14px 16px;border-radius:8px;margin-bottom:16px;
+  }
+
+  /* ready / lobby card */
+  .lobby{
+    max-width:480px;margin:50px auto;background:var(--panel);border:1px solid var(--border);
+    border-radius:14px;padding:40px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;
+  }
+  .octagon{
+    width:60px;height:60px;clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+    background:var(--gold);display:flex;align-items:center;justify-content:center;
+  }
+  button.primary{
+    background:var(--red);color:#fff;border:none;border-radius:4px;padding:13px 30px;
+    font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;
+  }
+  button.primary:disabled{opacity:0.4;cursor:not-allowed;}
+  button.ghost{
+    background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:4px;
+    padding:10px 20px;font-size:12px;letter-spacing:1px;cursor:pointer;
+  }
+
+  /* header status strip */
+  .status-strip{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px 24px;margin-bottom:20px;flex-wrap:wrap;
+  }
+  .status-block{text-align:right;}
+  .status-block .label{font-size:10px;letter-spacing:2px;color:var(--text-faint);}
+  .status-block .val{font-size:18px;font-weight:700;font-family:'Oswald',sans-serif;}
+
+  /* main layout */
+  .layout{display:flex;gap:24px;align-items:flex-start;}
+  .col-main{flex:2;min-width:0;}
+  .col-side{flex:0 0 320px;}
+
+  .onclock-banner{
+    display:flex;align-items:center;gap:10px;margin-bottom:14px;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--red);}
+
+  .pool-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:20px;}
+  input.search{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);border-radius:6px;color:var(--text);
+    font-size:14px;padding:10px 14px;margin-bottom:14px;
+  }
+  input.search:focus{outline:none;border-color:var(--gold);}
+
+  .fighter-row{
+    display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:4px;cursor:pointer;
+    border:1px solid transparent;
+  }
+  .fighter-row:hover{background:var(--panel-2);}
+  .fighter-row.selected{background:rgba(212,175,55,0.1);border-color:var(--gold);}
+  .fighter-row .name{flex:1;font-size:14px;font-weight:600;}
+  .fighter-row .rating{font-size:13px;color:var(--gold);font-weight:700;}
+  .fighter-row .weight{font-size:11px;color:var(--text-faint);width:120px;}
+
+  .role-row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+  .role-btn{
+    background:var(--panel-2);border:1px solid var(--border);border-radius:20px;padding:8px 16px;
+    cursor:pointer;color:var(--text-dim);font-size:11px;letter-spacing:1px;
+  }
+  .role-btn.active{border-color:var(--gold);color:var(--gold);}
+  .role-btn:disabled{opacity:0.3;cursor:not-allowed;}
+
+  .lock-btn{
+    margin-top:16px;background:var(--red);color:#fff;border:none;border-radius:4px;padding:13px 28px;
+    font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;
+  }
+  .lock-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+  /* roster side panel */
+  .teams-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+  .team-row{
+    display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--panel-2);
+  }
+  .team-row.current{background:rgba(226,40,60,0.08);}
+  .team-photo{width:30px;height:30px;border-radius:6px;object-fit:cover;background:var(--panel-2);flex-shrink:0;}
+  .team-photo-ph{width:30px;height:30px;border-radius:6px;background:var(--panel-2);flex-shrink:0;}
+  .team-row .tname{flex:1;font-size:13px;font-weight:600;}
+  .team-row .tcount{font-size:11px;color:var(--text-faint);}
+
+  .feed-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:16px;margin-top:16px;max-height:280px;overflow-y:auto;}
+  .feed-row{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px dashed var(--panel-2);font-size:12.5px;}
+  .feed-row .fname{font-weight:600;}
+  .feed-row .meta{color:var(--text-faint);font-size:11px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <span class="name">COMBAT</span>
+      <span class="sub h-font">REAL DRAFT</span>
+    </div>
+    <div class="nav">
+      <a href="index.html">Mock Draft</a>
+      <a href="news.html">News</a>
+      <a href="chat.html">League Chat</a>
+      <a href="settings.html">League Settings</a>
+      <a href="notifications.html">Notifications</a>
+      <a href="team.html">My Team</a>
+      <span id="authStatus"></span>
+    </div>
+  </div>
+
+  <div id="content"><div class="loading">Loading draft room…</div></div>
+</div>
+
+<script>
+const FN_BASE = "https://combat-sync.netlify.app/.netlify/functions";
+const LEAGUE_ID = "a18edea0-2355-45c7-a175-f880597aa86e";
+const POLL_MS = 4000;
+
+const content = document.getElementById("content");
+function esc(s){ return CombatAuth.escapeHtml(s); }
+
+let fighters = [];           // every real fighter, fetched once
+let fightersById = {};
+let leagueInfo = null;
+let teams = [];
+let myUser = null;
+let myTeamId = null;
+let selectedFighterId = null;
+let selectedRole = null;
+let pollTimer = null;
+
+async function authHeader(){
+  const session = await CombatAuth.getSession();
+  return session ? `Bearer ${session.access_token}` : "";
+}
+
+async function loadFighterPool(){
+  if (fighters.length) return;
+  const { data, error } = await CombatAuth.client
+    .from("fighters")
+    .select("id, full_name, nickname, announced_weight_class, current_rating, photo_url")
+    .order("current_rating", { ascending: false })
+    .limit(1000);
+  if (!error && data) {
+    fighters = data;
+    fightersById = {};
+    data.forEach((f) => { fightersById[f.id] = f; });
+  }
+}
+
+function fighterName(id){
+  const f = fightersById[id];
+  return f ? f.full_name : "Unknown fighter";
+}
+
+async function loadLeagueAndTeams(){
+  const res = await fetch(`${FN_BASE}/league-settings?league_id=${LEAGUE_ID}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  leagueInfo = data.league;
+  teams = data.teams || [];
+  return data.draftRoom; // {id, status, pickSeconds, teamOrder} | null
+}
+
+function teamName(id){
+  const t = teams.find((t) => t.id === id);
+  return t ? t.name : id;
+}
+
+async function startTheDraft(){
+  const btn = document.getElementById("startBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "STARTING…"; }
+  try {
+    const res = await fetch(`${FN_BASE}/start-draft`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": await authHeader() },
+      body: JSON.stringify({ league_id: LEAGUE_ID }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    render();
+  } catch (err) {
+    content.innerHTML = `<div class="error">Couldn't start the draft: ${esc(err.message)}</div>` + content.innerHTML;
+  }
+}
+
+function renderLobby(roomExists, isCommissioner){
+  if (!roomExists) {
+    content.innerHTML = `
+      <div class="lobby">
+        <div class="octagon"></div>
+        <div>
+          <div class="h-font" style="font-size:17px;font-weight:700;letter-spacing:1px;">NO DRAFT ORDER SET</div>
+          <div style="font-size:13px;color:var(--text-dim);margin-top:8px;">Set the draft order and pick timer in League Settings first.</div>
+        </div>
+        <a href="settings.html"><button class="primary">GO TO LEAGUE SETTINGS</button></a>
+      </div>
+    `;
+    return;
+  }
+  content.innerHTML = `
+    <div class="lobby">
+      <div class="octagon"></div>
+      <div>
+        <div class="h-font" style="font-size:18px;font-weight:700;letter-spacing:2px;">READY TO DRAFT</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-top:8px;">${teams.length} teams &middot; real fighters &middot; snake order</div>
+      </div>
+      ${isCommissioner
+        ? `<button class="primary" id="startBtn">START DRAFT</button>`
+        : `<div style="font-size:12.5px;color:var(--text-faint);">Waiting for the commissioner to start the draft…</div>`}
+    </div>
+  `;
+  const btn = document.getElementById("startBtn");
+  if (btn) btn.addEventListener("click", startTheDraft);
+}
+
+function renderComplete(){
+  content.innerHTML = `
+    <div class="lobby">
+      <div class="octagon"></div>
+      <div>
+        <div class="h-font" style="font-size:18px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT COMPLETE</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-top:8px;">Every roster is set. Check My Team for your final squad.</div>
+      </div>
+    </div>
+  `;
+}
+
+let countdownTimer = null;
+
+function renderActive(room, draftRoomData){
+  const { status, picks, openRoleSlots } = draftRoomData;
+  const onClockTeam = status.onTheClock;
+  const isMyTurn = myTeamId && onClockTeam === myTeamId;
+  const myOpenRoles = isMyTurn ? (openRoleSlots[myTeamId] || []) : [];
+  const phaseField = status.phase === "active" ? "activeOpen" : "cageOpen";
+
+  const filterVal = document.getElementById("fighterSearch") ? document.getElementById("fighterSearch").value : "";
+  const taken = new Set(picks.map((p) => p.fighter_id));
+  const poolRows = fighters
+    .filter((f) => !taken.has(f.id))
+    .filter((f) => !filterVal || f.full_name.toLowerCase().includes(filterVal.toLowerCase()))
+    .slice(0, 60);
+
+  const feedRows = picks.slice().reverse().slice(0, 25).map((p) => `
+    <div class="feed-row">
+      <div><span class="fname">${esc(fighterName(p.fighter_id))}</span> <span class="meta">${esc(p.role)}</span></div>
+      <div class="meta">#${p.pick_number} &middot; ${esc(teamName(p.team_id))}${p.is_autopick ? " · auto" : ""}</div>
+    </div>
+  `).join("") || `<div style="color:var(--text-faint);font-size:12.5px;">No picks yet.</div>`;
+
+  const teamRows = (room.teamOrder || []).map((tid) => {
+    const t = teams.find((x) => x.id === tid);
+    const count = picks.filter((p) => p.team_id === tid).length;
+    const photo = t && t.photo_url
+      ? `<img class="team-photo" src="${esc(t.photo_url)}" alt="">`
+      : `<div class="team-photo-ph"></div>`;
+    return `
+      <div class="team-row ${tid === onClockTeam ? "current" : ""}">
+        ${photo}
+        <div class="tname">${esc(t ? t.name : tid)}</div>
+        <div class="tcount">${count}/50</div>
+      </div>
+    `;
+  }).join("");
+
+  content.innerHTML = `
+    <div class="status-strip">
+      <div class="onclock-banner">
+        <div class="dot"></div>
+        <div class="h-font" style="font-size:13px;letter-spacing:2px;color:var(--red);">ON THE CLOCK — ${esc(teamName(onClockTeam))}</div>
+      </div>
+      <div style="display:flex;gap:28px;">
+        <div class="status-block">
+          <div class="label">PICK</div>
+          <div class="val">${status.pickNumber} <span style="color:var(--text-faint);font-size:13px;">(${esc(status.phase)})</span></div>
+        </div>
+        <div class="status-block">
+          <div class="label">TIME LEFT</div>
+          <div class="val" id="countdown">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="col-main">
+        <div class="pool-card">
+          <input class="search" id="fighterSearch" placeholder="Search fighters…" value="${esc(filterVal)}">
+          <div id="poolList">
+            ${poolRows.map((f) => `
+              <div class="fighter-row ${f.id === selectedFighterId ? "selected" : ""}" data-fighter-id="${f.id}">
+                <div class="name">${esc(f.full_name)}${f.nickname ? ` <span style="color:var(--text-faint);font-weight:400;">"${esc(f.nickname)}"</span>` : ""}</div>
+                <div class="weight">${esc(f.announced_weight_class || "")}</div>
+                <div class="rating">${Math.round(f.current_rating)}</div>
+              </div>
+            `).join("")}
+          </div>
+
+          ${isMyTurn ? `
+            <div class="role-row" id="roleRow">
+              ${myOpenRoles.map((r) => `
+                <button class="role-btn ${r.role === selectedRole ? "active" : ""}" data-role="${r.role}" ${r[phaseField] <= 0 ? "disabled" : ""}>
+                  ${esc(r.role)} (${r[phaseField]} open)
+                </button>
+              `).join("")}
+            </div>
+            <button class="lock-btn" id="lockBtn" ${(!selectedFighterId || !selectedRole) ? "disabled" : ""}>LOCK PICK</button>
+            <div class="error" id="pickError" style="display:none;margin-top:12px;"></div>
+          ` : `<div style="margin-top:16px;font-size:12.5px;color:var(--text-faint);">Waiting on ${esc(teamName(onClockTeam))}…</div>`}
+        </div>
+      </div>
+
+      <div class="col-side">
+        <div class="teams-card">${teamRows}</div>
+        <div class="feed-card">
+          <div class="h-font" style="font-size:11px;letter-spacing:2px;color:var(--text-faint);margin-bottom:8px;">RECENT PICKS</div>
+          ${feedRows}
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.querySelectorAll(".fighter-row").forEach((row) => {
+    row.addEventListener("click", () => {
+      selectedFighterId = row.dataset.fighterId;
+      render();
+    });
+  });
+  const searchInput = document.getElementById("fighterSearch");
+  if (searchInput) {
+    searchInput.addEventListener("input", () => { stopCountdown(); renderActive(room, draftRoomData); startCountdown(draftRoomData.room.currentPickDeadline); searchInput.focus(); });
+  }
+  document.querySelectorAll(".role-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (btn.disabled) return;
+      selectedRole = btn.dataset.role;
+      render();
+    });
+  });
+  const lockBtn = document.getElementById("lockBtn");
+  if (lockBtn) lockBtn.addEventListener("click", () => lockInPick(room.id));
+
+  startCountdown(draftRoomData.room.currentPickDeadline);
+}
+
+function stopCountdown(){
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+}
+
+function startCountdown(deadlineIso){
+  stopCountdown();
+  const el = document.getElementById("countdown");
+  if (!el || !deadlineIso) return;
+  function tick(){
+    const secsLeft = Math.max(0, Math.round((new Date(deadlineIso).getTime() - Date.now()) / 1000));
+    const mm = Math.floor(secsLeft / 60);
+    const ss = String(secsLeft % 60).padStart(2, "0");
+    el.textContent = `${mm}:${ss}`;
+    el.style.color = secsLeft <= 15 ? "var(--red)" : "var(--text)";
+  }
+  tick();
+  countdownTimer = setInterval(tick, 1000);
+}
+
+async function lockInPick(draftRoomId){
+  const errorBox = document.getElementById("pickError");
+  const lockBtn = document.getElementById("lockBtn");
+  if (!selectedFighterId || !selectedRole) return;
+  lockBtn.disabled = true;
+  try {
+    const res = await fetch(`${FN_BASE}/draft-pick`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": await authHeader() },
+      body: JSON.stringify({ draft_room_id: draftRoomId, team_id: myTeamId, fighter_id: selectedFighterId, role: selectedRole }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.reason || data.error);
+    selectedFighterId = null;
+    selectedRole = null;
+    await refresh();
+  } catch (err) {
+    errorBox.textContent = err.message || "Pick failed.";
+    errorBox.style.display = "block";
+    lockBtn.disabled = false;
+  }
+}
+
+let currentRoomMeta = null;
+let currentDraftRoomData = null;
+
+function render(){
+  if (!currentRoomMeta) return;
+  if (!currentRoomMeta.exists) { renderLobby(false, false); return; }
+  if (currentRoomMeta.status === "pending") { renderLobby(true, currentRoomMeta.isCommissioner); return; }
+  if (currentRoomMeta.status === "complete") { renderComplete(); return; }
+  if (currentRoomMeta.status === "active" && currentDraftRoomData) {
+    renderActive({ id: currentRoomMeta.id, teamOrder: currentRoomMeta.teamOrder }, currentDraftRoomData);
+  }
+}
+
+async function refresh(){
+  try {
+    const draftRoomSummary = await loadLeagueAndTeams();
+    myUser = await CombatAuth.getUser();
+    if (myUser) {
+      const mine = teams.find((t) => t.owner_user_id === myUser.id);
+      myTeamId = mine ? mine.id : null;
+    }
+
+    if (!draftRoomSummary) {
+      currentRoomMeta = { exists: false };
+      currentDraftRoomData = null;
+      stopCountdown();
+      render();
+      return;
+    }
+
+    const isCommissioner = !!(myUser && leagueInfo && leagueInfo.commissioner_user_id === myUser.id);
+    currentRoomMeta = {
+      exists: true,
+      id: draftRoomSummary.id,
+      status: draftRoomSummary.status,
+      teamOrder: draftRoomSummary.teamOrder,
+      isCommissioner,
+    };
+
+    if (draftRoomSummary.status === "active") {
+      const res = await fetch(`${FN_BASE}/draft-room?room_id=${draftRoomSummary.id}`);
+      const data = await res.json();
+      if (!data.error) currentDraftRoomData = data;
+    } else {
+      stopCountdown();
+    }
+
+    render();
+  } catch (err) {
+    content.innerHTML = `<div class="error">Couldn't load the draft room: ${esc(err.message || "")}</div>`;
+  }
+}
+
+async function init(){
+  await loadFighterPool();
+  await refresh();
+  pollTimer = setInterval(refresh, POLL_MS);
+}
+
+init();
+</script>
+</body>
+</html>
