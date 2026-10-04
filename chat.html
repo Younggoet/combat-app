@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Combat — League Chat</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#0E0F11;
+    --panel:#17181B;
+    --panel-2:#1E2024;
+    --border:#2A2C31;
+    --text:#EDEDED;
+    --text-dim:#8A8A8A;
+    --text-faint:#4E4F53;
+    --gold:#D4AF37;
+    --red:#E2283C;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Inter","Helvetica Neue",Arial,sans-serif;
+    height:100%;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:28px 20px 0;height:100vh;display:flex;flex-direction:column;box-sizing:border-box;}
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex:0 0 auto;}
+  .brand{font-size:15px;font-weight:600;letter-spacing:0.02em;}
+  .brand span{color:var(--gold);}
+  .live-pill{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim);}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:#4CAF7D;box-shadow:0 0 0 3px rgba(76,175,125,0.15);}
+
+  .namebar{
+    display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);
+    border-radius:10px;padding:10px 14px;margin-bottom:14px;flex:0 0 auto;font-size:13px;color:var(--text-dim);
+  }
+  .namebar input{
+    background:var(--panel-2);border:1px solid var(--border);border-radius:6px;color:var(--text);
+    font-size:13px;padding:6px 10px;width:160px;
+  }
+  .namebar input:focus{outline:none;border-color:var(--gold);}
+
+  .messages{
+    flex:1 1 auto;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:16px;
+  }
+  .empty{text-align:center;color:var(--text-dim);padding:60px 0;font-size:14px;}
+  .msg{max-width:78%;}
+  .msg.mine{align-self:flex-end;}
+  .msg .meta{display:flex;gap:8px;align-items:baseline;margin-bottom:3px;}
+  .msg.mine .meta{justify-content:flex-end;}
+  .msg .name{font-size:11.5px;font-weight:600;color:var(--gold);}
+  .msg.mine .name{color:#9FD6B8;}
+  .msg .time{font-size:10.5px;color:var(--text-faint);}
+  .msg .bubble{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 13px;
+    font-size:14px;line-height:1.45;word-wrap:break-word;white-space:pre-wrap;
+  }
+  .msg.mine .bubble{background:rgba(212,175,55,0.1);border-color:rgba(212,175,55,0.35);}
+
+  .composer{
+    flex:0 0 auto;display:flex;gap:10px;padding:14px 0 20px;border-top:1px solid var(--border);
+  }
+  .composer textarea{
+    flex:1;resize:none;background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    color:var(--text);font-size:14px;padding:11px 14px;font-family:inherit;max-height:120px;
+  }
+  .composer textarea:focus{outline:none;border-color:var(--gold);}
+  .composer button{
+    background:var(--gold);color:#0E0F11;border:none;border-radius:10px;padding:0 20px;
+    font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .composer button:disabled{opacity:0.5;cursor:not-allowed;}
+  .error{
+    background:rgba(226,40,60,0.1);border:1px solid rgba(226,40,60,0.3);color:#F0897D;
+    font-size:12.5px;padding:10px 14px;border-radius:8px;margin-bottom:12px;flex:0 0 auto;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">COMBAT <span>LEAGUE CHAT</span></div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <a href="index.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;">Mock Draft</a>
+      <a href="news.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;">News</a>
+      <a href="settings.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;">League Settings</a>
+      <div class="live-pill"><span class="live-dot"></span> LIVE</div>
+    </div>
+  </div>
+
+  <div class="namebar">
+    Chatting as
+    <input id="nameInput" type="text" maxlength="40" placeholder="Your name">
+    <span id="nameSaved" style="display:none;color:#4CAF7D;">saved</span>
+  </div>
+
+  <div id="errorBox"></div>
+
+  <div class="messages" id="messages"><div class="empty">Loading league chat…</div></div>
+
+  <div class="composer">
+    <textarea id="bodyInput" rows="1" placeholder="Message the league…" maxlength="2000"></textarea>
+    <button id="sendBtn">Send</button>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://cguenfdcrqbduluscsel.supabase.co";
+const SUPABASE_KEY = "sb_publishable_51D_xE2j1vYOWl_0nNc4XQ_r7iAYn8x";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Single league for now — Combat doesn't have multi-league support yet.
+const LEAGUE_ID = "a18edea0-2355-45c7-a175-f880597aa86e";
+
+const nameInput = document.getElementById("nameInput");
+const nameSaved = document.getElementById("nameSaved");
+const bodyInput = document.getElementById("bodyInput");
+const sendBtn = document.getElementById("sendBtn");
+const messagesEl = document.getElementById("messages");
+const errorBox = document.getElementById("errorBox");
+
+// No login system exists yet in Combat, so — same trust level as the rest
+// of the app today — chat identity is just a free-text name saved in this
+// browser. Anyone can type any name; there's no verification.
+function getDisplayName(){ return (localStorage.getItem("combat_display_name") || "").trim(); }
+function setDisplayName(v){ localStorage.setItem("combat_display_name", v.trim()); }
+
+nameInput.value = getDisplayName();
+nameInput.addEventListener("input", () => {
+  setDisplayName(nameInput.value);
+  nameSaved.style.display = nameInput.value.trim() ? "inline" : "none";
+});
+if (getDisplayName()) nameSaved.style.display = "inline";
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+
+function timeLabel(dateStr){
+  const d = new Date(dateStr);
+  if (isNaN(d)) return "";
+  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+let renderedIds = new Set();
+
+function appendMessage(msg){
+  if (renderedIds.has(msg.id)) return;
+  renderedIds.add(msg.id);
+
+  const empty = messagesEl.querySelector(".empty");
+  if (empty) empty.remove();
+
+  const mine = msg.display_name.trim().toLowerCase() === getDisplayName().toLowerCase() && getDisplayName() !== "";
+
+  const row = document.createElement("div");
+  row.className = "msg" + (mine ? " mine" : "");
+  row.innerHTML = `
+    <div class="meta">
+      <span class="name">${escapeHtml(msg.display_name)}</span>
+      <span class="time">${timeLabel(msg.created_at)}</span>
+    </div>
+    <div class="bubble">${escapeHtml(msg.body)}</div>
+  `;
+  messagesEl.appendChild(row);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+async function loadHistory(){
+  const { data, error } = await sb
+    .from("chat_messages")
+    .select("id, display_name, body, created_at")
+    .eq("league_id", LEAGUE_ID)
+    .order("created_at", { ascending: true })
+    .limit(200);
+
+  if (error){
+    messagesEl.innerHTML = `<div class="empty">Couldn't load chat history.</div>`;
+    return;
+  }
+
+  messagesEl.innerHTML = "";
+  if (!data || data.length === 0){
+    messagesEl.innerHTML = `<div class="empty">No messages yet — say hello.</div>`;
+    return;
+  }
+  data.forEach(appendMessage);
+}
+
+function showError(text){
+  errorBox.innerHTML = `<div class="error">${escapeHtml(text)}</div>`;
+  setTimeout(() => { errorBox.innerHTML = ""; }, 4000);
+}
+
+async function sendMessage(){
+  const name = getDisplayName();
+  const body = bodyInput.value.trim();
+  if (!name){
+    showError("Pick a name up top before sending a message.");
+    nameInput.focus();
+    return;
+  }
+  if (!body) return;
+
+  sendBtn.disabled = true;
+  const { error } = await sb.from("chat_messages").insert({
+    league_id: LEAGUE_ID,
+    display_name: name,
+    body: body,
+  });
+  sendBtn.disabled = false;
+
+  if (error){
+    showError("Message didn't send — try again.");
+    return;
+  }
+  bodyInput.value = "";
+  bodyInput.style.height = "auto";
+}
+
+sendBtn.addEventListener("click", sendMessage);
+bodyInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey){
+    e.preventDefault();
+    sendMessage();
+  }
+});
+bodyInput.addEventListener("input", () => {
+  bodyInput.style.height = "auto";
+  bodyInput.style.height = Math.min(bodyInput.scrollHeight, 120) + "px";
+});
+
+// Realtime: every insert (from anyone, any tab) streams straight in —
+// no polling, no refresh.
+sb.channel("chat-messages")
+  .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (payload) => {
+    if (payload.new.league_id === LEAGUE_ID) appendMessage(payload.new);
+  })
+  .subscribe();
+
+loadHistory();
+</script>
+</body>
+</html>

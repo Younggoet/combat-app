@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Combat — League Settings</title>
+<style>
+  :root{
+    --bg:#0E0F11;
+    --panel:#17181B;
+    --panel-2:#1E2024;
+    --border:#2A2C31;
+    --text:#EDEDED;
+    --text-dim:#8A8A8A;
+    --text-faint:#4E4F53;
+    --gold:#D4AF37;
+    --red:#E2283C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Inter","Helvetica Neue",Arial,sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:28px 20px 60px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+  .brand{font-size:15px;font-weight:600;letter-spacing:0.02em;}
+  .brand span{color:var(--gold);}
+  .nav a{font-size:12px;color:var(--text-dim);text-decoration:none;margin-left:16px;}
+
+  h1{font-size:19px;margin:0 0 4px;font-weight:600;}
+  p.sub{color:var(--text-dim);font-size:13px;margin:0 0 26px;}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:18px;}
+  .card h2{font-size:13px;letter-spacing:0.04em;text-transform:uppercase;color:var(--gold);margin:0 0 16px;}
+
+  .size-toggle{display:flex;gap:10px;margin-bottom:4px;}
+  .size-btn{
+    flex:1;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;
+    padding:12px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-dim);
+  }
+  .size-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(212,175,55,0.08);}
+
+  .timer-row{display:flex;align-items:center;gap:12px;}
+  .timer-row input{
+    background:var(--panel-2);border:1px solid var(--border);border-radius:6px;color:var(--text);
+    font-size:14px;padding:8px 10px;width:80px;
+  }
+
+  .wheel-area{display:flex;flex-direction:column;align-items:center;gap:18px;padding:10px 0;}
+  .octagon-wheel{
+    position:relative;width:220px;height:220px;
+    clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+    background: conic-gradient(from 0deg, #D4AF37, #E2283C, #D4AF37, #E2283C, #D4AF37, #E2283C, #D4AF37, #E2283C);
+    display:flex;align-items:center;justify-content:center;
+    transition: transform 2.4s cubic-bezier(0.17,0.84,0.44,1);
+  }
+  .octagon-wheel .hub{
+    width:70px;height:70px;border-radius:50%;background:var(--bg);border:2px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gold);
+    text-align:center;letter-spacing:0.5px;
+  }
+  .spin-btn{
+    background:var(--gold);color:#0E0F11;border:none;border-radius:8px;padding:12px 28px;
+    font-size:13px;font-weight:700;letter-spacing:0.5px;cursor:pointer;
+  }
+  .spin-btn:disabled{opacity:0.5;cursor:not-allowed;}
+
+  .order-list{list-style:none;margin:0;padding:0;}
+  .order-list li{
+    display:flex;align-items:center;gap:12px;background:var(--panel-2);border:1px solid var(--border);
+    border-radius:8px;padding:10px 14px;margin-bottom:8px;cursor:grab;
+  }
+  .order-list li.dragging{opacity:0.4;}
+  .order-num{font-size:12px;color:var(--text-faint);width:20px;flex:0 0 auto;}
+  .order-name{font-size:14px;font-weight:600;flex:1;}
+  .order-handle{color:var(--text-faint);font-size:14px;}
+
+  .save-bar{display:flex;align-items:center;gap:14px;margin-top:6px;}
+  .save-btn{
+    background:var(--red);color:#fff;border:none;border-radius:8px;padding:13px 30px;
+    font-size:13px;font-weight:700;cursor:pointer;
+  }
+  .save-btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .status-msg{font-size:12.5px;color:var(--text-dim);}
+  .status-msg.error{color:#F0897D;}
+  .status-msg.ok{color:#8FD6A8;}
+
+  .locked-banner{
+    background:rgba(226,40,60,0.1);border:1px solid rgba(226,40,60,0.3);color:#F0897D;
+    font-size:12.5px;padding:12px 16px;border-radius:8px;margin-bottom:18px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">COMBAT <span>LEAGUE SETTINGS</span></div>
+    <div class="nav">
+      <a href="index.html">Mock Draft</a>
+      <a href="news.html">News</a>
+      <a href="chat.html">League Chat</a>
+    </div>
+  </div>
+
+  <h1 id="leagueName">League Settings</h1>
+  <p class="sub">Set the draft order and pick timer before the draft starts. No login yet, so this page is open to anyone with the link — same as the rest of Combat today.</p>
+
+  <div id="lockedBanner" style="display:none;" class="locked-banner"></div>
+
+  <div class="card">
+    <h2>League size</h2>
+    <div class="size-toggle">
+      <div class="size-btn" id="size8">8 Teams</div>
+      <div class="size-btn" id="size10">10 Teams</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Pick timer</h2>
+    <div class="timer-row">
+      <input type="number" id="pickSeconds" min="10" max="600" value="90">
+      <span style="font-size:13px;color:var(--text-dim);">seconds per pick</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Draft order</h2>
+    <div class="wheel-area">
+      <div class="octagon-wheel" id="wheel"><div class="hub">SPIN</div></div>
+      <button class="spin-btn" id="spinBtn">Spin the wheel</button>
+    </div>
+    <p style="font-size:12px;color:var(--text-faint);margin:14px 0 10px;">Or drag teams into a specific order:</p>
+    <ul class="order-list" id="orderList"></ul>
+  </div>
+
+  <div class="save-bar">
+    <button class="save-btn" id="saveBtn">Save Settings</button>
+    <span class="status-msg" id="statusMsg"></span>
+  </div>
+</div>
+
+<script>
+const FN_BASE = "https://combat-sync.netlify.app/.netlify/functions";
+const LEAGUE_ID = "a18edea0-2355-45c7-a175-f880597aa86e";
+
+const EIGHT_TEAM_CODES = ["JM","KR","TW","AB","YOU","DC","FS","LP"];
+
+let allTeams = [];       // [{id, name}] every team in the league
+let leagueSize = 8;
+let order = [];          // array of team ids, current working order
+let roomStatus = "pending";
+
+const wheelEl = document.getElementById("wheel");
+const spinBtn = document.getElementById("spinBtn");
+const orderListEl = document.getElementById("orderList");
+const saveBtn = document.getElementById("saveBtn");
+const statusMsg = document.getElementById("statusMsg");
+const size8Btn = document.getElementById("size8");
+const size10Btn = document.getElementById("size10");
+const lockedBanner = document.getElementById("lockedBanner");
+
+function teamsForSize(size) {
+  if (size === 8) {
+    const eight = EIGHT_TEAM_CODES
+      .map((code) => allTeams.find((t) => t.name === code))
+      .filter(Boolean);
+    return eight.length === 8 ? eight : allTeams.slice(0, 8);
+  }
+  return allTeams.slice(0, 10);
+}
+
+function teamName(id) {
+  const t = allTeams.find((t) => t.id === id);
+  return t ? t.name : id;
+}
+
+function setLocked(locked, label) {
+  const inputsDisabled = locked;
+  spinBtn.disabled = inputsDisabled;
+  saveBtn.disabled = inputsDisabled;
+  size8Btn.style.pointerEvents = inputsDisabled ? "none" : "auto";
+  size10Btn.style.pointerEvents = inputsDisabled ? "none" : "auto";
+  document.getElementById("pickSeconds").disabled = inputsDisabled;
+  lockedBanner.style.display = locked ? "block" : "none";
+  if (locked) lockedBanner.textContent = label;
+}
+
+function renderOrderList() {
+  orderListEl.innerHTML = "";
+  order.forEach((teamId, i) => {
+    const li = document.createElement("li");
+    li.draggable = true;
+    li.dataset.teamId = teamId;
+    li.innerHTML = `
+      <span class="order-num">${i + 1}</span>
+      <span class="order-name">${teamName(teamId)}</span>
+      <span class="order-handle">⠿</span>
+    `;
+    li.addEventListener("dragstart", () => li.classList.add("dragging"));
+    li.addEventListener("dragend", () => li.classList.remove("dragging"));
+    li.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      const dragging = orderListEl.querySelector(".dragging");
+      if (!dragging || dragging === li) return;
+      const rect = li.getBoundingClientRect();
+      const before = (e.clientY - rect.top) < rect.height / 2;
+      orderListEl.insertBefore(dragging, before ? li : li.nextSibling);
+    });
+    li.addEventListener("drop", () => {
+      order = Array.from(orderListEl.children).map((el) => el.dataset.teamId);
+      renderOrderList();
+    });
+    orderListEl.appendChild(li);
+  });
+}
+
+function setSize(size) {
+  leagueSize = size;
+  size8Btn.classList.toggle("active", size === 8);
+  size10Btn.classList.toggle("active", size === 10);
+  const teams = teamsForSize(size);
+  // Keep the existing relative order where possible, append anything new.
+  const kept = order.filter((id) => teams.some((t) => t.id === id));
+  const added = teams.filter((t) => !kept.includes(t.id)).map((t) => t.id);
+  order = [...kept, ...added].slice(0, size);
+  renderOrderList();
+}
+
+size8Btn.addEventListener("click", () => setSize(8));
+size10Btn.addEventListener("click", () => setSize(10));
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+let spinRotation = 0;
+spinBtn.addEventListener("click", () => {
+  spinBtn.disabled = true;
+  spinRotation += 1080 + Math.floor(Math.random() * 720); // 3-5 full turns
+  wheelEl.style.transform = `rotate(${spinRotation}deg)`;
+  setTimeout(() => {
+    order = shuffle(order);
+    renderOrderList();
+    spinBtn.disabled = false;
+  }, 2450);
+});
+
+async function loadSettings() {
+  statusMsg.textContent = "Loading…";
+  statusMsg.className = "status-msg";
+  try {
+    const res = await fetch(`${FN_BASE}/league-settings?league_id=${LEAGUE_ID}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    document.getElementById("leagueName").textContent = `${data.league.name} — Settings`;
+    allTeams = data.teams;
+
+    if (data.draftRoom) {
+      roomStatus = data.draftRoom.status;
+      document.getElementById("pickSeconds").value = data.draftRoom.pickSeconds;
+      order = data.draftRoom.teamOrder;
+      leagueSize = order.length === 10 ? 10 : 8;
+    } else {
+      order = teamsForSize(8).map((t) => t.id);
+      leagueSize = 8;
+    }
+
+    size8Btn.classList.toggle("active", leagueSize === 8);
+    size10Btn.classList.toggle("active", leagueSize === 10);
+    renderOrderList();
+
+    if (roomStatus !== "pending") {
+      setLocked(true, `This league's draft has already ${roomStatus === "complete" ? "completed" : "started"} — settings are locked.`);
+    }
+
+    statusMsg.textContent = "";
+  } catch (e) {
+    statusMsg.textContent = "Couldn't load league settings.";
+    statusMsg.className = "status-msg error";
+  }
+}
+
+saveBtn.addEventListener("click", async () => {
+  saveBtn.disabled = true;
+  statusMsg.textContent = "Saving…";
+  statusMsg.className = "status-msg";
+  try {
+    const pickSeconds = parseInt(document.getElementById("pickSeconds").value, 10) || 90;
+    const res = await fetch(`${FN_BASE}/save-league-settings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ league_id: LEAGUE_ID, team_order: order, pick_seconds: pickSeconds }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    statusMsg.textContent = "Saved.";
+    statusMsg.className = "status-msg ok";
+  } catch (e) {
+    statusMsg.textContent = e.message || "Save failed.";
+    statusMsg.className = "status-msg error";
+  }
+  saveBtn.disabled = false;
+});
+
+loadSettings();
+</script>
+</body>
+</html>
