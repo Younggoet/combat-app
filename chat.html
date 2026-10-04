@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#0E0F11">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
 <style>
   :root{
     --bg:#0E0F11;
@@ -91,15 +92,13 @@
       <a href="news.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;">News</a>
       <a href="settings.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;">League Settings</a>
       <a href="notifications.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;">Notifications</a>
+      <a href="team.html" style="font-size:12px;color:var(--text-dim);text-decoration:none;">My Team</a>
+      <span id="authStatus"></span>
       <div class="live-pill"><span class="live-dot"></span> LIVE</div>
     </div>
   </div>
 
-  <div class="namebar">
-    Chatting as
-    <input id="nameInput" type="text" maxlength="40" placeholder="Your name">
-    <span id="nameSaved" style="display:none;color:#4CAF7D;">saved</span>
-  </div>
+  <div class="namebar" id="nameBar">Loading…</div>
 
   <div id="errorBox"></div>
 
@@ -120,25 +119,34 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const LEAGUE_ID = "a18edea0-2355-45c7-a175-f880597aa86e";
 const FN_BASE = "https://combat-sync.netlify.app/.netlify/functions";
 
-const nameInput = document.getElementById("nameInput");
-const nameSaved = document.getElementById("nameSaved");
+const nameBar = document.getElementById("nameBar");
 const bodyInput = document.getElementById("bodyInput");
 const sendBtn = document.getElementById("sendBtn");
 const messagesEl = document.getElementById("messages");
 const errorBox = document.getElementById("errorBox");
 
-// No login system exists yet in Combat, so — same trust level as the rest
-// of the app today — chat identity is just a free-text name saved in this
-// browser. Anyone can type any name; there's no verification.
-function getDisplayName(){ return (localStorage.getItem("combat_display_name") || "").trim(); }
-function setDisplayName(v){ localStorage.setItem("combat_display_name", v.trim()); }
+// Chat identity now comes from the signed-in user's real account — no more
+// free-text name typed into localStorage.
+let currentUser = null;
+let currentDisplayName = "";
 
-nameInput.value = getDisplayName();
-nameInput.addEventListener("input", () => {
-  setDisplayName(nameInput.value);
-  nameSaved.style.display = nameInput.value.trim() ? "inline" : "none";
-});
-if (getDisplayName()) nameSaved.style.display = "inline";
+function getDisplayName(){ return currentDisplayName; }
+
+async function initIdentity(){
+  currentUser = await CombatAuth.getUser();
+  if (!currentUser) {
+    nameBar.innerHTML = `Sign in to chat — <a href="login.html" style="color:#D4AF37;text-decoration:none;">sign in →</a>`;
+    bodyInput.disabled = true;
+    sendBtn.disabled = true;
+    bodyInput.placeholder = "Sign in to send a message…";
+    return;
+  }
+  const profile = await CombatAuth.getProfile(currentUser.id);
+  currentDisplayName = (profile && profile.display_name) || currentUser.email;
+  nameBar.textContent = `Chatting as ${currentDisplayName}`;
+  bodyInput.disabled = false;
+  sendBtn.disabled = false;
+}
 
 function escapeHtml(s){
   return s.replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
@@ -201,26 +209,29 @@ function showError(text){
 }
 
 async function sendMessage(){
-  const name = getDisplayName();
-  const body = bodyInput.value.trim();
-  if (!name){
-    showError("Pick a name up top before sending a message.");
-    nameInput.focus();
+  if (!currentUser){
+    showError("Sign in to send a message.");
     return;
   }
+  const body = bodyInput.value.trim();
   if (!body) return;
 
   sendBtn.disabled = true;
   // Routed through a server function (instead of inserting with the anon
-  // key directly) so a new message can also trigger a push notification
-  // to subscribed devices. Realtime still delivers it live to every open
-  // tab, including this one, the instant it's inserted.
+  // key directly) so identity can be verified server-side and a new
+  // message can also trigger a push notification to subscribed devices.
+  // Realtime still delivers it live to every open tab, including this
+  // one, the instant it's inserted.
   let ok = true;
   try {
+    const session = await CombatAuth.getSession();
     const res = await fetch(`${FN_BASE}/send-chat-message`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ league_id: LEAGUE_ID, display_name: name, body: body }),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session ? session.access_token : ""}`,
+      },
+      body: JSON.stringify({ league_id: LEAGUE_ID, body: body }),
     });
     ok = res.ok;
   } catch (err) {
@@ -256,7 +267,7 @@ sb.channel("chat-messages")
   })
   .subscribe();
 
-loadHistory();
+initIdentity().then(loadHistory);
 </script>
 </body>
 </html>
