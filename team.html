@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Combat — My Team</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0E0F11">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#0E0F11; --panel:#17181B; --panel-2:#1E2024; --border:#2A2C31;
+    --text:#EDEDED; --text-dim:#8A8A8A; --text-faint:#4E4F53; --gold:#D4AF37; --red:#E2283C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Inter","Helvetica Neue",Arial,sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:28px 20px 60px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:10px;}
+  .brand{font-size:15px;font-weight:600;letter-spacing:0.02em;}
+  .brand span{color:var(--gold);}
+  .nav{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .nav a{font-size:12px;color:var(--text-dim);text-decoration:none;}
+
+  h1{font-size:20px;margin:0 0 4px;font-weight:600;}
+  p.sub{color:var(--text-dim);font-size:13px;margin:0 0 24px;}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;}
+
+  .loading{text-align:center;color:var(--text-dim);padding:60px 0;font-size:14px;}
+
+  .signed-out{
+    text-align:center;padding:40px 20px;color:var(--text-dim);font-size:14px;
+  }
+  .signed-out a{color:var(--gold);text-decoration:none;font-weight:600;}
+
+  /* --- Team display --- */
+  .team-view{display:flex;align-items:center;gap:18px;}
+  .team-photo{
+    width:88px;height:88px;border-radius:12px;object-fit:cover;background:var(--panel-2);
+    border:1px solid var(--border);flex-shrink:0;
+  }
+  .team-photo-placeholder{
+    width:88px;height:88px;border-radius:12px;background:var(--panel-2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:11px;
+    flex-shrink:0;text-align:center;
+  }
+  .team-name{font-size:19px;font-weight:600;margin:0 0 4px;}
+  .team-meta{font-size:12.5px;color:var(--text-dim);}
+  .team-actions{margin-left:auto;}
+  button.ghost{
+    background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;
+    padding:8px 14px;font-size:12.5px;cursor:pointer;
+  }
+  button.ghost:hover{border-color:var(--gold);color:var(--gold);}
+
+  /* --- Create/edit form --- */
+  label{display:block;font-size:12px;color:var(--text-dim);margin-top:16px;margin-bottom:6px;}
+  input[type=text]{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;color:var(--text);
+    font-size:14px;padding:10px 12px;
+  }
+  input[type=text]:focus{outline:none;border-color:var(--gold);}
+
+  .photo-row{display:flex;align-items:center;gap:14px;margin-top:8px;}
+  .photo-preview{
+    width:72px;height:72px;border-radius:10px;object-fit:cover;background:var(--panel-2);
+    border:1px solid var(--border);flex-shrink:0;
+  }
+  .photo-preview-placeholder{
+    width:72px;height:72px;border-radius:10px;background:var(--panel-2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:10px;
+    flex-shrink:0;
+  }
+  input[type=file]{font-size:12.5px;color:var(--text-dim);}
+
+  button.primary{
+    background:var(--gold);color:#0E0F11;border:none;border-radius:8px;padding:12px;
+    font-size:14px;font-weight:600;cursor:pointer;margin-top:20px;width:100%;
+  }
+  button.primary:disabled{opacity:0.5;cursor:not-allowed;}
+
+  .error{
+    background:rgba(226,67,51,0.1);border:1px solid rgba(226,67,51,0.3);color:#F0897D;
+    font-size:12.5px;padding:10px 14px;border-radius:8px;margin-top:16px;
+  }
+  .success{
+    background:rgba(76,175,125,0.1);border:1px solid rgba(76,175,125,0.3);color:#9FD6B8;
+    font-size:12.5px;padding:10px 14px;border-radius:8px;margin-top:16px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">COMBAT <span>MY TEAM</span></div>
+    <div class="nav">
+      <a href="index.html">Mock Draft</a>
+      <a href="draft.html">Draft</a>
+      <a href="news.html">News</a>
+      <a href="chat.html">League Chat</a>
+      <a href="settings.html">League Settings</a>
+      <a href="notifications.html">Notifications</a>
+      <span id="authStatus"></span>
+    </div>
+  </div>
+
+  <h1>Your team</h1>
+  <p class="sub">Name your team and add a photo — this is how the rest of the league sees you.</p>
+
+  <div class="card" id="content"><div class="loading">Loading…</div></div>
+</div>
+
+<script src="auth.js"></script>
+<script>
+const { client } = CombatAuth;
+const LEAGUE_ID = "a18edea0-2355-45c7-a175-f880597aa86e";
+const content = document.getElementById("content");
+
+function escapeHtml(s){ return CombatAuth.escapeHtml(s); }
+
+async function getMyTeam(userId){
+  const { data, error } = await client
+    .from("teams")
+    .select("id, name, photo_url, created_at")
+    .eq("league_id", LEAGUE_ID)
+    .eq("owner_user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+function renderSignedOut(){
+  content.innerHTML = `
+    <div class="signed-out">
+      Sign in to create or manage your team.<br><br>
+      <a href="login.html">Sign in →</a>
+    </div>
+  `;
+}
+
+function renderTeamView(team){
+  content.innerHTML = `
+    <div class="team-view">
+      ${team.photo_url
+        ? `<img class="team-photo" src="${escapeHtml(team.photo_url)}" alt="">`
+        : `<div class="team-photo-placeholder">NO PHOTO</div>`}
+      <div>
+        <div class="team-name">${escapeHtml(team.name)}</div>
+        <div class="team-meta">Your team in this league</div>
+      </div>
+      <div class="team-actions"><button class="ghost" id="editBtn">Edit</button></div>
+    </div>
+  `;
+  document.getElementById("editBtn").addEventListener("click", () => renderForm(team));
+}
+
+function renderForm(existingTeam){
+  const isEdit = !!existingTeam;
+  content.innerHTML = `
+    <form id="teamForm">
+      <label for="teamName">Team name</label>
+      <input type="text" id="teamName" maxlength="40" placeholder="e.g. Cage Rattlers" value="${isEdit ? escapeHtml(existingTeam.name) : ""}" required>
+
+      <label>Team photo</label>
+      <div class="photo-row">
+        ${isEdit && existingTeam.photo_url
+          ? `<img class="photo-preview" id="photoPreview" src="${escapeHtml(existingTeam.photo_url)}" alt="">`
+          : `<div class="photo-preview-placeholder" id="photoPreview">NO PHOTO</div>`}
+        <input type="file" id="photoInput" accept="image/*">
+      </div>
+
+      <button class="primary" id="submitBtn" type="submit">${isEdit ? "Save changes" : "Create team"}</button>
+      <div class="error" id="errorBox" style="display:none;"></div>
+      <div class="success" id="successBox" style="display:none;"></div>
+    </form>
+  `;
+
+  const photoInput = document.getElementById("photoInput");
+  const photoPreview = document.getElementById("photoPreview");
+  photoInput.addEventListener("change", () => {
+    const file = photoInput.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const img = document.createElement("img");
+    img.className = "photo-preview";
+    img.id = "photoPreview";
+    img.src = url;
+    photoPreview.replaceWith(img);
+  });
+
+  document.getElementById("teamForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const errorBox = document.getElementById("errorBox");
+    const successBox = document.getElementById("successBox");
+    const submitBtn = document.getElementById("submitBtn");
+    errorBox.style.display = "none";
+    successBox.style.display = "none";
+    submitBtn.disabled = true;
+
+    try {
+      const user = await CombatAuth.getUser();
+      if (!user) throw new Error("Not signed in.");
+
+      const name = document.getElementById("teamName").value.trim();
+      if (!name) throw new Error("Give your team a name.");
+
+      let photo_url = isEdit ? existingTeam.photo_url : null;
+      const file = document.getElementById("photoInput").files[0];
+      if (file) {
+        const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+        const path = `${user.id}/team.${ext}`;
+        const { error: uploadError } = await client.storage
+          .from("team-photos")
+          .upload(path, file, { upsert: true });
+        if (uploadError) throw uploadError;
+        const { data: pub } = client.storage.from("team-photos").getPublicUrl(path);
+        photo_url = pub.publicUrl + "?t=" + Date.now();
+      }
+
+      if (isEdit) {
+        const { error } = await client
+          .from("teams")
+          .update({ name, photo_url })
+          .eq("id", existingTeam.id);
+        if (error) throw error;
+      } else {
+        const { error } = await client
+          .from("teams")
+          .insert({ league_id: LEAGUE_ID, name, photo_url, owner_user_id: user.id, claimed_at: new Date().toISOString() });
+        if (error) throw error;
+      }
+
+      successBox.textContent = "Saved.";
+      successBox.style.display = "block";
+      setTimeout(load, 500);
+    } catch (err) {
+      errorBox.textContent = err.message || "Something went wrong.";
+      errorBox.style.display = "block";
+      submitBtn.disabled = false;
+    }
+  });
+}
+
+async function load(){
+  content.innerHTML = `<div class="loading">Loading…</div>`;
+  const user = await CombatAuth.getUser();
+  if (!user) { renderSignedOut(); return; }
+
+  try {
+    const team = await getMyTeam(user.id);
+    if (team) renderTeamView(team);
+    else renderForm(null);
+  } catch (err) {
+    content.innerHTML = `<div class="error">Couldn't load your team: ${escapeHtml(err.message || "")}</div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>

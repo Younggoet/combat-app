@@ -7,6 +7,8 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0E0F11">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
 <style>
   :root{
     --bg:#0E0F11;
@@ -104,11 +106,14 @@
       <a href="news.html">News</a>
       <a href="chat.html">League Chat</a>
       <a href="notifications.html">Notifications</a>
+      <a href="draft.html">Draft</a>
+      <a href="team.html">My Team</a>
+      <span id="authStatus"></span>
     </div>
   </div>
 
   <h1 id="leagueName">League Settings</h1>
-  <p class="sub">Set the draft order and pick timer before the draft starts. No login yet, so this page is open to anyone with the link — same as the rest of Combat today.</p>
+  <p class="sub">Set the draft order and pick timer before the draft starts. Only the league's commissioner can save changes — the first person to save here claims that role.</p>
 
   <div id="lockedBanner" style="display:none;" class="locked-banner"></div>
 
@@ -292,14 +297,25 @@ async function loadSettings() {
 }
 
 saveBtn.addEventListener("click", async () => {
+  const user = await CombatAuth.getUser();
+  if (!user) {
+    statusMsg.textContent = "Sign in to save league settings.";
+    statusMsg.className = "status-msg error";
+    return;
+  }
+
   saveBtn.disabled = true;
   statusMsg.textContent = "Saving…";
   statusMsg.className = "status-msg";
   try {
+    const session = await CombatAuth.getSession();
     const pickSeconds = parseInt(document.getElementById("pickSeconds").value, 10) || 90;
     const res = await fetch(`${FN_BASE}/save-league-settings`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session ? session.access_token : ""}`,
+      },
       body: JSON.stringify({ league_id: LEAGUE_ID, team_order: order, pick_seconds: pickSeconds }),
     });
     const data = await res.json();

@@ -7,6 +7,8 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0E0F11">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
 <style>
   :root{
     --bg:#0E0F11;
@@ -105,6 +107,9 @@
       <a href="news.html">News</a>
       <a href="settings.html">League Settings</a>
       <a href="notifications.html" class="active">Notifications</a>
+      <a href="draft.html">Draft</a>
+      <a href="team.html">My Team</a>
+      <span id="authStatus"></span>
     </nav>
   </div>
 
@@ -146,12 +151,7 @@
       <label class="switch"><input type="checkbox" id="toggleNews"><span class="slider"></span></label>
     </div>
 
-    <label class="field-label" for="teamSelect">Which team is yours? (needed for pick alerts)</label>
-    <select id="teamSelect">
-      <option value="">— Select your team —</option>
-    </select>
-
-    <div class="note">Pick alerts fire for a real league draft room once your league is drafting — not the mock draft room, which is a local practice simulation with no backing teams.</div>
+    <div class="note" id="teamNote">Pick alerts fire for a real league draft room once your league is drafting — not the mock draft room, which is a local practice simulation with no backing teams.</div>
   </div>
 </div>
 
@@ -169,7 +169,9 @@ const toggleCard = document.getElementById("toggleCard");
 const toggleYourTeamPick = document.getElementById("toggleYourTeamPick");
 const toggleChat = document.getElementById("toggleChat");
 const toggleNews = document.getElementById("toggleNews");
-const teamSelect = document.getElementById("teamSelect");
+const teamNote = document.getElementById("teamNote");
+
+let myTeamId = null;
 
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -183,28 +185,34 @@ function showError(msg) {
   errorBox.style.display = "block";
 }
 
-function getStoredTeamId() {
-  return localStorage.getItem("combat_push_team_id") || "";
-}
-function setStoredTeamId(id) {
-  if (id) localStorage.setItem("combat_push_team_id", id);
-  else localStorage.removeItem("combat_push_team_id");
-}
-
-async function loadTeams() {
+// "It's your pick" alerts are tied to the signed-in user's own team now,
+// not a manually-picked team from a dropdown.
+async function loadMyTeam() {
+  const user = await CombatAuth.getUser();
+  if (!user) {
+    myTeamId = null;
+    teamNote.innerHTML = `Sign in and <a href="team.html" style="color:#D4AF37;text-decoration:none;">create your team</a> to get pick alerts. Chat and news alerts still work either way.`;
+    toggleYourTeamPick.disabled = true;
+    return;
+  }
   try {
-    const res = await fetch(`${FN_BASE}/league-settings?league_id=${LEAGUE_ID}`);
-    const data = await res.json();
-    (data.teams || []).forEach((t) => {
-      const opt = document.createElement("option");
-      opt.value = t.id;
-      opt.textContent = t.name;
-      teamSelect.appendChild(opt);
-    });
-    const stored = getStoredTeamId();
-    if (stored) teamSelect.value = stored;
+    const { data } = await CombatAuth.client
+      .from("teams")
+      .select("id, name")
+      .eq("league_id", LEAGUE_ID)
+      .eq("owner_user_id", user.id)
+      .maybeSingle();
+    if (data) {
+      myTeamId = data.id;
+      toggleYourTeamPick.disabled = false;
+      teamNote.textContent = `Pick alerts fire for "${data.name}" once your league's real draft room reaches your turn — not the mock draft room, which is a local practice simulation.`;
+    } else {
+      myTeamId = null;
+      toggleYourTeamPick.disabled = true;
+      teamNote.innerHTML = `<a href="team.html" style="color:#D4AF37;text-decoration:none;">Create your team</a> to get pick alerts. Chat and news alerts still work either way.`;
+    }
   } catch (err) {
-    // Non-fatal — chat/news toggles still work without a team list.
+    myTeamId = null;
   }
 }
 
@@ -216,7 +224,7 @@ async function saveSubscription(subscription, action) {
           p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey("p256dh")))),
           auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey("auth")))),
         },
-        team_id: teamSelect.value || null,
+        team_id: myTeamId,
         notify_pick: toggleYourTeamPick.checked,
         notify_chat: toggleChat.checked,
         notify_news: toggleNews.checked,
@@ -286,7 +294,7 @@ async function init() {
     return;
   }
 
-  await loadTeams();
+  await loadMyTeam();
 
   if (Notification.permission === "denied") {
     setUiState("denied");
@@ -299,7 +307,7 @@ async function init() {
     // Toggle defaults to on; we don't read back saved toggle state from
     // the server today, so reflect "subscribed" with everything on unless
     // the person changes it here.
-    toggleYourTeamPick.checked = true;
+    toggleYourTeamPick.checked = !!myTeamId;
     toggleChat.checked = true;
     toggleNews.checked = true;
   } else {
@@ -322,7 +330,7 @@ enableBtn.addEventListener("click", async () => {
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
-    toggleYourTeamPick.checked = true;
+    toggleYourTeamPick.checked = !!myTeamId;
     toggleChat.checked = true;
     toggleNews.checked = true;
     await saveSubscription(subscription, "subscribe");
@@ -351,11 +359,8 @@ async function persistToggles() {
   if (sub) await saveSubscription(sub, "subscribe");
 }
 
-[toggleYourTeamPick, toggleChat, toggleNews, teamSelect].forEach((el) => {
-  el.addEventListener("change", () => {
-    setStoredTeamId(teamSelect.value);
-    persistToggles();
-  });
+[toggleYourTeamPick, toggleChat, toggleNews].forEach((el) => {
+  el.addEventListener("change", persistToggles);
 });
 
 init();
