@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Combat — Sign In</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0E0F11">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#0E0F11; --panel:#17181B; --panel-2:#1E2024; --border:#2A2C31;
+    --text:#EDEDED; --text-dim:#8A8A8A; --text-faint:#4E4F53; --gold:#D4AF37; --red:#E2283C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Inter","Helvetica Neue",Arial,sans-serif;
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .wrap{width:100%;max-width:380px;}
+  .brand{text-align:center;font-size:17px;font-weight:600;letter-spacing:0.02em;margin-bottom:24px;}
+  .brand span{color:var(--gold);}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:24px;}
+  .tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--panel-2);border-radius:8px;padding:4px;}
+  .tab{flex:1;text-align:center;padding:8px;border-radius:6px;font-size:13px;cursor:pointer;color:var(--text-dim);}
+  .tab.active{background:var(--gold);color:#0E0F11;font-weight:600;}
+  label{display:block;font-size:12px;color:var(--text-dim);margin-top:14px;margin-bottom:6px;}
+  input{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;color:var(--text);
+    font-size:14px;padding:10px 12px;
+  }
+  input:focus{outline:none;border-color:var(--gold);}
+  button.primary{
+    width:100%;background:var(--gold);color:#0E0F11;border:none;border-radius:8px;padding:12px;
+    font-size:14px;font-weight:600;cursor:pointer;margin-top:20px;
+  }
+  button.primary:disabled{opacity:0.5;cursor:not-allowed;}
+  .error{
+    background:rgba(226,67,51,0.1);border:1px solid rgba(226,67,51,0.3);color:#F0897D;
+    font-size:12.5px;padding:10px 14px;border-radius:8px;margin-top:16px;
+  }
+  .success{
+    background:rgba(76,175,125,0.1);border:1px solid rgba(76,175,125,0.3);color:#9FD6B8;
+    font-size:12.5px;padding:10px 14px;border-radius:8px;margin-top:16px;
+  }
+  .back{display:block;text-align:center;margin-top:18px;font-size:12.5px;color:var(--text-dim);text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">COMBAT <span>SIGN IN</span></div>
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" id="tabSignIn">Sign In</div>
+      <div class="tab" id="tabSignUp">Sign Up</div>
+    </div>
+
+    <form id="form">
+      <div id="displayNameField" style="display:none;">
+        <label for="displayName">Display name</label>
+        <input id="displayName" type="text" maxlength="40" placeholder="How your league sees you">
+      </div>
+      <label for="email">Email</label>
+      <input id="email" type="email" required autocomplete="email">
+      <label for="password">Password</label>
+      <input id="password" type="password" required autocomplete="current-password" minlength="6">
+      <button class="primary" id="submitBtn" type="submit">Sign In</button>
+    </form>
+
+    <div class="error" id="errorBox" style="display:none;"></div>
+    <div class="success" id="successBox" style="display:none;"></div>
+  </div>
+  <a href="index.html" class="back">← Back to Combat</a>
+</div>
+
+<script src="auth.js"></script>
+<script>
+const { client } = CombatAuth;
+
+const tabSignIn = document.getElementById("tabSignIn");
+const tabSignUp = document.getElementById("tabSignUp");
+const form = document.getElementById("form");
+const displayNameField = document.getElementById("displayNameField");
+const displayNameInput = document.getElementById("displayName");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const submitBtn = document.getElementById("submitBtn");
+const errorBox = document.getElementById("errorBox");
+const successBox = document.getElementById("successBox");
+
+let mode = "signin";
+
+function setMode(next) {
+  mode = next;
+  tabSignIn.classList.toggle("active", mode === "signin");
+  tabSignUp.classList.toggle("active", mode === "signup");
+  displayNameField.style.display = mode === "signup" ? "block" : "none";
+  displayNameInput.required = mode === "signup";
+  passwordInput.autocomplete = mode === "signup" ? "new-password" : "current-password";
+  submitBtn.textContent = mode === "signup" ? "Create Account" : "Sign In";
+  errorBox.style.display = "none";
+  successBox.style.display = "none";
+}
+
+tabSignIn.addEventListener("click", () => setMode("signin"));
+tabSignUp.addEventListener("click", () => setMode("signup"));
+
+// Already signed in? Bounce straight back rather than showing the form.
+CombatAuth.getUser().then((user) => {
+  if (user) {
+    successBox.textContent = "You're already signed in.";
+    successBox.style.display = "block";
+  }
+});
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  errorBox.style.display = "none";
+  successBox.style.display = "none";
+  submitBtn.disabled = true;
+
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+
+  try {
+    if (mode === "signup") {
+      const displayName = displayNameInput.value.trim();
+      if (!displayName) throw new Error("Pick a display name.");
+
+      const { data, error } = await client.auth.signUp({ email, password });
+      if (error) throw error;
+
+      if (data.user) {
+        await CombatAuth.ensureProfile(data.user.id, displayName);
+      }
+
+      if (data.session) {
+        successBox.textContent = "Account created — you're signed in.";
+        successBox.style.display = "block";
+        setTimeout(() => { window.location.href = "team.html"; }, 800);
+      } else {
+        successBox.textContent = "Account created — check your email to confirm, then sign in.";
+        successBox.style.display = "block";
+        setMode("signin");
+      }
+    } else {
+      const { error } = await client.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      window.location.href = "team.html";
+    }
+  } catch (err) {
+    errorBox.textContent = err.message || "Something went wrong.";
+    errorBox.style.display = "block";
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
