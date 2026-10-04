@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Combat — Notifications</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0E0F11">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<style>
+  :root{
+    --bg:#0E0F11;
+    --panel:#17181B;
+    --panel-2:#1E2024;
+    --border:#2A2C31;
+    --text:#EDEDED;
+    --text-dim:#8A8A8A;
+    --text-faint:#4E4F53;
+    --gold:#D4AF37;
+    --red:#E2283C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Inter","Helvetica Neue",Arial,sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:28px 20px 60px;}
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:10px;}
+  .brand{font-size:15px;font-weight:600;letter-spacing:0.02em;}
+  .brand span{color:var(--gold);}
+  .topbar nav{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .topbar a{font-size:12px;color:var(--text-dim);text-decoration:none;}
+  .topbar a.active{color:var(--gold);}
+
+  h1{font-size:20px;margin:0 0 4px;font-weight:600;}
+  p.sub{color:var(--text-dim);font-size:13px;margin:0 0 24px;line-height:1.5;}
+
+  .card{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    padding:20px;margin-bottom:16px;
+  }
+
+  .status-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px;}
+  .status-text{font-size:13.5px;color:var(--text-dim);}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--text-faint);flex:0 0 auto;}
+  .status-dot.on{background:#4CAF7D;box-shadow:0 0 0 3px rgba(76,175,125,0.15);}
+  .status-dot.off{background:#C9564A;}
+
+  button.primary{
+    background:var(--gold);color:#0E0F11;border:none;border-radius:8px;padding:11px 20px;
+    font-size:13.5px;font-weight:600;cursor:pointer;width:100%;margin-top:14px;
+  }
+  button.primary:disabled{opacity:0.5;cursor:not-allowed;}
+  button.secondary{
+    background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:8px;
+    padding:9px 16px;font-size:12.5px;cursor:pointer;margin-top:10px;
+  }
+
+  .toggle-row{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:14px 0;border-bottom:1px solid var(--panel-2);
+  }
+  .toggle-row:last-of-type{border-bottom:none;}
+  .toggle-row .label{font-size:14px;}
+  .toggle-row .desc{font-size:12px;color:var(--text-dim);margin-top:2px;}
+
+  .switch{position:relative;display:inline-block;width:40px;height:22px;flex:0 0 auto;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{
+    position:absolute;cursor:pointer;inset:0;background:var(--panel-2);border:1px solid var(--border);
+    border-radius:22px;transition:0.15s;
+  }
+  .slider:before{
+    position:absolute;content:"";height:16px;width:16px;left:2px;top:2px;background:var(--text-dim);
+    border-radius:50%;transition:0.15s;
+  }
+  input:checked + .slider{background:rgba(212,175,55,0.25);border-color:var(--gold);}
+  input:checked + .slider:before{background:var(--gold);transform:translateX(18px);}
+  input:disabled + .slider{opacity:0.4;cursor:not-allowed;}
+
+  select{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;color:var(--text);
+    font-size:13.5px;padding:9px 10px;margin-top:8px;
+  }
+  label.field-label{font-size:12px;color:var(--text-dim);display:block;margin-top:14px;}
+
+  .error{
+    background:rgba(226,67,51,0.1);border:1px solid rgba(226,67,51,0.3);color:#F0897D;
+    font-size:12.5px;padding:10px 14px;border-radius:8px;margin-top:14px;
+  }
+  .note{font-size:11.5px;color:var(--text-faint);margin-top:14px;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">COMBAT <span>NOTIFICATIONS</span></div>
+    <nav>
+      <a href="index.html">Mock Draft</a>
+      <a href="chat.html">League Chat</a>
+      <a href="news.html">News</a>
+      <a href="settings.html">League Settings</a>
+      <a href="notifications.html" class="active">Notifications</a>
+    </nav>
+  </div>
+
+  <h1>Push notifications</h1>
+  <p class="sub">Get alerted on this device, even when Combat isn't open. Each alert can be switched off on its own.</p>
+
+  <div class="card" id="permissionCard">
+    <div class="status-row">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-text" id="statusText">Checking this device…</span>
+      </div>
+    </div>
+    <button class="primary" id="enableBtn">Enable notifications on this device</button>
+    <button class="secondary" id="disableBtn" style="display:none;">Turn off on this device</button>
+    <div class="error" id="errorBox" style="display:none;"></div>
+  </div>
+
+  <div class="card" id="toggleCard" style="display:none;">
+    <div class="toggle-row">
+      <div>
+        <div class="label">It's your pick</div>
+        <div class="desc">When a real draft room reaches your team's turn</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="toggleYourTeamPick"><span class="slider"></span></label>
+    </div>
+    <div class="toggle-row">
+      <div>
+        <div class="label">League chat</div>
+        <div class="desc">New messages in league-wide chat</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="toggleChat"><span class="slider"></span></label>
+    </div>
+    <div class="toggle-row">
+      <div>
+        <div class="label">League news</div>
+        <div class="desc">New combat-sports articles as they're synced</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="toggleNews"><span class="slider"></span></label>
+    </div>
+
+    <label class="field-label" for="teamSelect">Which team is yours? (needed for pick alerts)</label>
+    <select id="teamSelect">
+      <option value="">— Select your team —</option>
+    </select>
+
+    <div class="note">Pick alerts fire for a real league draft room once your league is drafting — not the mock draft room, which is a local practice simulation with no backing teams.</div>
+  </div>
+</div>
+
+<script>
+const FN_BASE = "https://combat-sync.netlify.app/.netlify/functions";
+const LEAGUE_ID = "a18edea0-2355-45c7-a175-f880597aa86e";
+const VAPID_PUBLIC_KEY = "BKoDOfqrfsn8hb2FsAnfNeSP7ATTkgDYW7F9VdCvZmE4TbDd1VfEY9HFIwYdsXoXVZgTqGN0C3Ag0F8S5zr3HYI";
+
+const statusDot = document.getElementById("statusDot");
+const statusText = document.getElementById("statusText");
+const enableBtn = document.getElementById("enableBtn");
+const disableBtn = document.getElementById("disableBtn");
+const errorBox = document.getElementById("errorBox");
+const toggleCard = document.getElementById("toggleCard");
+const toggleYourTeamPick = document.getElementById("toggleYourTeamPick");
+const toggleChat = document.getElementById("toggleChat");
+const toggleNews = document.getElementById("toggleNews");
+const teamSelect = document.getElementById("teamSelect");
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+}
+
+function showError(msg) {
+  errorBox.textContent = msg;
+  errorBox.style.display = "block";
+}
+
+function getStoredTeamId() {
+  return localStorage.getItem("combat_push_team_id") || "";
+}
+function setStoredTeamId(id) {
+  if (id) localStorage.setItem("combat_push_team_id", id);
+  else localStorage.removeItem("combat_push_team_id");
+}
+
+async function loadTeams() {
+  try {
+    const res = await fetch(`${FN_BASE}/league-settings?league_id=${LEAGUE_ID}`);
+    const data = await res.json();
+    (data.teams || []).forEach((t) => {
+      const opt = document.createElement("option");
+      opt.value = t.id;
+      opt.textContent = t.name;
+      teamSelect.appendChild(opt);
+    });
+    const stored = getStoredTeamId();
+    if (stored) teamSelect.value = stored;
+  } catch (err) {
+    // Non-fatal — chat/news toggles still work without a team list.
+  }
+}
+
+async function saveSubscription(subscription, action) {
+  const payload = subscription
+    ? {
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey("p256dh")))),
+          auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey("auth")))),
+        },
+        team_id: teamSelect.value || null,
+        notify_pick: toggleYourTeamPick.checked,
+        notify_chat: toggleChat.checked,
+        notify_news: toggleNews.checked,
+      }
+    : null;
+
+  if (action === "unsubscribe" && payload === null) return;
+
+  const body = action === "unsubscribe"
+    ? { endpoint: (await getExistingSubscription())?.endpoint, action: "unsubscribe" }
+    : payload;
+
+  if (!body || !body.endpoint) return;
+
+  await fetch(`${FN_BASE}/save-push-subscription`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+async function getExistingSubscription() {
+  const reg = await navigator.serviceWorker.ready;
+  return reg.pushManager.getSubscription();
+}
+
+function setUiState(state) {
+  if (state === "unsupported") {
+    statusDot.className = "status-dot off";
+    statusText.textContent = "Push notifications aren't supported in this browser.";
+    enableBtn.disabled = true;
+    enableBtn.textContent = "Not supported here";
+    toggleCard.style.display = "none";
+  } else if (state === "denied") {
+    statusDot.className = "status-dot off";
+    statusText.textContent = "Notifications are blocked for this site — allow them in your browser settings to turn this on.";
+    enableBtn.disabled = true;
+    toggleCard.style.display = "none";
+  } else if (state === "subscribed") {
+    statusDot.className = "status-dot on";
+    statusText.textContent = "Notifications are on for this device.";
+    enableBtn.style.display = "none";
+    disableBtn.style.display = "inline-block";
+    toggleCard.style.display = "block";
+  } else {
+    statusDot.className = "status-dot";
+    statusText.textContent = "Notifications are off for this device.";
+    enableBtn.style.display = "inline-block";
+    enableBtn.disabled = false;
+    enableBtn.textContent = "Enable notifications on this device";
+    disableBtn.style.display = "none";
+    toggleCard.style.display = "none";
+  }
+}
+
+async function init() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    setUiState("unsupported");
+    return;
+  }
+
+  try {
+    await navigator.serviceWorker.register("sw.js");
+  } catch (err) {
+    showError("Couldn't register the service worker: " + err.message);
+    setUiState("unsupported");
+    return;
+  }
+
+  await loadTeams();
+
+  if (Notification.permission === "denied") {
+    setUiState("denied");
+    return;
+  }
+
+  const existing = await getExistingSubscription();
+  if (existing) {
+    setUiState("subscribed");
+    // Toggle defaults to on; we don't read back saved toggle state from
+    // the server today, so reflect "subscribed" with everything on unless
+    // the person changes it here.
+    toggleYourTeamPick.checked = true;
+    toggleChat.checked = true;
+    toggleNews.checked = true;
+  } else {
+    setUiState("idle");
+  }
+}
+
+enableBtn.addEventListener("click", async () => {
+  errorBox.style.display = "none";
+  enableBtn.disabled = true;
+  enableBtn.textContent = "Requesting…";
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      setUiState(permission === "denied" ? "denied" : "idle");
+      return;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+    toggleYourTeamPick.checked = true;
+    toggleChat.checked = true;
+    toggleNews.checked = true;
+    await saveSubscription(subscription, "subscribe");
+    setUiState("subscribed");
+  } catch (err) {
+    showError("Couldn't turn on notifications: " + err.message);
+    setUiState("idle");
+  }
+});
+
+disableBtn.addEventListener("click", async () => {
+  try {
+    const sub = await getExistingSubscription();
+    if (sub) {
+      await saveSubscription(null, "unsubscribe");
+      await sub.unsubscribe();
+    }
+    setUiState("idle");
+  } catch (err) {
+    showError("Couldn't turn off notifications: " + err.message);
+  }
+});
+
+async function persistToggles() {
+  const sub = await getExistingSubscription();
+  if (sub) await saveSubscription(sub, "subscribe");
+}
+
+[toggleYourTeamPick, toggleChat, toggleNews, teamSelect].forEach((el) => {
+  el.addEventListener("change", () => {
+    setStoredTeamId(teamSelect.value);
+    persistToggles();
+  });
+});
+
+init();
+</script>
+</body>
+</html>
