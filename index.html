@@ -111,6 +111,14 @@
   .stepper button:hover{border-color:var(--gold);}
   .stepper .val{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;min-width:28px;text-align:center;}
   .photo-row{display:flex;align-items:center;gap:14px;}
+  .timer-options{display:flex;flex-wrap:wrap;gap:8px;}
+  .timer-opt{
+    border-radius:var(--r-sm);padding:9px 16px;cursor:pointer;background:var(--panel-2);border:1px solid var(--border);
+    color:var(--text-dim);font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:0.5px;
+  }
+  .timer-opt:hover{border-color:var(--gold);}
+  .timer-opt.active{background:rgba(212,175,55,0.14);border-color:var(--gold);color:var(--gold);font-weight:700;}
+  .timer-hint{font-size:11.5px;color:var(--text-faint);margin-top:8px;line-height:1.5;}
   .photo-preview{width:60px;height:60px;border-radius:8px;object-fit:cover;background:var(--panel-2);border:1px solid var(--border);flex-shrink:0;}
   .photo-preview-ph{
     width:60px;height:60px;border-radius:8px;background:var(--panel-2);border:1px solid var(--border);
@@ -395,6 +403,8 @@ const DIV_SHORT = {
 const DIVISION_LIST = Object.keys(DIVISION_COLOR);
 const ROLE_COLOR = { ALL: "var(--gold)", PRIMARY: "var(--gold)", STRIKER: "#E8C93A", GRAPPLER: "#1F6B3A", FINISHER: "var(--red)" };
 const FILTER_TABS = ["ALL", "PRIMARY", "STRIKER", "GRAPPLER", "FINISHER"];
+const ACTIVE_TIMER_CHOICES = [30, 60, 90, 120];   // seconds — 30s / 1:00 / 1:30 / 2:00
+const CAGESIDE_TIMER_CHOICES = [15, 30, 45];      // seconds
 
 function fmtCtrl(sec){
   if (sec === null || sec === undefined) return "—";
@@ -412,6 +422,15 @@ function fmtNum(x, d){
 function fmtRecord(f){
   if (f.wins === null || f.wins === undefined || f.losses === null || f.losses === undefined) return "—";
   return `${f.wins}-${f.losses}-0`;
+}
+function fmtClock(totalSeconds){
+  const s = Math.max(0, Math.round(totalSeconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+// Labels used on the setup screen's timer pickers, e.g. 30 -> "0:30", 90 -> "1:30"
+function fmtTimerLabel(seconds){ return seconds < 60 ? `${seconds}s` : fmtClock(seconds); }
+function fmtRank(rank){
+  return (rank === null || rank === undefined) ? "—" : `#${rank}`;
 }
 
 // Same "Standard Fight Points" weights used to score real leagues
@@ -443,12 +462,14 @@ let fighters = [];
 let fightersById = {};
 let fighterPoolError = null;
 let projectedFPById = {};  // fighter id -> projected fantasy points (per fight)
-let overallRatingById = {}; // fighter id -> 60-99 "Overall Rating", purely a function of rank among projected fantasy points
+let overallRankById = {};  // fighter id -> 1-based overall rank among ALL fighters by projected fantasy points (1 = best)
 
 let screen = "landing"; // landing | setup | draft | board | complete
 let teamCount = 8;
 let userTeamName = "";
 let userTeamPhotoUrl = null;
+let activeTimerSeconds = 60;    // pick clock while drafting the 10 active roster slots — 30s/1:00/1:30/2:00
+let cagesideTimerSeconds = 30;  // pick clock while drafting cageside/bench slots — 15s/30s/45s (faster, deeper bench)
 
 let teams = [];       // [{id, name, photoUrl, isUser}]
 let teamOrder = [];   // team ids in round-1 order
@@ -459,29 +480,42 @@ let selectedFighterId = null; // manual override — click any pool row to targe
 let selectedRole = null;      // which roster slot the locked pick fills
 let activeFilter = "ALL";     // ranking lens: ALL/PRIMARY/STRIKER/GRAPPLER/FINISHER, or a division name
 let botTimer = null;
+let pickClockInterval = null;   // ticks the on-screen countdown + triggers the autopick
+let pickClockForPickNum = null; // which pick number the running countdown belongs to
+let pickClockDeadline = null;   // Date.now()-style ms timestamp the clock expires at
 
 let newsItems = [];
 let newsLoaded = false;
 
-// Which number a fighter is ranked by right now: the rank-based Overall
-// Rating by default (derived from where a fighter ranks in projected
-// fantasy points — never the raw internal Elo number), or that role's own
-// stat-weighted score once that role is the active filter — same logic the
-// real draft.html room and bots use.
+// Which number a fighter is ranked by right now: Overall Rank by default
+// (their literal position among ALL fighters sorted by projected fantasy
+// points, #1 = best — never the raw internal Elo number), or that role's
+// own stat-weighted score once that role is the active filter — same logic
+// the real draft.html room and bots use.
 function rankField(filterValue){
   if (filterValue === "STRIKER") return "striker_score";
   if (filterValue === "GRAPPLER") return "grappler_score";
   if (filterValue === "FINISHER") return "finisher_score";
-  return null; // ALL / PRIMARY / a division — ranked by Overall Rating below
+  return null; // ALL / PRIMARY / a division — ranked by Overall Rank below
 }
 function rankValue(f, filterValue){
   const field = rankField(filterValue);
   if (field === null) {
-    const v = overallRatingById[f.id];
-    return (v === null || v === undefined) ? -Infinity : v;
+    const rank = overallRankById[f.id];
+    // Sort key only — lower rank is better, so flip the sign to keep the
+    // existing descending ("best first") sort used everywhere this is called.
+    return (rank === null || rank === undefined) ? -Infinity : -rank;
   }
   const v = f[field];
   return (v === null || v === undefined) ? -Infinity : v;
+}
+// Display value for a fighter's rank under the current filter: the literal
+// "#N" overall rank for the default lens, or the raw role score otherwise.
+function rankDisplay(f, filterValue){
+  const field = rankField(filterValue);
+  if (field === null) return fmtRank(overallRankById[f.id]);
+  const v = f[field];
+  return (v === null || v === undefined) ? "—" : fmtNum(v, 0);
 }
 function isDivisionFilter(v){ return DIVISION_LIST.includes(v); }
 
@@ -507,18 +541,15 @@ async function loadFighterPool(){
     fightersById = {};
     fighters.forEach((f) => { fightersById[f.id] = f; });
 
-    // Overall Rating is a rank, not a score: sort everyone by projected
-    // fantasy points, then scale each fighter's position in that order onto
-    // a friendly 60-99 band (#1 overall = 99) — never the raw internal
-    // rating number.
+    // Overall Rank is a literal ranking, not a score: sort everyone by
+    // projected fantasy points and number each fighter's position in that
+    // order (#1 overall = the best projected fantasy scorer) — never the
+    // raw internal rating number.
     projectedFPById = {};
     fighters.forEach((f) => { projectedFPById[f.id] = projectedFantasyPoints(f); });
     const byProjectedFP = fighters.slice().sort((a, b) => (projectedFPById[b.id] || 0) - (projectedFPById[a.id] || 0));
-    overallRatingById = {};
-    const n = byProjectedFP.length;
-    byProjectedFP.forEach((f, idx) => {
-      overallRatingById[f.id] = n > 1 ? Math.round(99 - (idx / (n - 1)) * 39) : 99;
-    });
+    overallRankById = {};
+    byProjectedFP.forEach((f, idx) => { overallRankById[f.id] = idx + 1; });
   } catch (err) {
     fighterPoolError = err.message || "Couldn't load fighters.";
   }
@@ -596,6 +627,22 @@ function renderSetup(){
         </div>
       </div>
 
+      <div class="field">
+        <label>Pick timer — active roster</label>
+        <div class="timer-options" id="activeTimerOptions">
+          ${ACTIVE_TIMER_CHOICES.map((s) => `<button type="button" class="timer-opt${s === activeTimerSeconds ? " active" : ""}" data-secs="${s}">${esc(fmtTimerLabel(s))}</button>`).join("")}
+        </div>
+        <div class="timer-hint">How long you get on the clock for each of your 10 active-roster picks.</div>
+      </div>
+
+      <div class="field">
+        <label>Pick timer — cageside</label>
+        <div class="timer-options" id="cagesideTimerOptions">
+          ${CAGESIDE_TIMER_CHOICES.map((s) => `<button type="button" class="timer-opt${s === cagesideTimerSeconds ? " active" : ""}" data-secs="${s}">${esc(fmtTimerLabel(s))}</button>`).join("")}
+        </div>
+        <div class="timer-hint">Cageside is the deep bench round after your roster is set — faster picks keep it moving.</div>
+      </div>
+
       <button class="primary" id="setupStartBtn">START MOCK DRAFT</button>
       <div class="error" id="setupError" style="display:none;margin-top:16px;"></div>
     </div>
@@ -608,6 +655,19 @@ function renderSetup(){
   });
   document.getElementById("teamCountPlus").addEventListener("click", () => {
     if (teamCount < 12) { teamCount += 2; document.getElementById("teamCountVal").textContent = teamCount; }
+  });
+
+  document.querySelectorAll("#activeTimerOptions .timer-opt").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeTimerSeconds = Number(btn.dataset.secs);
+      document.querySelectorAll("#activeTimerOptions .timer-opt").forEach((b) => b.classList.toggle("active", b === btn));
+    });
+  });
+  document.querySelectorAll("#cagesideTimerOptions .timer-opt").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      cagesideTimerSeconds = Number(btn.dataset.secs);
+      document.querySelectorAll("#cagesideTimerOptions .timer-opt").forEach((b) => b.classList.toggle("active", b === btn));
+    });
   });
 
   const photoInput = document.getElementById("photoInput");
@@ -673,6 +733,7 @@ function beginDraft(){
   selectedFighterId = null;
   selectedRole = null;
   activeFilter = "ALL";
+  clearPickClock();
   screen = "draft";
   render();
   loadNews();
@@ -734,6 +795,67 @@ function maybeRunBots(){
   }, 450);
 }
 
+/* ---------------- Pick clock ----------------
+   Counts down whenever it's the user's turn, using whichever duration
+   matches the current phase (active roster vs. cageside), set on the setup
+   screen. If it hits zero, the best-ranked available fighter for an open
+   role is auto-drafted for the user, same as a bot would. */
+function clearPickClock(){
+  clearInterval(pickClockInterval);
+  pickClockInterval = null;
+  pickClockForPickNum = null;
+  pickClockDeadline = null;
+}
+
+function autoPickForUser(){
+  const { phase } = getPhase(currentPickNumber(), teamOrder.length);
+  if (phase === "complete") return;
+  const role = bestOpenRoleForPhase(userTeamId, phase);
+  if (!role) return;
+  const taken = {};
+  picks.forEach((p) => { taken[p.fighter_id] = true; });
+  const best = rankedAvailable(role, taken)[0];
+  if (!best) return;
+  const result = makeLocalPick(userTeamId, best.id, role, true);
+  if (!result.legal) return;
+  selectedFighterId = null;
+  selectedRole = null;
+  maybeRunBots();
+}
+
+function tickPickClock(){
+  const remain = Math.max(0, (pickClockDeadline - Date.now()) / 1000);
+  document.querySelectorAll(".pick-clock-val").forEach((el) => { el.textContent = fmtClock(remain); });
+  const urgent = remain <= 10;
+  document.querySelectorAll(".pick-clock-val").forEach((el) => { el.style.color = urgent ? "var(--red)" : el.dataset.normalColor || ""; });
+  if (remain <= 0) {
+    const pickNum = pickClockForPickNum;
+    clearPickClock();
+    // Guard against a stale tick landing after the user already locked a
+    // pick manually (e.g. right before expiry, while a bot pick is still
+    // pending) — only autopick if it's genuinely still this same pick.
+    if (pickNum === currentPickNumber() && snakeTeamForPick(teamOrder, pickNum) === userTeamId) {
+      autoPickForUser();
+    }
+  }
+}
+
+// Starts (or leaves alone) the countdown for the pick currently on the
+// clock. Safe to call on every render — it only resets the clock when the
+// pick number it's tracking has actually changed.
+function ensurePickClock(pickNum, phase, isMyTurn){
+  if (!started || !isMyTurn) { clearPickClock(); return; }
+  if (pickClockForPickNum === pickNum && pickClockInterval) return;
+  clearPickClock();
+  pickClockForPickNum = pickNum;
+  const durationSec = phase === "cageside" ? cagesideTimerSeconds : activeTimerSeconds;
+  pickClockDeadline = Date.now() + durationSec * 1000;
+  pickClockInterval = setInterval(tickPickClock, 250);
+}
+function pickClockRemainSeconds(){
+  return pickClockDeadline ? Math.max(0, (pickClockDeadline - Date.now()) / 1000) : 0;
+}
+
 function teamName(id){
   const t = teams.find((x) => x.id === id);
   return t ? t.name : id;
@@ -753,6 +875,9 @@ function renderDraft(){
   const onClockTeam = draftComplete ? null : snakeTeamForPick(teamOrder, pickNum);
   const isMyTurn = !draftComplete && onClockTeam === userTeamId;
   const showPickUI = started && isMyTurn && !draftComplete;
+  ensurePickClock(pickNum, phase, isMyTurn);
+  const clockRemain = isMyTurn ? pickClockRemainSeconds() : 0;
+  const clockUrgent = isMyTurn && clockRemain <= 10;
   const myOpenRoles = isMyTurn ? openRoleSlots(picks, userTeamId) : [];
   const phaseField = phase === "active" ? "activeOpen" : "cageOpen";
   const roundNumber = roundNumberForPick(Math.min(pickNum, totalPicks), teamOrder.length);
@@ -830,7 +955,7 @@ function renderDraft(){
     const tapeRows = [
       { a: fmtRecord(spotlight), label: "RECORD", b: lastOwnPick ? fmtRecord(lastOwnPick) : "—" },
       { a: String(spotlight.finishes ?? "—"), label: "FINISHES", b: lastOwnPick ? String(lastOwnPick.finishes ?? "—") : "—" },
-      { a: fmtNum(overallRatingById[spotlight.id], 0), label: "OVERALL RATING", b: lastOwnPick ? fmtNum(overallRatingById[lastOwnPick.id], 0) : "—" },
+      { a: fmtRank(overallRankById[spotlight.id]), label: "OVERALL RANK", b: lastOwnPick ? fmtRank(overallRankById[lastOwnPick.id]) : "—" },
       { a: fmtNum(projectedFPById[spotlight.id], 1), label: "PROJ FANTASY PTS", b: lastOwnPick ? fmtNum(projectedFPById[lastOwnPick.id], 1) : "—" },
     ];
 
@@ -838,6 +963,7 @@ function renderDraft(){
       <div style="display:flex;align-items:center;gap:10px;">
         <div style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div>
         <div class="h-font" style="font-size:13px;letter-spacing:3px;color:var(--red);">ON THE CLOCK &mdash; YOUR PICK</div>
+        <div class="h-font pick-clock-val" data-normal-color="var(--text)" style="margin-left:auto;font-size:22px;font-weight:700;color:${clockUrgent ? "var(--red)" : "var(--text)"};">${fmtClock(clockRemain)}</div>
       </div>
 
       <div class="spotlight-card">
@@ -857,8 +983,8 @@ function renderDraft(){
               <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#9A9AA2;margin-top:4px;">${esc(spotlight.announced_weight_class || "")} &middot; ${fmtRecord(spotlight)} &middot; ${spotlight.finishes ?? 0} FINISHES</div>
             </div>
             <div style="flex:0 0 auto;text-align:center;background:linear-gradient(180deg,#E6C75C,var(--gold));border-radius:var(--r-sm);padding:10px 22px;box-shadow:0 8px 20px rgba(212,175,55,0.3);">
-              <div class="h-font" style="font-size:9px;letter-spacing:2px;color:rgba(23,18,10,0.7);">OVERALL RATING</div>
-              <div class="h-font" style="font-size:32px;font-weight:700;color:#17120A;line-height:1.05;">${fmtNum(overallRatingById[spotlight.id], 0)}</div>
+              <div class="h-font" style="font-size:9px;letter-spacing:2px;color:rgba(23,18,10,0.7);">OVERALL RANK</div>
+              <div class="h-font" style="font-size:32px;font-weight:700;color:#17120A;line-height:1.05;">${fmtRank(overallRankById[spotlight.id])}</div>
             </div>
           </div>
 
@@ -956,7 +1082,8 @@ function renderDraft(){
   /* ---- Live draft feed ---- */
   const feedHtml = picks.slice().reverse().slice(0, 12).map((p) => {
     const f = fightersById[p.fighter_id];
-    return `<div class="feed-item"><div class="h-font" style="font-size:11px;color:#5A5A62;flex:0 0 auto;">#${p.pick_number}</div><div class="h-font" style="font-size:13px;color:#C9C6BD;"><span style="color:var(--gold);">${esc(teamInitials(p.team_id))}</span> took ${esc(f ? f.full_name : "?")} <span style="color:#6A6A72;">(${esc(f ? (DIV_SHORT[f.announced_weight_class] || "") : "")})</span></div></div>`;
+    const timedOut = p.team_id === userTeamId && p.is_autopick;
+    return `<div class="feed-item"><div class="h-font" style="font-size:11px;color:#5A5A62;flex:0 0 auto;">#${p.pick_number}</div><div class="h-font" style="font-size:13px;color:#C9C6BD;"><span style="color:var(--gold);">${esc(teamInitials(p.team_id))}</span> took ${esc(f ? f.full_name : "?")} <span style="color:#6A6A72;">(${esc(f ? (DIV_SHORT[f.announced_weight_class] || "") : "")})</span>${timedOut ? ` <span style="color:var(--red);">&middot; AUTO (TIMER EXPIRED)</span>` : ""}</div></div>`;
   }).join("") || `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">No picks yet.</div>`;
 
   /* ---- League news — real articles, roster-relevant ones first ---- */
@@ -994,12 +1121,12 @@ function renderDraft(){
   }).join("");
 
   const poolHeading = isDivisionFilter(activeFilter)
-    ? `${activeFilter.toUpperCase()} · RANKED BY OVERALL RATING`
-    : activeFilter === "ALL" ? "ALL ROLES · RANKED BY OVERALL RATING"
-    : activeFilter === "PRIMARY" ? "PRIMARY · RANKED BY OVERALL RATING"
+    ? `${activeFilter.toUpperCase()} · RANKED BY OVERALL RANK`
+    : activeFilter === "ALL" ? "ALL ROLES · RANKED BY OVERALL RANK"
+    : activeFilter === "PRIMARY" ? "PRIMARY · RANKED BY OVERALL RANK"
     : `${activeFilter} · RANKED BY ${activeFilter} SCORE`;
   const rankColLabel = isDivisionFilter(activeFilter) || activeFilter === "ALL" || activeFilter === "PRIMARY"
-    ? "OVERALL RATING" : `${activeFilter} SCORE`;
+    ? "OVERALL RANK" : `${activeFilter} SCORE`;
 
   const existingSearchInput = document.getElementById("fighterSearch");
   const filterVal = existingSearchInput ? existingSearchInput.value : "";
@@ -1015,7 +1142,7 @@ function renderDraft(){
   const poolRows = searched.slice(0, 60).map((f) => {
     const dc = DIVISION_COLOR[f.announced_weight_class] || "var(--gold)";
     const isSpotlight = !!spotlight && f.id === spotlight.id;
-    const rv = rankValue(f, activeFilter);
+    const rankText = rankDisplay(f, activeFilter);
     const hl = isSpotlight ? "background:rgba(212,175,55,0.06);" : "";
     return `
       <button class="pool-row-btn" data-fighter-id="${f.id}" ${showPickUI ? "" : "disabled"}>
@@ -1031,7 +1158,7 @@ function renderDraft(){
         <div style="${hl}" class="pool-cell cell-tddef">${esc(fmtPct(f.td_def_pct))}</div>
         <div style="${hl}" class="pool-cell cell-finishes" data-label="FIN">${f.finishes ?? "—"}</div>
         <div style="${hl}" class="pool-cell cell-projfp" data-label="PROJ FP">${fmtNum(projectedFPById[f.id], 1)}</div>
-        <div style="${hl}" class="pool-cell cell-rank"><span class="h-font" style="font-size:17px;font-weight:700;color:var(--gold);">${rv === -Infinity ? "—" : fmtNum(rv, 0)}</span></div>
+        <div style="${hl}" class="pool-cell cell-rank"><span class="h-font" style="font-size:17px;font-weight:700;color:var(--gold);">${esc(rankText)}</span></div>
         <div style="${hl}" class="pool-cell cell-star">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="${isSpotlight ? "var(--gold)" : "none"}" stroke="${isSpotlight ? "var(--gold)" : "#4A4A52"}" stroke-width="1.5"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21.1 7 14.2l-5-4.9 6.9-1L12 2z"></path></svg>
         </div>
@@ -1059,6 +1186,7 @@ function renderDraft(){
           <div class="status-right">
             <div class="lbl">ON THE CLOCK</div>
             <div class="h-font val" style="color:${draftComplete ? "#5A5A62" : isMyTurn ? "var(--red)" : "var(--gold)"};">${draftComplete ? "—" : esc(teamInitials(onClockTeam))}</div>
+            ${isMyTurn ? `<div class="h-font pick-clock-val" data-normal-color="var(--gold)" style="font-size:13px;font-weight:700;margin-top:2px;color:${clockUrgent ? "var(--red)" : "var(--gold)"};">${fmtClock(clockRemain)}</div>` : ""}
           </div>
         ` : ""}
       </div>
@@ -1168,6 +1296,7 @@ function renderDraft(){
       }
       selectedFighterId = null;
       selectedRole = null;
+      clearPickClock();
       maybeRunBots();
     });
   }
