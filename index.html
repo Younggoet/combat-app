@@ -16,8 +16,16 @@
   :root{
     --bg:#0B0B0D; --panel:#141417; --panel-2:#1A1A1E; --panel-3:#0F0F12; --border:#242428; --border-2:#1C1C20;
     --text:#F5F2EA; --text-dim:#9A9AA2; --text-faint:#5A5A62; --text-faint-2:#4A4A52; --gold:#D4AF37; --red:#E2283C;
+    /* Elevation: cards are told apart by depth (shadow), not a hairline
+       border — a thin rgba edge keeps things crisp but the shadow carries
+       the weight. Two sizes: small controls vs. hero panels. */
+    --edge:1px solid rgba(255,255,255,0.06);
+    --shadow-sm:0 4px 14px rgba(0,0,0,0.35);
+    --shadow-lg:0 16px 40px rgba(0,0,0,0.5);
+    --r-sm:8px; --r-md:14px; --r-lg:20px;
   }
   *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
   body{
     margin:0; color:var(--text);
     font-family:'Barlow',-apple-system,sans-serif; min-height:100vh;
@@ -32,6 +40,9 @@
   .wrap{max-width:1440px;margin:0 auto;padding:24px 20px 60px;}
   ::-webkit-scrollbar{height:8px;width:8px;}
   ::-webkit-scrollbar-thumb{background:#2A2A30;border-radius:4px;}
+  @media (max-width:760px){
+    .wrap{padding:14px 14px 40px;}
+  }
 
   .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:10px;}
   .brand{display:flex;align-items:center;gap:12px;}
@@ -76,8 +87,11 @@
 
   /* ---------- Setup ---------- */
   .settings-card{
-    max-width:520px;margin:20px auto;background:var(--panel);border:1px solid var(--border);
-    border-radius:10px;padding:28px 30px 32px;
+    max-width:520px;margin:20px auto;background:var(--panel);border:var(--edge);
+    border-radius:var(--r-md);padding:28px 30px 32px;box-shadow:var(--shadow-lg);
+  }
+  @media (max-width:760px){
+    .settings-card{padding:22px 20px 26px;margin:14px auto;}
   }
   .settings-card .kicker{font-size:11px;letter-spacing:2px;color:var(--text-faint);margin-bottom:4px;}
   .settings-card h2{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:20px;margin:0 0 6px;letter-spacing:1px;}
@@ -111,8 +125,12 @@
   .back-link{display:inline-block;margin-bottom:14px;font-size:12px;color:var(--text-faint);text-decoration:none;cursor:pointer;}
   .back-link:hover{color:var(--text-dim);}
   .lobby{
-    max-width:480px;margin:50px auto;background:var(--panel);border:1px solid var(--border);
-    border-radius:14px;padding:40px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;
+    max-width:480px;margin:50px auto;background:var(--panel);border:var(--edge);
+    border-radius:var(--r-lg);padding:40px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;
+    box-shadow:var(--shadow-lg);
+  }
+  @media (max-width:760px){
+    .lobby{margin:20px auto;padding:28px 22px;}
   }
   .share-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px;}
   button.ghost{
@@ -130,99 +148,148 @@
   .feed-row .meta{color:var(--text-faint);font-size:11px;}
 
   /* ---------- Draft room header ---------- */
-  .dr-header{display:flex;align-items:center;justify-content:space-between;padding:20px 0;border-bottom:1px solid #222226;margin-bottom:0;flex-wrap:wrap;gap:14px;}
+  .dr-header{display:flex;align-items:center;justify-content:space-between;padding:18px 0;border-bottom:1px solid #1C1C20;margin-bottom:0;flex-wrap:wrap;gap:14px;}
   .dr-header-left{display:flex;align-items:center;gap:14px;}
   .vrule{width:1px;height:22px;background:#2A2A30;}
-  .board-link{border:1px solid #2A2A30;border-radius:3px;padding:9px 16px;cursor:pointer;background:none;color:#B8B5AD;}
-  .board-link:hover{border-color:var(--gold);color:var(--gold);}
+  .board-link{border:var(--edge);border-radius:var(--r-sm);padding:10px 18px;cursor:pointer;background:var(--panel-2);color:#D8D5CC;font-weight:600;box-shadow:var(--shadow-sm);}
+  .board-link:hover{color:var(--gold);}
   .status-group{display:flex;align-items:center;gap:24px;}
   .status-right{text-align:right;}
-  .status-right .lbl{font-size:11px;letter-spacing:2px;color:#7A7A82;}
-  .status-right .val{font-size:20px;font-weight:600;}
-  button.start-draft{background:var(--red);color:#fff;border:none;border-radius:3px;padding:11px 26px;cursor:pointer;}
+  .status-right .lbl{font-size:10px;letter-spacing:1.5px;color:#7A7A82;}
+  .status-right .val{font-size:22px;font-weight:700;}
+  button.start-draft{background:linear-gradient(180deg,#F0423F,var(--red));color:#fff;border:none;border-radius:var(--r-sm);padding:16px 36px;cursor:pointer;box-shadow:0 10px 26px rgba(226,40,60,0.35);}
+  @media (max-width:560px){
+    .dr-header-subtitle{display:none;}
+    .status-group, .status-right{gap:16px;}
+  }
 
   /* ---------- Octagon tracker ---------- */
-  .tracker{display:flex;align-items:flex-start;justify-content:center;gap:14px;padding:24px 0;background:var(--panel-3);border-bottom:1px solid var(--border-2);flex-wrap:wrap;margin:0 -20px;padding-left:20px;padding-right:20px;overflow-x:auto;}
-  .tslot{display:flex;flex-direction:column;align-items:center;gap:7px;width:108px;flex-shrink:0;}
-  .tslot .oct{width:52px;height:52px;display:flex;align-items:center;justify-content:center;}
+  .tracker{display:flex;align-items:flex-start;gap:14px;padding:22px 0;background:var(--panel-3);border-bottom:1px solid var(--border-2);margin:0 -20px;padding-left:20px;padding-right:20px;overflow-x:auto;scroll-snap-type:x proximity;}
+  .tslot{display:flex;flex-direction:column;align-items:center;gap:7px;width:108px;flex-shrink:0;scroll-snap-align:start;}
+  .tslot .oct{width:52px;height:52px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);}
   .tslot .pickline{display:flex;align-items:center;gap:5px;}
   .tslot .pickline .n{font-size:10px;letter-spacing:1px;color:#5A5A62;}
   .tslot .info{font-size:11px;letter-spacing:0.5px;text-align:center;line-height:1.3;}
   .tslot .divtag{border-radius:10px;padding:1px 8px;}
+  @media (max-width:760px){
+    .tracker{gap:10px;padding:16px 14px;margin:0 -14px;}
+    .tslot{width:82px;}
+    .tslot .oct{width:42px;height:42px;}
+  }
 
   /* ---------- Main stage ---------- */
-  .stage{display:flex;gap:28px;padding:32px 0;align-items:flex-start;flex-wrap:wrap;}
+  .stage{display:flex;gap:24px;padding:28px 0;align-items:flex-start;flex-wrap:wrap;}
   .stage-main{flex:2;min-width:320px;display:flex;flex-direction:column;gap:20px;}
   .stage-side{flex:0 0 360px;display:flex;flex-direction:column;min-width:300px;}
+  @media (max-width:900px){
+    .stage{flex-direction:column;padding:20px 0;}
+    .stage-main, .stage-side{flex:unset;width:100%;min-width:0;}
+  }
 
-  .spotlight-card{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:28px;display:flex;gap:28px;flex-wrap:wrap;}
-  .spotlight-photo{flex:0 0 180px;height:220px;background:#1C1C20;border:1px solid #2A2A30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border-radius:3px;}
+  .spotlight-card{background:var(--panel);border:var(--edge);border-radius:var(--r-md);padding:26px;display:flex;gap:26px;flex-wrap:wrap;box-shadow:var(--shadow-lg);}
+  .spotlight-photo{flex:0 0 200px;height:260px;background:#1C1C20;border:var(--edge);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border-radius:var(--r-sm);overflow:hidden;}
   .spotlight-body{flex:1;min-width:260px;display:flex;flex-direction:column;gap:18px;}
-  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:10px;margin-bottom:18px;}
-  .stat-cell{background:#1C1C20;border:1px solid var(--border);border-radius:3px;padding:8px 6px;text-align:center;}
-  .stat-cell .v{font-size:15px;font-weight:700;color:var(--text);}
-  .stat-cell .l{font-size:8px;letter-spacing:0.5px;color:#6A6A72;margin-top:2px;}
-  .tape-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:7px 0;border-bottom:1px solid var(--border-2);}
-  .tape-row .a{font-size:15px;font-weight:600;color:var(--text);}
-  .tape-row .lbl{font-size:11px;letter-spacing:1px;color:#6A6A72;text-align:center;padding:0 18px;}
-  .tape-row .b{font-size:15px;font-weight:600;color:#9A9AA2;text-align:right;}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:10px;margin-bottom:18px;}
+  .stat-cell{background:#1C1C20;border:var(--edge);border-radius:var(--r-sm);padding:12px 6px;text-align:center;}
+  .stat-cell .v{font-family:'Oswald',sans-serif;font-size:24px;font-weight:700;color:var(--text);line-height:1.1;}
+  .stat-cell .l{font-size:9px;letter-spacing:0.5px;color:#6A6A72;margin-top:4px;}
+  .tape-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-2);}
+  .tape-row .a{font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;color:var(--text);}
+  .tape-row .lbl{font-size:10.5px;letter-spacing:1px;color:#6A6A72;text-align:center;padding:0 18px;}
+  .tape-row .b{font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;color:#8A8A92;text-align:right;}
+  @media (max-width:760px){
+    .spotlight-card{padding:18px;gap:16px;}
+    .spotlight-photo{flex:unset;width:100%;height:220px;}
+    .stat-grid{grid-template-columns:repeat(3,1fr);}
+    .tape-row .a, .tape-row .b{font-size:16px;}
+  }
 
   .role-pills{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-  .role-pill{border-radius:20px;padding:8px 16px;border:1px solid #2A2A30;background:transparent;}
-  .lock-pick-btn{align-self:flex-start;border:none;border-radius:3px;padding:14px 32px;font-size:14px;font-weight:700;letter-spacing:2px;font-family:'Oswald',sans-serif;text-transform:uppercase;}
+  .role-pill{border-radius:var(--r-lg);padding:10px 18px;border:var(--edge);background:var(--panel-2);min-height:40px;}
+  .lock-pick-btn{align-self:stretch;border:none;border-radius:var(--r-sm);padding:16px 32px;font-size:15px;font-weight:700;letter-spacing:2px;font-family:'Oswald',sans-serif;text-transform:uppercase;box-shadow:var(--shadow-sm);}
+  @media (max-width:760px){
+    .lock-pick-btn{padding:16px 20px;}
+  }
 
-  .slip-panel{background:var(--panel);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
-  .slip-head{padding:18px 22px;border-bottom:1px dashed #2A2A30;display:flex;align-items:center;justify-content:space-between;}
+  .slip-panel{background:var(--panel);border:var(--edge);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-lg);}
+  .slip-head{padding:18px 22px;border-bottom:1px solid var(--border-2);display:flex;align-items:center;justify-content:space-between;}
   .slip-list{padding:6px 22px;max-height:420px;overflow-y:auto;}
   .slip-group{display:flex;align-items:center;gap:8px;padding:12px 0 6px;}
-  .slip-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--border-2);gap:8px;}
+  .slip-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-2);gap:8px;}
   .slip-foot{padding:16px 22px;background:var(--panel-3);}
 
-  .side-card{background:var(--panel);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-top:18px;}
-  .side-card-head{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+  .side-card{background:var(--panel);border:var(--edge);border-radius:var(--r-md);overflow:hidden;margin-top:18px;box-shadow:var(--shadow-lg);}
+  .side-card-head{padding:16px 22px;border-bottom:1px solid var(--border-2);display:flex;align-items:center;gap:8px;}
   .side-card-body{padding:6px 22px;}
   .feed-item{padding:11px 0;border-bottom:1px solid var(--border-2);display:flex;align-items:baseline;gap:10px;font-size:13px;}
   .news-item{padding:12px 0;border-bottom:1px solid var(--border-2);display:flex;align-items:flex-start;gap:10px;}
   .news-item a{font-size:12px;color:#C9C6BD;line-height:1.4;}
   .news-item a:hover{color:var(--gold);}
-  .news-tag{border-radius:3px;padding:2px 7px;flex:0 0 auto;margin-top:1px;font-size:8px;letter-spacing:0.5px;}
+  .news-tag{border-radius:var(--r-sm);padding:2px 7px;flex:0 0 auto;margin-top:1px;font-size:8px;letter-spacing:0.5px;}
 
   /* ---------- Queue / filters / table ---------- */
   .queue-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
-  .queue-chip{border-radius:20px;padding:5px 12px;border:1px solid var(--border);font-size:11px;}
-  .filter-tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
-  .filter-tab{border-radius:20px;padding:7px 16px;cursor:pointer;background:transparent;border:1px solid #2A2A30;font-size:11px;letter-spacing:1px;}
-  .division-strip{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
-  .division-chip{border-radius:8px;padding:2px 8px;cursor:pointer;font-size:8px;letter-spacing:0.3px;border:1px solid #2A2A30;}
+  .queue-chip{border-radius:var(--r-lg);padding:6px 14px;border:var(--edge);background:var(--panel-2);font-size:11px;}
+  .filter-tabs{display:flex;align-items:center;gap:8px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px;}
+  .filter-tab{border-radius:var(--r-lg);padding:9px 18px;cursor:pointer;background:var(--panel-2);border:var(--edge);font-size:11.5px;letter-spacing:1px;flex-shrink:0;min-height:40px;}
+  .division-strip{display:flex;align-items:center;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px;}
+  .division-chip{border-radius:var(--r-sm);padding:5px 10px;cursor:pointer;font-size:9px;letter-spacing:0.3px;border:var(--edge);flex-shrink:0;min-height:30px;}
   .search-row{display:flex;gap:10px;margin-bottom:14px;}
   input.search{
-    background:var(--panel-2);border:1px solid var(--border);border-radius:6px;color:var(--text);
-    font-size:13px;padding:9px 12px;flex:1;
+    background:var(--panel-2);border:var(--edge);border-radius:var(--r-sm);color:var(--text);
+    font-size:15px;padding:13px 16px;flex:1;box-shadow:var(--shadow-sm);
   }
-  input.search:focus{outline:none;border-color:var(--gold);}
+  input.search:focus{outline:none;box-shadow:0 0 0 2px var(--gold);}
 
-  .pool-table{border:1px solid var(--border);border-radius:4px;overflow:hidden;overflow-x:auto;}
+  .pool-table{border:var(--edge);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-lg);}
+  .pool-table-scroll{overflow-x:auto;}
   .pool-grid{display:grid;grid-template-columns:1.8fr 0.9fr 0.8fr 0.8fr 0.6fr 0.6fr 0.8fr 0.8fr 0.6fr 0.8fr 0.8fr 0.9fr 1fr 0.5fr;min-width:1060px;}
-  .pool-head{padding:10px 16px;background:var(--panel-3);border-bottom:1px solid var(--border);font-size:10px;letter-spacing:1px;color:#6A6A72;}
-  .pool-row{display:contents;}
-  .pool-row > div{padding:12px 16px;border-bottom:1px solid var(--border-2);font-size:13px;color:#B8B5AD;display:flex;align-items:center;}
+  .pool-head{padding:12px 16px;background:var(--panel-3);border-bottom:1px solid var(--border-2);font-size:10px;letter-spacing:1px;color:#6A6A72;}
   button.pool-row-btn{all:unset;display:contents;cursor:pointer;}
+  .pool-cell{padding:13px 16px;border-bottom:1px solid var(--border-2);font-size:13.5px;color:#C4C1B8;display:flex;align-items:center;}
+  .pool-row-btn:hover .pool-cell{background:rgba(255,255,255,0.02);}
   .fname-cell{gap:10px;min-width:0;}
-  .fname-cell .av{width:30px;height:30px;border-radius:50%;background:#1C1C20;border:1px solid #2A2A30;flex:0 0 auto;}
-  .divtag2{border-radius:10px;padding:2px 7px;font-size:8px;letter-spacing:0.5px;width:fit-content;}
+  .fname-cell .av{width:32px;height:32px;border-radius:50%;background:#1C1C20;border:var(--edge);flex:0 0 auto;}
+  .divtag2{border-radius:var(--r-sm);padding:2px 7px;font-size:8px;letter-spacing:0.5px;width:fit-content;}
   .footnote{font-size:10px;letter-spacing:1px;color:var(--text-faint-2);margin-top:10px;}
 
+  /* Card-ified pool list on phones: the 14-column grid becomes a stack of
+     tappable fighter cards — name + photo up top, the handful of stats that
+     actually help a quick decision (division, record, projected points,
+     rating) as labeled chips below. Full per-stat columns stay on desktop,
+     where there's room to actually read them. */
+  @media (max-width:760px){
+    .pool-table-scroll{overflow-x:visible;}
+    .pool-grid{display:block;min-width:0;}
+    .pool-head{display:none;}
+    button.pool-row-btn{
+      display:flex !important;flex-wrap:wrap;align-items:center;gap:6px 10px;
+      background:var(--panel-2);border-radius:var(--r-sm);padding:14px;margin-bottom:10px;box-shadow:var(--shadow-sm);
+    }
+    .pool-cell{padding:0;border-bottom:none;font-size:13px;}
+    .fname-cell{order:1;flex:1 1 100%;}
+    .cell-rank{order:2;margin-left:auto;}
+    .cell-star{order:3;}
+    .cell-div, .cell-record, .cell-finishes, .cell-projfp{order:4;}
+    .cell-sigstr, .cell-td, .cell-kd, .cell-ctrl, .cell-subatt, .cell-rev, .cell-tddef{display:none;}
+    .pool-cell[data-label]::before{content:attr(data-label) " ";color:var(--text-faint-2);font-size:10px;letter-spacing:0.5px;margin-right:4px;}
+  }
+
   /* ---------- Full Draft Board ---------- */
-  .board-wrap{overflow-x:auto;padding:12px 0;}
+  .board-wrap{overflow-x:auto;padding:12px 0;-webkit-overflow-scrolling:touch;}
   .board-min{min-width:1280px;}
   .board-team-row{display:grid;gap:10px;margin-bottom:14px;}
-  .board-team-cell{text-align:center;padding:10px 6px;border-radius:3px;background:var(--panel);border:1px solid var(--border);}
+  .board-team-cell{text-align:center;padding:10px 6px;border-radius:var(--r-sm);background:var(--panel);border:var(--edge);}
   .board-round-row{display:grid;gap:10px;margin-bottom:14px;align-items:center;}
   .board-round-lbl{display:flex;flex-direction:column;justify-content:center;padding-right:6px;}
-  .board-cell{padding:12px 10px 10px;border-radius:5px;min-height:108px;display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--border);}
+  .board-cell{padding:12px 10px 10px;border-radius:var(--r-sm);min-height:108px;display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--panel);border:var(--edge);box-shadow:var(--shadow-sm);}
   .board-cell .oct{width:46px;height:46px;display:flex;align-items:center;justify-content:center;}
   .board-cell .nm{font-size:12px;font-weight:600;text-align:center;line-height:1.15;}
-  .board-cell .tag{border-radius:10px;padding:2px 8px;font-size:8px;letter-spacing:0.5px;}
+  .board-cell .tag{border-radius:var(--r-sm);padding:2px 8px;font-size:8px;letter-spacing:0.5px;}
+  .board-hint{display:none;font-size:11px;color:var(--text-faint);margin-bottom:8px;}
+  @media (max-width:760px){
+    .board-hint{display:block;}
+  }
 </style>
 </head>
 <body>
@@ -789,21 +856,21 @@ function renderDraft(){
               </div>
               <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#9A9AA2;margin-top:4px;">${esc(spotlight.announced_weight_class || "")} &middot; ${fmtRecord(spotlight)} &middot; ${spotlight.finishes ?? 0} FINISHES</div>
             </div>
-            <div style="flex:0 0 auto;text-align:center;background:rgba(212,175,55,0.08);border:1px solid var(--gold);border-radius:4px;padding:8px 18px;">
-              <div class="h-font" style="font-size:9px;letter-spacing:2px;color:var(--gold);">OVERALL RATING</div>
-              <div class="h-font" style="font-size:24px;font-weight:700;color:var(--gold);line-height:1.1;">${fmtNum(overallRatingById[spotlight.id], 0)}</div>
+            <div style="flex:0 0 auto;text-align:center;background:linear-gradient(180deg,#E6C75C,var(--gold));border-radius:var(--r-sm);padding:10px 22px;box-shadow:0 8px 20px rgba(212,175,55,0.3);">
+              <div class="h-font" style="font-size:9px;letter-spacing:2px;color:rgba(23,18,10,0.7);">OVERALL RATING</div>
+              <div class="h-font" style="font-size:32px;font-weight:700;color:#17120A;line-height:1.05;">${fmtNum(overallRatingById[spotlight.id], 0)}</div>
             </div>
           </div>
 
-          <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:18px;">
-            <div class="h-font" style="font-size:11px;letter-spacing:3px;color:var(--gold);margin-bottom:12px;">CAREER AVERAGES</div>
+          <div style="border-top:1px solid var(--border-2);padding-top:16px;margin-top:18px;">
+            <div class="h-font" style="font-size:11px;letter-spacing:1.5px;color:var(--text-faint);margin-bottom:12px;">CAREER AVERAGES</div>
             <div class="stat-grid">
               ${statCells.map((c) => `<div class="stat-cell"><div class="v">${esc(c.v)}</div><div class="l">${esc(c.l)}</div></div>`).join("")}
             </div>
           </div>
 
-          <div style="border-top:1px solid var(--border);padding-top:16px;">
-            <div class="h-font" style="font-size:11px;letter-spacing:3px;color:var(--gold);margin-bottom:12px;">TALE OF THE TAPE &mdash; VS YOUR LAST PICK</div>
+          <div style="border-top:1px solid var(--border-2);padding-top:16px;">
+            <div class="h-font" style="font-size:11px;letter-spacing:1.5px;color:var(--text-faint);margin-bottom:12px;">TALE OF THE TAPE &mdash; VS YOUR LAST PICK</div>
             ${tapeRows.map((r) => `<div class="tape-row"><div class="a">${esc(r.a)}</div><div class="lbl">${esc(r.label)}</div><div class="b">${esc(r.b)}</div></div>`).join("")}
             <div style="display:grid;grid-template-columns:1fr auto 1fr;padding-top:8px;">
               <div class="h-font" style="font-size:11px;letter-spacing:1px;color:var(--gold);">${esc(spotlight.full_name.toUpperCase())} (AVAILABLE)</div>
@@ -949,22 +1016,23 @@ function renderDraft(){
     const dc = DIVISION_COLOR[f.announced_weight_class] || "var(--gold)";
     const isSpotlight = !!spotlight && f.id === spotlight.id;
     const rv = rankValue(f, activeFilter);
+    const hl = isSpotlight ? "background:rgba(212,175,55,0.06);" : "";
     return `
       <button class="pool-row-btn" data-fighter-id="${f.id}" ${showPickUI ? "" : "disabled"}>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}" class="fname-cell"><div class="av" style="overflow:hidden;">${f.photo_url ? `<img src="${esc(f.photo_url)}" style="width:100%;height:100%;object-fit:cover;" alt="">` : ""}</div><span class="h-font" style="font-size:14px;font-weight:600;color:${isSpotlight ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span></div>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div></div>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${esc(fmtRecord(f))}</div>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${esc(fmtNum(f.avg_sig_strikes))}</div>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${esc(fmtNum(f.avg_takedowns))}</div>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${esc(fmtNum(f.avg_knockdowns, 2))}</div>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${esc(fmtCtrl(f.avg_control_seconds))}</div>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${esc(fmtNum(f.avg_sub_attempts))}</div>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${esc(fmtNum(f.avg_reversals, 2))}</div>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${esc(fmtPct(f.td_def_pct))}</div>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${f.finishes ?? "—"}</div>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${fmtNum(projectedFPById[f.id], 1)}</div>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}"><span class="h-font" style="font-size:15px;font-weight:700;color:var(--gold);">${rv === -Infinity ? "—" : fmtNum(rv, 0)}</span></div>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">
+        <div style="${hl}" class="pool-cell fname-cell"><div class="av" style="overflow:hidden;">${f.photo_url ? `<img src="${esc(f.photo_url)}" style="width:100%;height:100%;object-fit:cover;" alt="">` : ""}</div><span class="h-font" style="font-size:14px;font-weight:600;color:${isSpotlight ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span></div>
+        <div style="${hl}" class="pool-cell cell-div"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div></div>
+        <div style="${hl}" class="pool-cell cell-record" data-label="REC">${esc(fmtRecord(f))}</div>
+        <div style="${hl}" class="pool-cell cell-sigstr">${esc(fmtNum(f.avg_sig_strikes))}</div>
+        <div style="${hl}" class="pool-cell cell-td">${esc(fmtNum(f.avg_takedowns))}</div>
+        <div style="${hl}" class="pool-cell cell-kd">${esc(fmtNum(f.avg_knockdowns, 2))}</div>
+        <div style="${hl}" class="pool-cell cell-ctrl">${esc(fmtCtrl(f.avg_control_seconds))}</div>
+        <div style="${hl}" class="pool-cell cell-subatt">${esc(fmtNum(f.avg_sub_attempts))}</div>
+        <div style="${hl}" class="pool-cell cell-rev">${esc(fmtNum(f.avg_reversals, 2))}</div>
+        <div style="${hl}" class="pool-cell cell-tddef">${esc(fmtPct(f.td_def_pct))}</div>
+        <div style="${hl}" class="pool-cell cell-finishes" data-label="FIN">${f.finishes ?? "—"}</div>
+        <div style="${hl}" class="pool-cell cell-projfp" data-label="PROJ FP">${fmtNum(projectedFPById[f.id], 1)}</div>
+        <div style="${hl}" class="pool-cell cell-rank"><span class="h-font" style="font-size:17px;font-weight:700;color:var(--gold);">${rv === -Infinity ? "—" : fmtNum(rv, 0)}</span></div>
+        <div style="${hl}" class="pool-cell cell-star">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="${isSpotlight ? "var(--gold)" : "none"}" stroke="${isSpotlight ? "var(--gold)" : "#4A4A52"}" stroke-width="1.5"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21.1 7 14.2l-5-4.9 6.9-1L12 2z"></path></svg>
         </div>
       </button>
@@ -976,7 +1044,7 @@ function renderDraft(){
       <div class="dr-header-left">
         <div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:1px;color:var(--gold);">COMBAT</div>
         <div class="vrule"></div>
-        <div class="h-font" style="font-size:15px;letter-spacing:2px;color:#9A9AA2;">DIVISIONAL DYNASTY DRAFT</div>
+        <div class="h-font dr-header-subtitle" style="font-size:15px;letter-spacing:2px;color:#9A9AA2;">DIVISIONAL DYNASTY DRAFT</div>
       </div>
       <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
         <button class="board-link h-font" id="boardLinkBtn" style="font-size:11px;letter-spacing:2px;">FULL DRAFT BOARD</button>
@@ -1035,14 +1103,16 @@ function renderDraft(){
       <div class="division-strip">${divisionStripHtml}</div>
       <div class="h-font" style="font-size:12px;letter-spacing:2px;color:#7A7A82;margin-bottom:12px;">AVAILABLE &mdash; ${esc(poolHeading)}</div>
       <div class="pool-table">
-        <div class="pool-grid">
-          <div class="pool-head">FIGHTER</div><div class="pool-head">DIV</div><div class="pool-head">RECORD</div>
-          <div class="pool-head">SIG STR</div><div class="pool-head">TD</div><div class="pool-head">KD</div>
-          <div class="pool-head">CTRL</div><div class="pool-head">SUB ATT</div><div class="pool-head">REV</div>
-          <div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div>
-          <div class="pool-head">PROJ FP</div>
-          <div class="pool-head" style="color:var(--gold);">${esc(rankColLabel)}</div><div class="pool-head">★</div>
-          ${poolRows}
+        <div class="pool-table-scroll">
+          <div class="pool-grid">
+            <div class="pool-head">FIGHTER</div><div class="pool-head">DIV</div><div class="pool-head">RECORD</div>
+            <div class="pool-head">SIG STR</div><div class="pool-head">TD</div><div class="pool-head">KD</div>
+            <div class="pool-head">CTRL</div><div class="pool-head">SUB ATT</div><div class="pool-head">REV</div>
+            <div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div>
+            <div class="pool-head">PROJ FP</div>
+            <div class="pool-head" style="color:var(--gold);">${esc(rankColLabel)}</div><div class="pool-head">★</div>
+            ${poolRows}
+          </div>
         </div>
       </div>
       <div class="footnote">STATS SHOWN ARE PER-FIGHT CAREER AVERAGES FROM SYNCED FIGHT DATA &middot; SIG STR = SIGNIFICANT STRIKES LANDED &middot; TD = TAKEDOWNS LANDED &middot; KD = KNOCKDOWNS &middot; CTRL = CONTROL TIME &middot; FINISHES = CAREER KO/TKO + SUBMISSION WINS &middot; ★ = CURRENTLY SPOTLIGHTED</div>
@@ -1172,6 +1242,7 @@ function renderBoard(){
       </div>
       <button class="board-link h-font" id="backToRoomBtn" style="font-size:11px;letter-spacing:2px;">&larr; BACK TO LIVE ROOM</button>
     </div>
+    <div class="board-hint">Swipe sideways to see every team &rarr;</div>
     <div class="board-wrap">
       <div class="board-min">
         <div class="board-team-row" style="grid-template-columns:90px repeat(${cols}, 1fr);"><div></div>${teamHeaderHtml}</div>
