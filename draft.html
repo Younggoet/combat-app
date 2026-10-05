@@ -161,6 +161,23 @@ let myUser = null;
 let myTeamId = null;
 let selectedFighterId = null;
 let selectedRole = null;
+let selectedWeightClass = "";
+
+// Which number a fighter is ranked by right now: the Elo-style overall
+// current_rating by default, or that role's own stat-weighted score once a
+// role button is active -- so "best available" always matches whichever
+// slot you're about to fill, and re-sorts live as the pool narrows.
+function rankField(role){
+  if (role === "STRIKER") return "striker_score";
+  if (role === "GRAPPLER") return "grappler_score";
+  if (role === "FINISHER") return "finisher_score";
+  return "current_rating";
+}
+function rankValue(f, role){
+  const field = rankField(role);
+  const v = f[field];
+  return (v === null || v === undefined) ? -Infinity : v;
+}
 let pollTimer = null;
 
 async function authHeader(){
@@ -172,7 +189,7 @@ async function loadFighterPool(){
   if (fighters.length) return;
   const { data, error } = await CombatAuth.client
     .from("fighters")
-    .select("id, full_name, nickname, announced_weight_class, current_rating, photo_url")
+    .select("id, full_name, nickname, announced_weight_class, current_rating, striker_score, grappler_score, finisher_score, photo_url")
     .order("current_rating", { ascending: false })
     .limit(1000);
   if (!error && data) {
@@ -270,10 +287,14 @@ function renderActive(room, draftRoomData){
   const phaseField = status.phase === "active" ? "activeOpen" : "cageOpen";
 
   const filterVal = document.getElementById("fighterSearch") ? document.getElementById("fighterSearch").value : "";
+  const weightClasses = [...new Set(fighters.map((f) => f.announced_weight_class).filter(Boolean))].sort();
   const taken = new Set(picks.map((p) => p.fighter_id));
+  const activeRankRole = isMyTurn ? selectedRole : null;
   const poolRows = fighters
     .filter((f) => !taken.has(f.id))
     .filter((f) => !filterVal || f.full_name.toLowerCase().includes(filterVal.toLowerCase()))
+    .filter((f) => !selectedWeightClass || f.announced_weight_class === selectedWeightClass)
+    .sort((a, b) => rankValue(b, activeRankRole) - rankValue(a, activeRankRole))
     .slice(0, 60);
 
   const feedRows = picks.slice().reverse().slice(0, 25).map((p) => `
@@ -319,13 +340,23 @@ function renderActive(room, draftRoomData){
     <div class="layout">
       <div class="col-main">
         <div class="pool-card">
-          <input class="search" id="fighterSearch" placeholder="Search fighters…" value="${esc(filterVal)}">
+          <div style="display:flex;gap:10px;margin-bottom:14px;">
+            <input class="search" id="fighterSearch" placeholder="Search fighters…" value="${esc(filterVal)}" style="margin-bottom:0;flex:1;">
+            <select class="search" id="weightClassFilter" style="margin-bottom:0;flex:0 0 170px;">
+              <option value="">All weight classes</option>
+              ${weightClasses.map((w) => `<option value="${esc(w)}" ${w === selectedWeightClass ? "selected" : ""}>${esc(w)}</option>`).join("")}
+            </select>
+          </div>
+          <div style="font-size:10px;letter-spacing:1.5px;color:var(--text-faint);margin-bottom:8px;">
+            RANKED BY ${activeRankRole ? esc(activeRankRole) + " SCORE" : "OVERALL RATING"}${selectedWeightClass ? " · " + esc(selectedWeightClass).toUpperCase() : ""}
+          </div>
           <div id="poolList">
-            ${poolRows.map((f) => `
+            ${poolRows.map((f, i) => `
               <div class="fighter-row ${f.id === selectedFighterId ? "selected" : ""}" data-fighter-id="${f.id}">
+                ${i === 0 ? `<span style="color:var(--gold);font-size:10px;font-weight:700;width:16px;">#1</span>` : `<span style="width:16px;"></span>`}
                 <div class="name">${esc(f.full_name)}${f.nickname ? ` <span style="color:var(--text-faint);font-weight:400;">"${esc(f.nickname)}"</span>` : ""}</div>
                 <div class="weight">${esc(f.announced_weight_class || "")}</div>
-                <div class="rating">${Math.round(f.current_rating)}</div>
+                <div class="rating">${rankValue(f, activeRankRole) === -Infinity ? "—" : Math.round(rankValue(f, activeRankRole))}</div>
               </div>
             `).join("")}
           </div>
@@ -363,6 +394,15 @@ function renderActive(room, draftRoomData){
   const searchInput = document.getElementById("fighterSearch");
   if (searchInput) {
     searchInput.addEventListener("input", () => { stopCountdown(); renderActive(room, draftRoomData); startCountdown(draftRoomData.room.currentPickDeadline); searchInput.focus(); });
+  }
+  const weightClassFilter = document.getElementById("weightClassFilter");
+  if (weightClassFilter) {
+    weightClassFilter.addEventListener("change", () => {
+      selectedWeightClass = weightClassFilter.value;
+      stopCountdown();
+      renderActive(room, draftRoomData);
+      startCountdown(draftRoomData.room.currentPickDeadline);
+    });
   }
   document.querySelectorAll(".role-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
