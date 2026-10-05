@@ -202,7 +202,7 @@
   input.search:focus{outline:none;border-color:var(--gold);}
 
   .pool-table{border:1px solid var(--border);border-radius:4px;overflow:hidden;overflow-x:auto;}
-  .pool-grid{display:grid;grid-template-columns:1.8fr 0.9fr 0.8fr 0.8fr 0.6fr 0.6fr 0.8fr 0.8fr 0.6fr 0.8fr 0.8fr 1fr 0.5fr;min-width:980px;}
+  .pool-grid{display:grid;grid-template-columns:1.8fr 0.9fr 0.8fr 0.8fr 0.6fr 0.6fr 0.8fr 0.8fr 0.6fr 0.8fr 0.8fr 0.9fr 1fr 0.5fr;min-width:1060px;}
   .pool-head{padding:10px 16px;background:var(--panel-3);border-bottom:1px solid var(--border);font-size:10px;letter-spacing:1px;color:#6A6A72;}
   .pool-row{display:contents;}
   .pool-row > div{padding:12px 16px;border-bottom:1px solid var(--border-2);font-size:13px;color:#B8B5AD;display:flex;align-items:center;}
@@ -227,12 +227,6 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="topbar">
-    <div class="brand">
-      <span class="name">COMBAT</span>
-    </div>
-  </div>
-
   <div id="content"><div class="loading">Loading…</div></div>
 </div>
 
@@ -353,9 +347,36 @@ function fmtRecord(f){
   return `${f.wins}-${f.losses}-0`;
 }
 
+// Same "Standard Fight Points" weights used to score real leagues
+// (combat-sync/netlify/functions/scoring.js) — applied here to each
+// fighter's career per-fight averages to project a per-fight fantasy score.
+// TD-defense bonus (0.5 pt per takedown defended) is estimated from
+// td_def_pct against a league-average opponent-attempt rate, since the
+// fighters table stores a per-fighter aggregate, not opponent-specific
+// raw attempt counts.
+const FANTASY_WEIGHTS = { sigStrike: 0.1, takedown: 2, knockdown: 8, controlMinute: 1, subAttempt: 1, reversal: 6, tdDefended: 0.5 };
+const ASSUMED_OPP_TD_ATTEMPTS = 3;
+function projectedFantasyPoints(f){
+  if (!f) return null;
+  const sig = Number(f.avg_sig_strikes) || 0;
+  const td = Number(f.avg_takedowns) || 0;
+  const kd = Number(f.avg_knockdowns) || 0;
+  const ctrlMin = (Number(f.avg_control_seconds) || 0) / 60;
+  const subAtt = Number(f.avg_sub_attempts) || 0;
+  const rev = Number(f.avg_reversals) || 0;
+  const tdDefBonus = (f.td_def_pct !== null && f.td_def_pct !== undefined)
+    ? Number(f.td_def_pct) * ASSUMED_OPP_TD_ATTEMPTS * FANTASY_WEIGHTS.tdDefended
+    : 0;
+  return sig * FANTASY_WEIGHTS.sigStrike + td * FANTASY_WEIGHTS.takedown + kd * FANTASY_WEIGHTS.knockdown
+    + ctrlMin * FANTASY_WEIGHTS.controlMinute + subAtt * FANTASY_WEIGHTS.subAttempt + rev * FANTASY_WEIGHTS.reversal
+    + tdDefBonus;
+}
+
 let fighters = [];
 let fightersById = {};
 let fighterPoolError = null;
+let projectedFPById = {};  // fighter id -> projected fantasy points (per fight)
+let overallRatingById = {}; // fighter id -> 60-99 "Overall Rating", purely a function of rank among projected fantasy points
 
 let screen = "landing"; // landing | setup | draft | board | complete
 let teamCount = 8;
@@ -375,17 +396,24 @@ let botTimer = null;
 let newsItems = [];
 let newsLoaded = false;
 
-// Which number a fighter is ranked by right now: overall Elo-style rating by
-// default, or that role's own stat-weighted score once that role is the
-// active filter — same logic the real draft.html room and bots use.
+// Which number a fighter is ranked by right now: the rank-based Overall
+// Rating by default (derived from where a fighter ranks in projected
+// fantasy points — never the raw internal Elo number), or that role's own
+// stat-weighted score once that role is the active filter — same logic the
+// real draft.html room and bots use.
 function rankField(filterValue){
   if (filterValue === "STRIKER") return "striker_score";
   if (filterValue === "GRAPPLER") return "grappler_score";
   if (filterValue === "FINISHER") return "finisher_score";
-  return "current_rating";
+  return null; // ALL / PRIMARY / a division — ranked by Overall Rating below
 }
 function rankValue(f, filterValue){
-  const v = f[rankField(filterValue)];
+  const field = rankField(filterValue);
+  if (field === null) {
+    const v = overallRatingById[f.id];
+    return (v === null || v === undefined) ? -Infinity : v;
+  }
+  const v = f[field];
   return (v === null || v === undefined) ? -Infinity : v;
 }
 function isDivisionFilter(v){ return DIVISION_LIST.includes(v); }
@@ -411,6 +439,19 @@ async function loadFighterPool(){
     fighters = data || [];
     fightersById = {};
     fighters.forEach((f) => { fightersById[f.id] = f; });
+
+    // Overall Rating is a rank, not a score: sort everyone by projected
+    // fantasy points, then scale each fighter's position in that order onto
+    // a friendly 60-99 band (#1 overall = 99) — never the raw internal
+    // rating number.
+    projectedFPById = {};
+    fighters.forEach((f) => { projectedFPById[f.id] = projectedFantasyPoints(f); });
+    const byProjectedFP = fighters.slice().sort((a, b) => (projectedFPById[b.id] || 0) - (projectedFPById[a.id] || 0));
+    overallRatingById = {};
+    const n = byProjectedFP.length;
+    byProjectedFP.forEach((f, idx) => {
+      overallRatingById[f.id] = n > 1 ? Math.round(99 - (idx / (n - 1)) * 39) : 99;
+    });
   } catch (err) {
     fighterPoolError = err.message || "Couldn't load fighters.";
   }
@@ -418,6 +459,14 @@ async function loadFighterPool(){
 function fighterName(id){
   const f = fightersById[id];
   return f ? f.full_name : "Unknown fighter";
+}
+// Fills an octagon pick-tracker/board slot: the fighter's photo if we have
+// one, clipped to the parent's octagon shape, else the generic silhouette.
+function octagonAvatar(f, strokeColor, size){
+  if (f && f.photo_url) {
+    return `<img src="${esc(f.photo_url)}" style="width:100%;height:100%;object-fit:cover;" alt="">`;
+  }
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${strokeColor}" stroke-width="1.6"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path></svg>`;
 }
 
 const NEWS_ENDPOINT = "https://combat-sync.netlify.app/.netlify/functions/get-news";
@@ -665,8 +714,8 @@ function renderDraft(){
       const dc = (ef && DIVISION_COLOR[ef.announced_weight_class]) || "var(--gold)";
       trackerHtml += `
         <div class="tslot">
-          <div class="oct" style="clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);background:#1C1C20;border:2px solid ${dc};">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${dc}" stroke-width="1.6"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path></svg>
+          <div class="oct" style="clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);background:#1C1C20;border:2px solid ${dc};overflow:hidden;">
+            ${octagonAvatar(ef, dc, 22)}
           </div>
           <div class="pickline"><span class="n">PICK ${n}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${esc(teamInitials(team))}</span></div>
           <div class="info" style="color:${dc};font-weight:700;">${esc(ef ? ef.full_name : "?")}</div>
@@ -707,14 +756,15 @@ function renderDraft(){
       { l: "SUB ATT", v: fmtNum(spotlight.avg_sub_attempts) },
       { l: "REV", v: fmtNum(spotlight.avg_reversals, 2) },
       { l: "TD DEF", v: fmtPct(spotlight.td_def_pct) },
+      { l: "PROJ FP", v: fmtNum(projectedFPById[spotlight.id], 1) },
     ];
     const lastOwnPickEntry = picks.slice().reverse().find((p) => p.team_id === userTeamId);
     const lastOwnPick = lastOwnPickEntry ? fightersById[lastOwnPickEntry.fighter_id] : null;
     const tapeRows = [
       { a: fmtRecord(spotlight), label: "RECORD", b: lastOwnPick ? fmtRecord(lastOwnPick) : "—" },
       { a: String(spotlight.finishes ?? "—"), label: "FINISHES", b: lastOwnPick ? String(lastOwnPick.finishes ?? "—") : "—" },
-      { a: fmtNum(spotlight.current_rating, 1), label: "OVERALL RATING", b: lastOwnPick ? fmtNum(lastOwnPick.current_rating, 1) : "—" },
-      { a: fmtPct(spotlight.td_def_pct), label: "TD DEFENSE", b: lastOwnPick ? fmtPct(lastOwnPick.td_def_pct) : "—" },
+      { a: fmtNum(overallRatingById[spotlight.id], 0), label: "OVERALL RATING", b: lastOwnPick ? fmtNum(overallRatingById[lastOwnPick.id], 0) : "—" },
+      { a: fmtNum(projectedFPById[spotlight.id], 1), label: "PROJ FANTASY PTS", b: lastOwnPick ? fmtNum(projectedFPById[lastOwnPick.id], 1) : "—" },
     ];
 
     stageMainHtml += `
@@ -741,7 +791,7 @@ function renderDraft(){
             </div>
             <div style="flex:0 0 auto;text-align:center;background:rgba(212,175,55,0.08);border:1px solid var(--gold);border-radius:4px;padding:8px 18px;">
               <div class="h-font" style="font-size:9px;letter-spacing:2px;color:var(--gold);">OVERALL RATING</div>
-              <div class="h-font" style="font-size:24px;font-weight:700;color:var(--gold);line-height:1.1;">${fmtNum(spotlight.current_rating, 0)}</div>
+              <div class="h-font" style="font-size:24px;font-weight:700;color:var(--gold);line-height:1.1;">${fmtNum(overallRatingById[spotlight.id], 0)}</div>
             </div>
           </div>
 
@@ -824,12 +874,12 @@ function renderDraft(){
       const isPending = !p && showPickUI && role === selectedRole && i === have.length && spotlight;
       if (f) {
         const dc = DIVISION_COLOR[f.announced_weight_class] || "var(--gold)";
-        const pts = fmtNum(f.current_rating, 0);
-        projectedTotal += Number(f.current_rating) || 0;
+        const pts = fmtNum(projectedFPById[f.id], 1);
+        projectedTotal += Number(projectedFPById[f.id]) || 0;
         slipHtml += `<div class="slip-row"><div style="display:flex;align-items:center;gap:8px;min-width:0;"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div></div><div class="h-font" style="font-size:14px;font-weight:700;color:var(--text);">${pts}</div></div>`;
       } else if (isPending) {
         const dc = DIVISION_COLOR[spotlight.announced_weight_class] || "var(--gold)";
-        slipHtml += `<div class="slip-row"><div style="display:flex;align-items:center;gap:8px;min-width:0;"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[spotlight.announced_weight_class] || "")}</div><div class="h-font" style="font-size:14px;font-weight:600;color:var(--red);">${esc(spotlight.full_name)} (PENDING)</div></div><div class="h-font" style="font-size:14px;font-weight:700;">${fmtNum(spotlight.current_rating, 0)}</div></div>`;
+        slipHtml += `<div class="slip-row"><div style="display:flex;align-items:center;gap:8px;min-width:0;"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[spotlight.announced_weight_class] || "")}</div><div class="h-font" style="font-size:14px;font-weight:600;color:var(--red);">${esc(spotlight.full_name)} (PENDING)</div></div><div class="h-font" style="font-size:14px;font-weight:700;">${fmtNum(projectedFPById[spotlight.id], 1)}</div></div>`;
       } else {
         slipHtml += `<div class="slip-row"><div class="h-font" style="font-size:14px;color:#5A5A62;">Empty slot</div><div class="h-font" style="font-size:14px;color:#5A5A62;">--</div></div>`;
       }
@@ -884,7 +934,14 @@ function renderDraft(){
   const rankColLabel = isDivisionFilter(activeFilter) || activeFilter === "ALL" || activeFilter === "PRIMARY"
     ? "OVERALL RATING" : `${activeFilter} SCORE`;
 
-  const filterVal = document.getElementById("fighterSearch") ? document.getElementById("fighterSearch").value : "";
+  const existingSearchInput = document.getElementById("fighterSearch");
+  const filterVal = existingSearchInput ? existingSearchInput.value : "";
+  // Capture focus/cursor BEFORE the innerHTML swap below destroys this node,
+  // so typing doesn't lose focus after every keystroke (previously the new
+  // input rendered unfocused, so only one letter could be typed at a time).
+  const searchWasFocused = !!existingSearchInput && document.activeElement === existingSearchInput;
+  const searchSelStart = searchWasFocused ? existingSearchInput.selectionStart : null;
+  const searchSelEnd = searchWasFocused ? existingSearchInput.selectionEnd : null;
   const searched = filterVal
     ? available.filter((f) => f.full_name.toLowerCase().includes(filterVal.toLowerCase()))
     : available;
@@ -894,7 +951,7 @@ function renderDraft(){
     const rv = rankValue(f, activeFilter);
     return `
       <button class="pool-row-btn" data-fighter-id="${f.id}" ${showPickUI ? "" : "disabled"}>
-        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}" class="fname-cell"><div class="av"></div><span class="h-font" style="font-size:14px;font-weight:600;color:${isSpotlight ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span></div>
+        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}" class="fname-cell"><div class="av" style="overflow:hidden;">${f.photo_url ? `<img src="${esc(f.photo_url)}" style="width:100%;height:100%;object-fit:cover;" alt="">` : ""}</div><span class="h-font" style="font-size:14px;font-weight:600;color:${isSpotlight ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span></div>
         <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div></div>
         <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${esc(fmtRecord(f))}</div>
         <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${esc(fmtNum(f.avg_sig_strikes))}</div>
@@ -905,6 +962,7 @@ function renderDraft(){
         <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${esc(fmtNum(f.avg_reversals, 2))}</div>
         <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${esc(fmtPct(f.td_def_pct))}</div>
         <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${f.finishes ?? "—"}</div>
+        <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">${fmtNum(projectedFPById[f.id], 1)}</div>
         <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}"><span class="h-font" style="font-size:15px;font-weight:700;color:var(--gold);">${rv === -Infinity ? "—" : fmtNum(rv, 0)}</span></div>
         <div style="${isSpotlight ? "background:rgba(212,175,55,0.06);" : ""}">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="${isSpotlight ? "var(--gold)" : "none"}" stroke="${isSpotlight ? "var(--gold)" : "#4A4A52"}" stroke-width="1.5"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21.1 7 14.2l-5-4.9 6.9-1L12 2z"></path></svg>
@@ -948,8 +1006,8 @@ function renderDraft(){
           <div class="slip-list">${slipHtml}</div>
           <div class="slip-foot">
             <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">PROJECTED TOTAL</div>
-              <div class="h-font" style="font-size:24px;font-weight:700;color:var(--gold);">${fmtNum(projectedTotal, 0)}</div>
+              <div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">PROJECTED FANTASY PTS</div>
+              <div class="h-font" style="font-size:24px;font-weight:700;color:var(--gold);">${fmtNum(projectedTotal, 1)}</div>
             </div>
             <div class="h-font" style="font-size:10px;letter-spacing:1px;color:#4A4A52;margin-top:6px;">+ ${CAGESIDE_SLOTS_PER_TEAM} CAGE SIDE PICKS TO FOLLOW</div>
           </div>
@@ -982,6 +1040,7 @@ function renderDraft(){
           <div class="pool-head">SIG STR</div><div class="pool-head">TD</div><div class="pool-head">KD</div>
           <div class="pool-head">CTRL</div><div class="pool-head">SUB ATT</div><div class="pool-head">REV</div>
           <div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div>
+          <div class="pool-head">PROJ FP</div>
           <div class="pool-head" style="color:var(--gold);">${esc(rankColLabel)}</div><div class="pool-head">★</div>
           ${poolRows}
         </div>
@@ -1005,10 +1064,11 @@ function renderDraft(){
 
   const searchInput = document.getElementById("fighterSearch");
   if (searchInput) {
-    searchInput.addEventListener("input", () => { render(); searchInput.focus(); });
-    const v = searchInput.value;
-    searchInput.value = "";
-    searchInput.value = v;
+    searchInput.addEventListener("input", render);
+    if (searchWasFocused) {
+      searchInput.focus();
+      searchInput.setSelectionRange(searchSelStart, searchSelEnd);
+    }
   }
 
   document.querySelectorAll(".filter-tab, .division-chip").forEach((btn) => {
@@ -1075,8 +1135,8 @@ function renderBoard(){
         const dc = (f && DIVISION_COLOR[f.announced_weight_class]) || "var(--gold)";
         cellsHtml += `
           <div class="board-cell">
-            <div class="oct" style="clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);background:#1C1C20;border:2px solid ${dc};">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${dc}" stroke-width="1.6"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path></svg>
+            <div class="oct" style="clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);background:#1C1C20;border:2px solid ${dc};overflow:hidden;">
+              ${octagonAvatar(f, dc, 20)}
             </div>
             <div class="nm">${esc(f ? f.full_name : "?")}</div>
             <div class="tag" style="background:${dc}2A;color:${dc};">${esc(f ? (DIV_SHORT[f.announced_weight_class] || "") : "")}</div>
