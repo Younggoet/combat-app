@@ -298,6 +298,89 @@
   @media (max-width:760px){
     .board-hint{display:block;}
   }
+
+  /* ---------- Mode picker ---------- */
+  .mode-wrap{max-width:900px;margin:40px auto 0;padding:0 10px;}
+  .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:28px;}
+  @media (max-width:700px){ .mode-grid{grid-template-columns:1fr;} }
+  button.mode-card{
+    all:unset;cursor:pointer;display:block;background:var(--panel);border:1.5px solid var(--border);
+    border-radius:var(--r-lg);padding:30px 26px;box-shadow:var(--shadow-lg);text-align:left;
+    transition:border-color 0.15s ease, transform 0.15s ease;
+  }
+  button.mode-card:hover{transform:translateY(-2px);}
+  button.mode-card.gold:hover{border-color:var(--gold);}
+  button.mode-card.red:hover{border-color:var(--red);}
+  .mode-card .mc-kicker{font-size:11px;letter-spacing:2px;margin-bottom:10px;}
+  .mode-card.gold .mc-kicker{color:var(--gold);}
+  .mode-card.red .mc-kicker{color:var(--red);}
+  .mode-card .mc-title{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:24px;font-weight:700;letter-spacing:0.5px;margin-bottom:10px;}
+  .mode-card .mc-desc{font-size:13.5px;color:var(--text-dim);line-height:1.55;margin-bottom:18px;}
+  .mode-card .mc-meta{font-size:11px;color:var(--text-faint);letter-spacing:0.5px;}
+
+  /* ---------- Face-off draft ---------- */
+  .fo-topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding-bottom:18px;border-bottom:1px solid var(--border-2);margin-bottom:22px;}
+  .fo-gear{display:flex;align-items:center;gap:6px;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:9px 13px;cursor:pointer;}
+  .fo-gear.active{background:rgba(212,175,55,0.14);border-color:var(--gold);}
+  .fo-settings{background:var(--panel);border:1px solid var(--gold);border-radius:var(--r-md);padding:22px 26px;margin-bottom:22px;display:flex;flex-wrap:wrap;gap:34px;}
+  .fo-settings-col .fo-settings-label{font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:12px;}
+  .fo-pill{all:unset;cursor:pointer;}
+  .fo-mode-opt{padding:12px 16px;border-radius:9px;min-width:150px;}
+  .fo-head{position:relative;margin-bottom:22px;border-radius:var(--r-lg);background:var(--panel);border:var(--edge);box-shadow:var(--shadow-lg);overflow:hidden;}
+  .fo-head-inner{display:flex;align-items:center;min-height:360px;}
+  @media (max-width:760px){ .fo-head-inner{flex-direction:column;min-height:0;} }
+  .fo-team{flex:1;display:flex;align-items:center;gap:24px;padding:36px 40px;min-width:0;}
+  .fo-team.b{flex-direction:row-reverse;text-align:right;}
+  @media (max-width:760px){ .fo-team, .fo-team.b{flex-direction:row;text-align:left;padding:24px;width:100%;} }
+  .fo-avatar-wrap{position:relative;flex-shrink:0;}
+  .fo-avatar{width:120px;height:120px;background:#1C1C20;overflow:hidden;box-shadow:var(--shadow-sm);}
+  .fo-avatar img{width:100%;height:100%;object-fit:cover;}
+  .fo-pencil{all:unset;cursor:pointer;position:absolute;bottom:-2px;right:-2px;width:30px;height:30px;border-radius:50%;background:var(--panel);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;}
+  .fo-team.b .fo-pencil{right:auto;left:-2px;border-color:var(--red);}
+  .fo-name{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:26px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;}
+  .fo-record{font-size:12px;letter-spacing:1px;color:var(--text-faint);margin:6px 0 12px;}
+  .fo-total{font-family:'Oswald',sans-serif;font-size:46px;font-weight:700;line-height:1;}
+  .fo-total-lbl{font-size:12px;letter-spacing:1.5px;color:var(--text-dim);}
+  .fo-roster-strip{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;}
+  .fo-roster-strip.b{justify-content:flex-end;}
+  .fo-mini{width:34px;height:34px;background:#1C1C20;border:2px solid var(--border);box-sizing:border-box;flex-shrink:0;overflow:hidden;}
+  .fo-mini img{width:100%;height:100%;object-fit:cover;}
+  .fo-vs{width:1px;background:var(--border-2);align-self:stretch;position:relative;flex-shrink:0;}
+  .fo-vs-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);border:3px solid var(--red);border-radius:50%;width:58px;height:58px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;color:var(--red);}
+  @media (max-width:760px){ .fo-vs{display:none;} }
+  .fo-editor{background:var(--panel);border:1px solid var(--gold);border-radius:var(--r-md);padding:22px 26px;margin-bottom:22px;}
+  .fo-swatch{all:unset;cursor:pointer;}
+  .fo-rule-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:22px;}
+  .fo-rule-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(226,40,60,0.1);border:1px solid var(--red);border-radius:8px;padding:8px 16px;font-size:11px;letter-spacing:1px;color:var(--red);}
+  .fo-status-chip{font-size:11px;font-weight:700;letter-spacing:1px;padding:7px 14px;border-radius:7px;background:rgba(212,175,55,0.1);border:1.5px solid var(--gold);color:var(--gold);}
+  .fo-section-div{display:flex;align-items:center;gap:12px;margin:14px 0 2px;}
+  .fo-section-div .ln{flex:1;height:1px;background:var(--border-2);}
+  .fo-section-div .lbl{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:3px;color:var(--gold);}
+  .fo-bouts{display:flex;flex-direction:column;gap:16px;max-width:780px;margin:0 auto;}
+  .fo-bout{background:var(--panel);border-radius:var(--r-md);border:var(--edge);box-shadow:var(--shadow-sm);overflow:hidden;}
+  .fo-bout-billing{text-align:center;padding-top:14px;font-family:'Oswald',sans-serif;letter-spacing:2px;}
+  .fo-bout-row{display:flex;align-items:stretch;position:relative;padding:8px 0 18px;}
+  .fo-bout-vs-line{position:absolute;top:0;left:50%;width:1px;height:100%;background:var(--border-2);pointer-events:none;}
+  .fo-bout-vs-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);border:2px solid var(--border);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:9px;font-weight:700;color:var(--text-faint);pointer-events:none;}
+  .fo-half{display:block;cursor:pointer;flex:1;box-sizing:border-box;padding:10px 16px;}
+  .fo-half:hover{filter:brightness(1.1);}
+  .fo-fighter-av{width:84px;height:84px;margin:0 auto 10px;background:#1C1C20;box-sizing:border-box;overflow:hidden;}
+  .fo-fighter-av img{width:100%;height:100%;object-fit:cover;}
+  .fo-fighter-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;line-height:1.15;margin-bottom:4px;}
+  .fo-fighter-div{font-size:10.5px;margin-bottom:2px;}
+  .fo-fighter-record{font-size:10.5px;color:var(--text-faint);margin-bottom:6px;}
+  .fo-stat-grid{display:inline-grid;grid-template-columns:auto auto;column-gap:10px;row-gap:1px;margin:0 auto 8px;text-align:left;}
+  .fo-stat-grid .l{font-size:8px;letter-spacing:0.3px;color:var(--text-faint);}
+  .fo-stat-grid .v{font-size:8.5px;font-weight:700;color:var(--text-dim);}
+  .fo-proj{font-size:9px;letter-spacing:0.5px;color:var(--text-faint);margin-bottom:2px;}
+  .fo-live-row{display:flex;align-items:center;justify-content:center;gap:5px;}
+  .fo-live-val{font-family:'Oswald',sans-serif;font-size:17px;font-weight:700;}
+  .fo-live-lbl{font-size:8.5px;letter-spacing:0.5px;color:var(--text-faint);margin-bottom:10px;}
+  .fo-tag{font-family:'Oswald',sans-serif;display:inline-block;font-size:9.5px;letter-spacing:1px;padding:5px 11px;border-radius:6px;margin-bottom:6px;}
+  .fo-role-row{display:flex;gap:4px;justify-content:center;}
+  .fo-role-btn{font-family:'Oswald',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.5px;padding:3px 7px;border-radius:4px;cursor:pointer;}
+  @keyframes fo-livepulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+  .fo-live-dot{animation:fo-livepulse 1.1s ease-in-out infinite;width:6px;height:6px;border-radius:50%;background:var(--red);}
 </style>
 </head>
 <body>
@@ -458,13 +541,447 @@ function projectedFantasyPoints(f){
     + tdDefBonus;
 }
 
+/* =========================================================================
+   Face-Off Card Draft — the other mock draft mode. Per-event, 2-team,
+   head-to-head: draft any fighter off tomorrow's real card, in fight order.
+   Ported from the Main.dc.html mockup (Claude Design artifact) into plain
+   JS/HTML matching this file's conventions — that artifact format only
+   runs inside Claude's own canvas, not here. Standard-mode role multiplier
+   is 2.00x (STRIKER/GRAPPLER) — this is a separate, per-event format from
+   the season-long Divisional Dynasty draft above, which uses 1.5x baked
+   into the fighters table instead of a pick-time role.
+   ========================================================================= */
+const FO_FIGHTERS = [
+  { id:"otari-tanzilovi", name:"Otari Tanzilovi", div:"Bantamweight", proj:21.5, wins:10, losses:2, sigStrAvg:58.0, tdAvg:1.2, kdAvg:0.3, ctrlAvg:90, subAttAvg:0.2, tdDefAvg:0.68, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/TANZILOVI_OTARI_06-20.png?itok=V2E-c9jE" },
+  { id:"melissa-gatto", name:"Melissa Gatto", div:"Women's Bantamweight", proj:20.3, wins:9, losses:3, sigStrAvg:31.5, tdAvg:1.8, kdAvg:0.1, ctrlAvg:144, subAttAvg:0.4, tdDefAvg:0.55, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/GATTO_MELISSA_04-04.png?itok=asrqp-zJ" },
+  { id:"brendan-allen", name:"Brendan Allen", div:"Middleweight", proj:18.5, wins:27, losses:7, sigStrAvg:55.0, tdAvg:2.1, kdAvg:0.2, ctrlAvg:288, subAttAvg:0.9, tdDefAvg:0.72, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/ALLEN_BRENDAN_06-06.png?itok=mXcOZvKs" },
+  { id:"ernesta-kareckaite", name:"Ernesta Kareckaitė", div:"Women's Flyweight", proj:17.1, wins:6, losses:2, sigStrAvg:89.0, tdAvg:0.4, kdAvg:0.2, ctrlAvg:48, subAttAvg:0.1, tdDefAvg:0.61, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-02/KARECKAITE_ERNESTA_02-28.png?itok=9-oSZvG3" },
+  { id:"loopy-godinez", name:"Loopy Godinez", div:"Women's Strawweight", proj:17.0, wins:14, losses:6, sigStrAvg:60.9, tdAvg:2.6, kdAvg:0.1, ctrlAvg:234, subAttAvg:0.6, tdDefAvg:0.58, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/GODINEZ_LOOPY_04-11.png?itok=lEd5QqLm" },
+  { id:"francisco-prado", name:"Francisco Prado", div:"Lightweight", proj:14.2, wins:12, losses:5, sigStrAvg:50.4, tdAvg:3.4, kdAvg:0.2, ctrlAvg:336, subAttAvg:0.3, tdDefAvg:0.64, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/PRADO_FRANCISCO_04-11.png?itok=EYhU3Rp7" },
+  { id:"julius-walker", name:"Julius Walker", div:"Light Heavyweight", proj:12.0, wins:7, losses:3, sigStrAvg:44.8, tdAvg:0.6, kdAvg:0.4, ctrlAvg:66, subAttAvg:0.1, tdDefAvg:0.70, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/WALKER_JULIUS_06-27.png?itok=XxGZTaIJ" },
+  { id:"christian-leroy-duncan", name:"Christian Leroy Duncan", div:"Middleweight", proj:11.4, wins:15, losses:2, sigStrAvg:44.0, tdAvg:0.3, kdAvg:0.5, ctrlAvg:36, subAttAvg:0.0, tdDefAvg:0.59, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/DUNCAN_CHRISTIAN_LEROY_07-18.png?itok=kI5AHuWF" },
+  { id:"allen-frye-jr", name:"Allen Frye Jr.", div:"Heavyweight", proj:11.2, wins:6, losses:1, sigStrAvg:33.0, tdAvg:0.2, kdAvg:0.6, ctrlAvg:24, subAttAvg:0.0, tdDefAvg:0.52, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-12/FRYE_ALLEN_12-13.png?itok=Q_khC32T" },
+  { id:"andre-fili", name:"Andre Fili", div:"Featherweight", proj:10.1, wins:25, losses:14, sigStrAvg:32.9, tdAvg:0.5, kdAvg:0.3, ctrlAvg:54, subAttAvg:0.1, tdDefAvg:0.66, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/FILI_ANDRE_06-20.png?itok=cIwJBZaQ" },
+  { id:"ketlen-souza", name:"Ketlen Souza", div:"Women's Strawweight", proj:9.7, wins:17, losses:6, sigStrAvg:48.9, tdAvg:1.4, kdAvg:0.2, ctrlAvg:120, subAttAvg:0.3, tdDefAvg:0.57, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/SOUZA_KETLEN_06-06.png?itok=CMCV5MWD" },
+  { id:"rj-harris", name:"RJ Harris", div:"Heavyweight", proj:9.7, wins:6, losses:0, sigStrAvg:15.0, tdAvg:0.3, kdAvg:0.5, ctrlAvg:30, subAttAvg:0.0, tdDefAvg:0.48, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/HARRIS_RJ_07-18.png?itok=bTTS0s6k" },
+  { id:"jai-herbert", name:"Jai Herbert", div:"Lightweight", proj:9.4, wins:14, losses:6, sigStrAvg:30.5, tdAvg:0.7, kdAvg:0.4, ctrlAvg:78, subAttAvg:0.2, tdDefAvg:0.62, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/HERBERT_JAI_04-18.png?itok=c0gEpBtA" },
+  { id:"gerald-meerschaert", name:"Gerald Meerschaert", div:"Light Heavyweight", proj:9.3, wins:37, losses:22, sigStrAvg:26.1, tdAvg:1.6, kdAvg:0.2, ctrlAvg:168, subAttAvg:2.1, tdDefAvg:0.60, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/MEERSCHAERT_GERALD_05-02.png?itok=klCny6bI" },
+  { id:"matheus-camilo", name:"Matheus Camilo", div:"Lightweight", proj:8.7, wins:11, losses:3, sigStrAvg:9.4, tdAvg:2.4, kdAvg:0.1, ctrlAvg:252, subAttAvg:0.8, tdDefAvg:0.55, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/CAMILO_MATHEUS_06-27.png?itok=b4Q0urPf" },
+  { id:"kai-kamaka-iii", name:"Kai Kamaka III", div:"Featherweight", proj:8.5, wins:18, losses:8, sigStrAvg:72.2, tdAvg:0.9, kdAvg:0.3, ctrlAvg:96, subAttAvg:0.2, tdDefAvg:0.63, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/KAMAKA_KAI_07-11.png?itok=WhRqM7-a" },
+  { id:"malcolm-wellmaker", name:"Malcolm Wellmaker", div:"Bantamweight", proj:7.7, wins:10, losses:2, sigStrAvg:31.7, tdAvg:1.1, kdAvg:0.2, ctrlAvg:108, subAttAvg:0.3, tdDefAvg:0.59, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/WELLMAKER_MALCOM_05-16.png?itok=Csyg4dNZ" },
+  { id:"niko-price", name:"Niko Price", div:"Welterweight", proj:7.6, wins:16, losses:11, sigStrAvg:37.9, tdAvg:0.4, kdAvg:0.4, ctrlAvg:42, subAttAvg:0.1, tdDefAvg:0.54, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/PRICE_NIKO_03-28.png?itok=c4sQathc" },
+  { id:"felipe-franco", name:"Felipe Franco", div:"Light Heavyweight", proj:7.3, wins:11, losses:2, sigStrAvg:27.0, tdAvg:1.3, kdAvg:0.3, ctrlAvg:132, subAttAvg:0.4, tdDefAvg:0.61, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/FRANCO_FELIPE_03-21.png?itok=WUrHMJqw" },
+  { id:"brendson-ribeiro", name:"Brendson Ribeiro", div:"Light Heavyweight", proj:6.7, wins:17, losses:11, sigStrAvg:18.1, tdAvg:1.9, kdAvg:0.2, ctrlAvg:186, subAttAvg:0.7, tdDefAvg:0.58, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/RIBEIRO_BRENDSON_07-25.png?itok=3s0NZSMh" },
+  { id:"ismael-bonfim", name:"Ismael Bonfim", div:"Lightweight", proj:6.6, wins:20, losses:7, sigStrAvg:23.8, tdAvg:2.8, kdAvg:0.1, ctrlAvg:270, subAttAvg:0.5, tdDefAvg:0.67, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/BONFIM_ISMAEL_07-25.png?itok=oBgE67iG" },
+  { id:"daria-zhelezniakova", name:"Daria Zhelezniakova", div:"Women's Bantamweight", proj:6.2, wins:10, losses:3, sigStrAvg:36.3, tdAvg:1.0, kdAvg:0.2, ctrlAvg:102, subAttAvg:0.3, tdDefAvg:0.56, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/ZHELEZNIAKOVA_DARIA_04-18.png?itok=oZ7sT-sw" },
+  { id:"alice-pereira", name:"Alice Pereira", div:"Women's Bantamweight", proj:5.4, wins:7, losses:1, sigStrAvg:34.5, tdAvg:0.5, kdAvg:0.3, ctrlAvg:54, subAttAvg:0.1, tdDefAvg:0.60, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/PEREIRA_ALICE_04-04.png?itok=vuVTbCtw" },
+  { id:"leon-shahbazyan", name:"Leon Shahbazyan", div:"Welterweight", proj:5.0, wins:12, losses:5, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/SHAHBAZYAN_LEON_06-20.png?itok=OVKQdyWH" },
+];
+const FO_FIGHTERS_BY_ID = Object.fromEntries(FO_FIGHTERS.map((f) => [f.id, f]));
+const FO_DIV_LABEL = {
+  "Heavyweight":"HEAVYWEIGHT BOUT","Light Heavyweight":"LIGHT HEAVYWEIGHT BOUT","Middleweight":"MIDDLEWEIGHT BOUT",
+  "Welterweight":"WELTERWEIGHT BOUT","Lightweight":"LIGHTWEIGHT BOUT","Featherweight":"FEATHERWEIGHT BOUT",
+  "Bantamweight":"BANTAMWEIGHT BOUT","Women's Strawweight":"WOMEN'S STRAWWEIGHT BOUT",
+  "Women's Flyweight":"WOMEN'S FLYWEIGHT BOUT","Women's Bantamweight":"WOMEN'S BANTAMWEIGHT BOUT",
+};
+// Real card order, top to bottom, for UFC Fight Night: Allen vs Duncan (Sat Oct 10, 2026).
+const FO_CARD_ORDER = [
+  { a:"brendan-allen", b:"christian-leroy-duncan", billing:"MAIN EVENT", section:"MAIN CARD" },
+  { a:"matheus-camilo", b:"jai-herbert", billing:"CO-MAIN EVENT" },
+  { a:"loopy-godinez", b:"ketlen-souza" },
+  { a:"andre-fili", b:"kai-kamaka-iii" },
+  { a:"julius-walker", b:"gerald-meerschaert" },
+  { a:"malcolm-wellmaker", b:"otari-tanzilovi" },
+  { a:"francisco-prado", b:"ismael-bonfim", section:"PRELIMINARY CARD" },
+  { a:"niko-price", b:"leon-shahbazyan" },
+  { a:"felipe-franco", b:"brendson-ribeiro" },
+  { a:"allen-frye-jr", b:"rj-harris" },
+  { a:"alice-pereira", b:"daria-zhelezniakova" },
+  { a:"ernesta-kareckaite", b:"melissa-gatto" },
+];
+const FO_TIMER_CHOICES = [15, 30, 45, 60, 90, 120];
+const FO_MIN_ROSTER_SIZE = 4;
+const FO_MAX_ROSTER_SIZE_CAP = 9;
+// Standard mode: a role picked per-fighter (your own roster only) scales that fighter's points.
+// This is the real build decision for Face-Off scoring — distinct from Dynasty's 1.5x.
+const FO_ROLE_MULT = { striker: 2.0, grappler: 2.0, finisher: 2.0 };
+const FO_ROLES = [{ id:"striker", label:"STR" }, { id:"grappler", label:"GRP" }, { id:"finisher", label:"FIN" }];
+const FO_TEAM_NAME_MAX = 24;
+const FO_DEFAULT_AVATAR = "data:image/svg+xml;utf8," + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1C1C20"/><circle cx="50" cy="38" r="18" fill="#2A2A30"/><path d="M14 92c4-24 24-36 36-36s32 12 36 36" fill="#2A2A30"/></svg>'
+);
+function foMakeAvatarSwatch(color){
+  return "data:image/svg+xml;utf8," + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="${color}"/><circle cx="50" cy="38" r="18" fill="rgba(0,0,0,0.28)"/><path d="M14 92c4-24 24-36 36-36s32 12 36 36" fill="rgba(0,0,0,0.28)"/></svg>`
+  );
+}
+const FO_AVATAR_SWATCHES = ["#D4AF37", "#E2283C", "#1F6B3A", "#5EC8E8", "#A855F7", "#E8742A"].map(foMakeAvatarSwatch);
+// Simple bot: best remaining projection with a little variance, so it's not the same draft twice.
+function foBotChoose(available){
+  const sorted = [...available].sort((a, b) => b.proj - a.proj);
+  const pool = sorted.slice(0, Math.min(3, sorted.length));
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// Mutable Face-Off draft state. null until the user picks this mode.
+let fo = null;
+function initFaceoff(){
+  fo = {
+    draftedBy: {},
+    settingsOpen: false,
+    pickTimerSeconds: 45,
+    rosterSize: 6,
+    gameMode: "standard", // "standard" (role multipliers) or "regular" (flat scoring)
+    teamNames: { A: "Cage Rattlers", B: "Knockout Kings" },
+    teamAvatars: { A: null, B: null },
+    editingTeam: null,
+    editNameDraft: "",
+    roles: {},
+  };
+}
+
+function foDraftFighter(id){
+  const { draftedBy, rosterSize } = fo;
+  if (draftedBy[id]) return;
+  const rosterACount = Object.values(draftedBy).filter((t) => t === "A").length;
+  if (rosterACount >= rosterSize) return;
+  const nextDraftedBy = { ...draftedBy, [id]: "A" };
+  const rosterBCount = Object.values(nextDraftedBy).filter((t) => t === "B").length;
+  if (rosterBCount < rosterSize) {
+    const available = FO_FIGHTERS.filter((f) => !nextDraftedBy[f.id]);
+    if (available.length) {
+      const pick = foBotChoose(available);
+      nextDraftedBy[pick.id] = "B";
+    }
+  }
+  fo.draftedBy = nextDraftedBy;
+  renderFaceoff();
+}
+function foSetRole(id, role){
+  if (fo.draftedBy[id] !== "A") return;
+  fo.roles[id] = fo.roles[id] === role ? null : role;
+  renderFaceoff();
+}
+function foToggleEdit(team){
+  fo.editingTeam = fo.editingTeam === team ? null : team;
+  fo.editNameDraft = fo.editingTeam ? fo.teamNames[fo.editingTeam] : "";
+  renderFaceoff();
+}
+function foCloseEdit(){ fo.editingTeam = null; renderFaceoff(); }
+function foFighterRoleMult(f, drafted, role){
+  return (fo.gameMode === "standard" && drafted === "A" && role) ? (FO_ROLE_MULT[role] || 1) : 1;
+}
+
+/* Builds the per-fighter display data for one bout-card half. */
+function foFighterCardData(f){
+  const drafted = fo.draftedBy[f.id];
+  const divColor = DIVISION_COLOR[f.div] || "var(--gold)";
+  let tagBg = "rgba(255,255,255,0.03)", tagColor = "var(--text-dim)", tagText = "DRAFT →", edgeColor = "var(--border)";
+  if (drafted === "A") { tagBg = "rgba(212,175,55,0.14)"; tagColor = "var(--gold)"; tagText = esc(fo.teamNames.A.toUpperCase()); edgeColor = "var(--gold)"; }
+  else if (drafted === "B") { tagBg = "rgba(226,40,60,0.12)"; tagColor = "var(--red)"; tagText = esc(fo.teamNames.B.toUpperCase()); edgeColor = "var(--red)"; }
+
+  const role = fo.roles[f.id] || null;
+  const mult = foFighterRoleMult(f, drafted, role);
+  const projValue = (f.proj * mult).toFixed(2);
+
+  const showRolePicker = fo.gameMode === "standard" && drafted === "A";
+  const roleButtonsHtml = showRolePicker ? FO_ROLES.map((r) => {
+    const active = role === r.id;
+    return `<button type="button" class="fo-role-btn" data-fo-role-btn data-fighter-id="${esc(f.id)}" data-role="${r.id}" style="background:${active ? "rgba(212,175,55,0.16)" : "transparent"};border:1px solid ${active ? "var(--gold)" : "var(--border)"};color:${active ? "var(--gold)" : "var(--text-dim)"};">${r.label}</button>`;
+  }).join("") : "";
+
+  const statGrid = [
+    { l: "SIG STR", v: fmtNum(f.sigStrAvg, 1) },
+    { l: "TD", v: fmtNum(f.tdAvg, 1) },
+    { l: "KD", v: fmtNum(f.kdAvg, 1) },
+    { l: "CTRL", v: fmtCtrl(f.ctrlAvg) },
+    { l: "SUB ATT", v: fmtNum(f.subAttAvg, 1) },
+    { l: "TD DEF", v: fmtPct(f.tdDefAvg) },
+  ];
+
+  return {
+    f, drafted, divColor, tagBg, tagColor, tagText, edgeColor, projValue, showRolePicker, roleButtonsHtml, statGrid,
+  };
+}
+
+function foRenderFighterHalf(d){
+  return `
+    <div class="fo-half" data-fo-pick data-fighter-id="${esc(d.f.id)}" role="button" tabindex="0" style="text-align:center;">
+      <div class="fo-fighter-av" style="border:3px solid ${d.divColor};clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);">
+        <img src="${esc(d.f.photo)}" alt="">
+      </div>
+      <div class="fo-fighter-name">${esc(d.f.name)}</div>
+      <div class="fo-fighter-div" style="color:${d.divColor};">${esc(DIV_SHORT[d.f.div] || "")}</div>
+      <div class="fo-fighter-record">${esc(fmtRecord(d.f))}</div>
+      <div class="fo-stat-grid">
+        ${d.statGrid.map((s) => `<div style="display:flex;justify-content:space-between;gap:6px;min-width:62px;"><span class="l">${s.l}</span><span class="v">${s.v}</span></div>`).join("")}
+      </div>
+      <div class="fo-proj">PROJ ${d.projValue}</div>
+      <div class="fo-tag" style="background:${d.tagBg};color:${d.tagColor};border:1px solid ${d.tagColor};">${d.tagText}</div>
+      ${d.showRolePicker ? `<div class="fo-role-row">${d.roleButtonsHtml}</div>` : ""}
+    </div>
+  `;
+}
+
+function renderModePick(){
+  content.innerHTML = `
+    <div class="mode-wrap">
+      <a class="back-link" id="modeBackLink">&larr; Back</a>
+      <div class="hero" style="margin-top:0;">
+        <div class="wordmark" style="font-size:clamp(34px,7vw,56px);">Pick your draft</div>
+        <div class="tagline" style="font-size:clamp(11px,2vw,14px);margin-bottom:0;">Both are free to try, no sign-up needed</div>
+      </div>
+      <div class="mode-grid">
+        <button type="button" class="mode-card gold" id="pickFaceoffBtn">
+          <div class="mc-kicker">PER-EVENT &middot; 2 TEAMS</div>
+          <div class="mc-title">Face-Off Draft</div>
+          <div class="mc-desc">Head-to-head against a bot for tomorrow's actual card — UFC Fight Night: Allen vs Duncan. Draft any fighter, in real fight order, and roll role multipliers for bonus points.</div>
+          <div class="mc-meta">12 BOUTS &middot; 24 FIGHTERS &middot; ONE CARD</div>
+        </button>
+        <button type="button" class="mode-card red" id="pickDynastyBtn">
+          <div class="mc-kicker">SEASON-LONG &middot; YOUR LEAGUE</div>
+          <div class="mc-title">Divisional Dynasty Draft</div>
+          <div class="mc-desc">Build a 50-fighter roster across every division with a full snake draft — 10 active starters plus a 40-fighter cageside bench, scored all season.</div>
+          <div class="mc-meta">4&ndash;12 TEAMS &middot; 50 FIGHTERS EACH</div>
+        </button>
+      </div>
+    </div>
+  `;
+  document.getElementById("modeBackLink").addEventListener("click", () => { screen = "landing"; render(); });
+  document.getElementById("pickFaceoffBtn").addEventListener("click", () => { initFaceoff(); screen = "faceoff"; render(); });
+  document.getElementById("pickDynastyBtn").addEventListener("click", () => { screen = "setup"; render(); });
+}
+
+function renderFaceoff(){
+  const { draftedBy, settingsOpen, pickTimerSeconds, rosterSize, gameMode, teamNames, teamAvatars, editingTeam, roles } = fo;
+
+  const rosterA = [], rosterB = [];
+  let totalA = 0, totalB = 0;
+  FO_FIGHTERS.forEach((f) => {
+    const team = draftedBy[f.id];
+    if (team === "A") { rosterA.push(f); const mult = foFighterRoleMult(f, "A", roles[f.id]); totalA += f.proj * mult; }
+    else if (team === "B") { rosterB.push(f); totalB += f.proj; }
+  });
+  const draftedCount = Object.keys(draftedBy).length;
+  const boutCount = FO_CARD_ORDER.length;
+  const maxRosterSize = Math.min(FO_MAX_ROSTER_SIZE_CAP, boutCount);
+
+  const settingsHtml = !settingsOpen ? "" : `
+    <div class="fo-settings">
+      <div class="fo-settings-col">
+        <div class="fo-settings-label">PICK TIMER</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${FO_TIMER_CHOICES.map((sec) => {
+            const active = sec === pickTimerSeconds;
+            return `<button type="button" class="fo-pill" data-fo-timer="${sec}"><div style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;padding:8px 14px;border-radius:7px;background:${active ? "rgba(212,175,55,0.16)" : "transparent"};border:1.5px solid ${active ? "var(--gold)" : "var(--border)"};color:${active ? "var(--gold)" : "var(--text-dim)"};">${fmtClock(sec)}</div></button>`;
+          }).join("")}
+        </div>
+      </div>
+      <div style="width:1px;background:var(--border-2);"></div>
+      <div class="fo-settings-col">
+        <div class="fo-settings-label">FIGHTERS PER TEAM</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${Array.from({ length: maxRosterSize - FO_MIN_ROSTER_SIZE + 1 }, (_, i) => FO_MIN_ROSTER_SIZE + i).map((n) => {
+            const active = n === rosterSize;
+            return `<button type="button" class="fo-pill" data-fo-roster-size="${n}"><div style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:7px;background:${active ? "rgba(212,175,55,0.16)" : "transparent"};border:1.5px solid ${active ? "var(--gold)" : "var(--border)"};color:${active ? "var(--gold)" : "var(--text-dim)"};">${n}</div></button>`;
+          }).join("")}
+        </div>
+        <div style="font-size:11px;color:var(--text-faint);margin-top:10px;max-width:380px;">Pick 4–${FO_MAX_ROSTER_SIZE_CAP} fighters per team. This card has ${boutCount} bouts, so up to ${maxRosterSize} each is available.</div>
+      </div>
+      <div style="width:100%;height:1px;background:var(--border-2);"></div>
+      <div class="fo-settings-col" style="width:100%;">
+        <div class="fo-settings-label">SCORING MODE</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          ${[
+            { id: "regular", label: "REGULAR", desc: "Flat point accumulation. +10 bonus for a KO/TKO or submission win." },
+            { id: "standard", label: "STANDARD", desc: "Each pick also gets a role — Grappler, Striker, or Finisher. Any role you assign boosts that fighter's points 2x." },
+          ].map((m) => {
+            const active = m.id === gameMode;
+            return `<button type="button" class="fo-pill" data-fo-mode="${m.id}"><div class="fo-mode-opt" style="background:${active ? "rgba(212,175,55,0.14)" : "var(--panel-2)"};border:1.5px solid ${active ? "var(--gold)" : "var(--border)"};"><div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;"><span style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:${active ? "var(--gold)" : "var(--text)"};">${m.label}</span></div><div style="font-size:10.5px;color:var(--text-faint);text-align:left;line-height:1.35;">${m.desc}</div></div></button>`;
+          }).join("")}
+        </div>
+      </div>
+    </div>
+  `;
+
+  const editorHtml = !editingTeam ? "" : `
+    <div class="fo-editor">
+      <div class="fo-settings-label">EDIT ${esc(teamNames[editingTeam].toUpperCase())}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start;margin-top:14px;">
+        <div>
+          <div style="font-size:9.5px;letter-spacing:1.5px;color:var(--text-faint);margin-bottom:8px;">TEAM NAME</div>
+          <input type="text" class="field-input" id="foTeamNameInput" value="${esc(teamNames[editingTeam])}" maxlength="${FO_TEAM_NAME_MAX}" style="width:240px;">
+        </div>
+        <div>
+          <div style="font-size:9.5px;letter-spacing:1.5px;color:var(--text-faint);margin-bottom:8px;">TEAM PHOTO</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            ${FO_AVATAR_SWATCHES.map((url) => {
+              const active = teamAvatars[editingTeam] === url;
+              return `<button type="button" class="fo-swatch" data-fo-avatar="${esc(url)}"><div style="width:42px;height:42px;clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);overflow:hidden;border:2px solid ${active ? "var(--gold)" : "var(--border)"};"><img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover;"></div></button>`;
+            }).join("")}
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:18px;">
+        <button type="button" class="fo-pill" id="foCloseEditBtn"><div style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;padding:9px 20px;border-radius:7px;background:rgba(212,175,55,0.14);border:1.5px solid var(--gold);color:var(--gold);display:inline-block;">DONE</div></button>
+      </div>
+    </div>
+  `;
+
+  const teamARosterHtml = rosterA.map((f) => `<div class="fo-mini" style="border-color:${DIVISION_COLOR[f.div] || "var(--border)"};" title="${esc(f.name)}"><img src="${esc(f.photo)}"></div>`).join("");
+  const teamBRosterHtml = rosterB.map((f) => `<div class="fo-mini" style="border-color:${DIVISION_COLOR[f.div] || "var(--border)"};" title="${esc(f.name)}"><img src="${esc(f.photo)}"></div>`).join("");
+
+  const boutsHtml = FO_CARD_ORDER.map((entry) => {
+    const f1 = FO_FIGHTERS_BY_ID[entry.a], f2 = FO_FIGHTERS_BY_ID[entry.b];
+    const d1 = foFighterCardData(f1), d2 = foFighterCardData(f2);
+    let billingText, billingColor, billingSize;
+    if (entry.billing === "MAIN EVENT") { billingText = "MAIN EVENT"; billingColor = "var(--gold)"; billingSize = "13px"; }
+    else if (entry.billing === "CO-MAIN EVENT") { billingText = "CO-MAIN EVENT"; billingColor = "var(--gold)"; billingSize = "12px"; }
+    else { billingText = FO_DIV_LABEL[f1.div] || "BOUT"; billingColor = "var(--text-faint)"; billingSize = "10px"; }
+    const sectionHtml = !entry.section ? "" : `<div class="fo-section-div"><div class="ln"></div><div class="lbl">${esc(entry.section)}</div><div class="ln"></div></div>`;
+    return `
+      ${sectionHtml}
+      <div class="fo-bout" style="border-top:3px solid ${d1.edgeColor};border-left:3px solid ${d1.edgeColor};border-bottom:3px solid ${d2.edgeColor};border-right:3px solid ${d2.edgeColor};">
+        <div class="fo-bout-billing" style="font-size:${billingSize};letter-spacing:2px;color:${billingColor};">${billingText}</div>
+        <div class="fo-bout-row">
+          ${foRenderFighterHalf(d1)}
+          <div class="fo-bout-vs-line"></div>
+          <div class="fo-bout-vs-badge">VS</div>
+          ${foRenderFighterHalf(d2)}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  content.innerHTML = `
+    <a class="back-link" id="foBackLink">&larr; Back to mode select</a>
+    <div class="fo-topbar">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="h-font" style="font-size:20px;font-weight:700;letter-spacing:1px;color:var(--gold);">COMBAT</div>
+        <div class="vrule"></div>
+        <div class="h-font" style="font-size:13px;letter-spacing:2px;color:var(--text-faint);">FACE-OFF CARD DRAFT</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:18px;">
+        <div style="text-align:right;">
+          <div class="h-font" style="font-size:11px;letter-spacing:1.5px;color:var(--gold);">UFC FIGHT NIGHT: ALLEN VS DUNCAN</div>
+          <div style="font-size:12px;color:var(--text-faint);margin-top:2px;">SAT, OCT 10 &middot; APEX, LAS VEGAS</div>
+        </div>
+        <button type="button" class="fo-gear ${settingsOpen ? "active" : ""}" id="foSettingsBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${settingsOpen ? "var(--gold)" : "var(--text-dim)"}" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
+          <span class="h-font" style="font-size:10px;letter-spacing:1px;color:${settingsOpen ? "var(--gold)" : "var(--text-dim)"};">LEAGUE SETTINGS</span>
+        </button>
+      </div>
+    </div>
+
+    ${settingsHtml}
+
+    <div class="fo-head">
+      <div class="fo-head-inner">
+        <div class="fo-team a">
+          <div class="fo-avatar-wrap">
+            <div class="fo-avatar octagon"><img src="${esc(teamAvatars.A || FO_DEFAULT_AVATAR)}" alt=""></div>
+            <button type="button" class="fo-pencil" id="foEditABtn" title="Edit team name &amp; photo">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4Z"></path></svg>
+            </button>
+          </div>
+          <div style="min-width:0;">
+            <div class="fo-name">${esc(teamNames.A)}</div>
+            <div class="fo-record">${rosterA.length}/${rosterSize} PICKED</div>
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;">
+              <div class="fo-total" style="color:var(--gold);">${totalA.toFixed(2)}</div>
+              <div class="fo-total-lbl">PROJECTED PTS</div>
+            </div>
+            <div class="fo-roster-strip">${teamARosterHtml}</div>
+          </div>
+        </div>
+        <div class="fo-vs"><div class="fo-vs-badge">VS</div></div>
+        <div class="fo-team b">
+          <div class="fo-avatar-wrap">
+            <div class="fo-avatar octagon"><img src="${esc(teamAvatars.B || FO_DEFAULT_AVATAR)}" alt=""></div>
+            <button type="button" class="fo-pencil" id="foEditBBtn" title="Edit team name &amp; photo">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4Z"></path></svg>
+            </button>
+          </div>
+          <div style="min-width:0;">
+            <div class="fo-name">${esc(teamNames.B)}</div>
+            <div class="fo-record">${rosterB.length}/${rosterSize} PICKED &middot; BOT</div>
+            <div style="display:flex;align-items:baseline;justify-content:flex-end;gap:10px;margin-bottom:4px;">
+              <div class="fo-total-lbl">PROJECTED PTS</div>
+              <div class="fo-total" style="color:var(--red);">${totalB.toFixed(2)}</div>
+            </div>
+            <div class="fo-roster-strip b">${teamBRosterHtml}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    ${editorHtml}
+
+    <div class="fo-rule-row">
+      <div class="fo-rule-chip">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"></path></svg>
+        WIN BY KO/TKO OR SUBMISSION &middot; +10 PTS
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span class="h-font" style="font-size:11px;letter-spacing:1px;color:var(--text-dim);">YOU'RE DRAFTING ${esc(teamNames.A.toUpperCase())} &middot; BOT DRAFTS ${esc(teamNames.B.toUpperCase())}</span>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div class="h-font" style="font-size:12px;letter-spacing:2px;color:var(--text-faint);">FULL CARD &mdash; IN FIGHT ORDER</div>
+      <div style="font-size:12px;color:var(--text-faint);">${draftedCount} OF ${FO_FIGHTERS.length} DRAFTED</div>
+    </div>
+    <div style="font-size:10.5px;letter-spacing:0.3px;color:var(--text-faint-2);margin-bottom:14px;">${gameMode === "standard" ? "COUNTS: ROLE-WEIGHTED STRIKES / TAKEDOWNS / FINISH BONUS" : "COUNTS: STRIKES &middot; TAKEDOWNS &middot; CONTROL &middot; SUB ATT &middot; KO/SUB WIN +10"}</div>
+
+    <div class="fo-bouts">${boutsHtml}</div>
+  `;
+
+  wireFaceoff();
+}
+
+function wireFaceoff(){
+  document.getElementById("foBackLink").addEventListener("click", () => { screen = "modePick"; render(); });
+  document.getElementById("foSettingsBtn").addEventListener("click", () => { fo.settingsOpen = !fo.settingsOpen; renderFaceoff(); });
+  document.getElementById("foEditABtn").addEventListener("click", () => foToggleEdit("A"));
+  document.getElementById("foEditBBtn").addEventListener("click", () => foToggleEdit("B"));
+
+  document.querySelectorAll("[data-fo-timer]").forEach((btn) => {
+    btn.addEventListener("click", () => { fo.pickTimerSeconds = Number(btn.dataset.foTimer); renderFaceoff(); });
+  });
+  document.querySelectorAll("[data-fo-roster-size]").forEach((btn) => {
+    btn.addEventListener("click", () => { fo.rosterSize = Number(btn.dataset.foRosterSize); renderFaceoff(); });
+  });
+  document.querySelectorAll("[data-fo-mode]").forEach((btn) => {
+    btn.addEventListener("click", () => { fo.gameMode = btn.dataset.foMode; renderFaceoff(); });
+  });
+
+  const nameInput = document.getElementById("foTeamNameInput");
+  if (nameInput) {
+    nameInput.addEventListener("input", () => {
+      if (fo.editingTeam) fo.teamNames[fo.editingTeam] = nameInput.value.slice(0, FO_TEAM_NAME_MAX);
+    });
+  }
+  document.querySelectorAll("[data-fo-avatar]").forEach((btn) => {
+    btn.addEventListener("click", () => { if (fo.editingTeam) fo.teamAvatars[fo.editingTeam] = btn.dataset.foAvatar; renderFaceoff(); });
+  });
+  const closeEditBtn = document.getElementById("foCloseEditBtn");
+  if (closeEditBtn) closeEditBtn.addEventListener("click", foCloseEdit);
+
+  document.querySelectorAll("[data-fo-pick]").forEach((btn) => {
+    btn.addEventListener("click", () => foDraftFighter(btn.dataset.fighterId));
+  });
+  document.querySelectorAll("[data-fo-role-btn]").forEach((btn) => {
+    btn.addEventListener("click", (e) => { e.stopPropagation(); foSetRole(btn.dataset.fighterId, btn.dataset.role); });
+  });
+}
+
 let fighters = [];
 let fightersById = {};
 let fighterPoolError = null;
 let projectedFPById = {};  // fighter id -> projected fantasy points (per fight)
 let overallRankById = {};  // fighter id -> 1-based overall rank among ALL fighters by projected fantasy points (1 = best)
 
-let screen = "landing"; // landing | setup | draft | board | complete
+let screen = "landing"; // landing | modePick | setup | draft | board | complete | faceoff
 let teamCount = 8;
 let userTeamName = "";
 let userTeamPhotoUrl = null;
@@ -591,7 +1108,7 @@ function renderLanding(){
       <div class="welcome">Jump into a live draft right now — no sign-up needed.</div>
     </div>
   `;
-  document.getElementById("startCtaBtn").addEventListener("click", () => { screen = "setup"; render(); });
+  document.getElementById("startCtaBtn").addEventListener("click", () => { screen = "modePick"; render(); });
 }
 
 /* ---------------- Setup ---------------- */
@@ -1429,6 +1946,8 @@ function renderComplete(){
 /* ---------------- Router ---------------- */
 function render(){
   if (screen === "landing") return renderLanding();
+  if (screen === "modePick") return renderModePick();
+  if (screen === "faceoff") return renderFaceoff();
   if (screen === "setup") return renderSetup();
   if (screen === "draft") return renderDraft();
   if (screen === "board") return renderBoard();
