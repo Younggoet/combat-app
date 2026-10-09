@@ -326,14 +326,24 @@
   .fo-settings-col .fo-settings-label{font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:12px;}
   .fo-pill{all:unset;cursor:pointer;}
   .fo-mode-opt{padding:12px 16px;border-radius:9px;min-width:150px;}
-  .fo-head{position:relative;margin-bottom:22px;border-radius:var(--r-lg);background:var(--panel);border:var(--edge);box-shadow:var(--shadow-lg);overflow:hidden;}
-  .fo-head-inner{display:flex;align-items:center;min-height:360px;}
-  @media (max-width:760px){ .fo-head-inner{flex-direction:column;min-height:0;} }
-  .fo-team{flex:1;display:flex;align-items:center;gap:24px;padding:36px 40px;min-width:0;}
+  /* True octagon frame — a bold border split cleanly gold (team A side) /
+     red (team B side) down the middle, not a diagonal gradient bleed. */
+  .fo-head{position:relative;margin-bottom:22px;padding:4px;background:linear-gradient(90deg, var(--gold) 50%, var(--red) 50%);clip-path:polygon(120px 0, calc(100% - 120px) 0, 100% 120px, 100% calc(100% - 120px), calc(100% - 120px) 100%, 120px 100%, 0 calc(100% - 120px), 0 120px);box-shadow:var(--shadow-lg);}
+  .fo-head-inner{display:flex;align-items:center;min-height:360px;background:var(--panel);clip-path:polygon(117px 0, calc(100% - 117px) 0, 100% 117px, 100% calc(100% - 117px), calc(100% - 117px) 100%, 117px 100%, 0 calc(100% - 117px), 0 117px);}
+  @media (max-width:760px){
+    .fo-head{padding:3px;clip-path:polygon(32px 0, calc(100% - 32px) 0, 100% 32px, 100% calc(100% - 32px), calc(100% - 32px) 100%, 32px 100%, 0 calc(100% - 32px), 0 32px);}
+    .fo-head-inner{flex-direction:column;min-height:0;clip-path:polygon(30px 0, calc(100% - 30px) 0, 100% 30px, 100% calc(100% - 30px), calc(100% - 30px) 100%, 30px 100%, 0 calc(100% - 30px), 0 30px);}
+  }
+  .fo-team{flex:1;display:flex;align-items:center;gap:24px;padding:36px 44px;min-width:0;}
   .fo-team.b{flex-direction:row-reverse;text-align:right;}
   @media (max-width:760px){ .fo-team, .fo-team.b{flex-direction:row;text-align:left;padding:24px;width:100%;} }
   .fo-avatar-wrap{position:relative;flex-shrink:0;}
-  .fo-avatar{width:120px;height:120px;background:#1C1C20;overflow:hidden;box-shadow:var(--shadow-sm);}
+  /* Gold/red radial-gradient octagon ring behind each team's avatar. */
+  .fo-avatar-ring{width:150px;height:150px;padding:5px;box-sizing:border-box;box-shadow:var(--shadow-sm);clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);}
+  .fo-avatar-ring.gold{background:radial-gradient(circle at 35% 28%, #F6DE8C 0%, var(--gold) 55%, #7A5A10 100%);}
+  .fo-avatar-ring.red{background:radial-gradient(circle at 35% 28%, #FF8A96 0%, var(--red) 55%, #7A1620 100%);}
+  @media (max-width:760px){ .fo-avatar-ring{width:100px;height:100px;} }
+  .fo-avatar{width:100%;height:100%;background:#1C1C20;overflow:hidden;clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);}
   .fo-avatar img{width:100%;height:100%;object-fit:cover;}
   .fo-pencil{all:unset;cursor:pointer;position:absolute;bottom:-2px;right:-2px;width:30px;height:30px;border-radius:50%;background:var(--panel);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;}
   .fo-team.b .fo-pencil{right:auto;left:-2px;border-color:var(--red);}
@@ -343,7 +353,7 @@
   .fo-total-lbl{font-size:12px;letter-spacing:1.5px;color:var(--text-dim);}
   .fo-roster-strip{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;}
   .fo-roster-strip.b{justify-content:flex-end;}
-  .fo-mini{width:34px;height:34px;background:#1C1C20;border:2px solid var(--border);box-sizing:border-box;flex-shrink:0;overflow:hidden;}
+  .fo-mini{width:34px;height:34px;background:#1C1C20;border:2px solid var(--border);box-sizing:border-box;flex-shrink:0;overflow:hidden;clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);}
   .fo-mini img{width:100%;height:100%;object-fit:cover;}
   .fo-vs{width:1px;background:var(--border-2);align-self:stretch;position:relative;flex-shrink:0;}
   .fo-vs-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);border:3px solid var(--red);border-radius:50%;width:58px;height:58px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;color:var(--red);}
@@ -356,15 +366,20 @@
   .fo-section-div{display:flex;align-items:center;gap:12px;margin:14px 0 2px;}
   .fo-section-div .ln{flex:1;height:1px;background:var(--border-2);}
   .fo-section-div .lbl{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:3px;color:var(--gold);}
-  .fo-bouts{display:flex;flex-direction:column;gap:16px;max-width:780px;margin:0 auto;}
-  .fo-bout{background:var(--panel);border-radius:var(--r-md);border:var(--edge);box-shadow:var(--shadow-sm);overflow:hidden;}
+  .fo-bouts{display:flex;flex-direction:column;gap:18px;max-width:780px;margin:0 auto;}
+  /* Octagon-cornered bout card — edge color split left/right by each
+     fighter's draft-state color (clean split, same gold/red-split idea as the header). */
+  .fo-bout{position:relative;padding:3px;box-shadow:var(--shadow-sm);clip-path:polygon(26px 0, calc(100% - 26px) 0, 100% 26px, 100% calc(100% - 26px), calc(100% - 26px) 100%, 26px 100%, 0 calc(100% - 26px), 0 26px);}
+  .fo-bout-inner{position:relative;background:var(--panel);clip-path:polygon(24px 0, calc(100% - 24px) 0, 100% 24px, 100% calc(100% - 24px), calc(100% - 24px) 100%, 24px 100%, 0 calc(100% - 24px), 0 24px);}
   .fo-bout-billing{text-align:center;padding-top:14px;font-family:'Oswald',sans-serif;letter-spacing:2px;}
   .fo-bout-row{display:flex;align-items:stretch;position:relative;padding:8px 0 18px;}
   .fo-bout-vs-line{position:absolute;top:0;left:50%;width:1px;height:100%;background:var(--border-2);pointer-events:none;}
   .fo-bout-vs-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);border:2px solid var(--border);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:9px;font-weight:700;color:var(--text-faint);pointer-events:none;}
   .fo-half{display:block;cursor:pointer;flex:1;box-sizing:border-box;padding:10px 16px;}
   .fo-half:hover{filter:brightness(1.1);}
-  .fo-fighter-av{width:84px;height:84px;margin:0 auto 10px;background:#1C1C20;box-sizing:border-box;overflow:hidden;}
+  /* Small octagon ring (division color) behind each bout-card fighter photo. */
+  .fo-fighter-ring{width:84px;height:84px;margin:0 auto 10px;padding:3px;box-sizing:border-box;clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);}
+  .fo-fighter-av{width:100%;height:100%;background:#0F0F12;box-sizing:border-box;overflow:hidden;clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);}
   .fo-fighter-av img{width:100%;height:100%;object-fit:cover;}
   .fo-fighter-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;line-height:1.15;margin-bottom:4px;}
   .fo-fighter-div{font-size:10.5px;margin-bottom:2px;}
@@ -552,30 +567,30 @@ function projectedFantasyPoints(f){
    into the fighters table instead of a pick-time role.
    ========================================================================= */
 const FO_FIGHTERS = [
-  { id:"otari-tanzilovi", name:"Otari Tanzilovi", div:"Bantamweight", proj:21.5, wins:10, losses:2, sigStrAvg:58.0, tdAvg:1.2, kdAvg:0.3, ctrlAvg:90, subAttAvg:0.2, tdDefAvg:0.68, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/TANZILOVI_OTARI_06-20.png?itok=V2E-c9jE" },
-  { id:"melissa-gatto", name:"Melissa Gatto", div:"Women's Bantamweight", proj:20.3, wins:9, losses:3, sigStrAvg:31.5, tdAvg:1.8, kdAvg:0.1, ctrlAvg:144, subAttAvg:0.4, tdDefAvg:0.55, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/GATTO_MELISSA_04-04.png?itok=asrqp-zJ" },
-  { id:"brendan-allen", name:"Brendan Allen", div:"Middleweight", proj:18.5, wins:27, losses:7, sigStrAvg:55.0, tdAvg:2.1, kdAvg:0.2, ctrlAvg:288, subAttAvg:0.9, tdDefAvg:0.72, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/ALLEN_BRENDAN_06-06.png?itok=mXcOZvKs" },
-  { id:"ernesta-kareckaite", name:"Ernesta Kareckaitė", div:"Women's Flyweight", proj:17.1, wins:6, losses:2, sigStrAvg:89.0, tdAvg:0.4, kdAvg:0.2, ctrlAvg:48, subAttAvg:0.1, tdDefAvg:0.61, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-02/KARECKAITE_ERNESTA_02-28.png?itok=9-oSZvG3" },
-  { id:"loopy-godinez", name:"Loopy Godinez", div:"Women's Strawweight", proj:17.0, wins:14, losses:6, sigStrAvg:60.9, tdAvg:2.6, kdAvg:0.1, ctrlAvg:234, subAttAvg:0.6, tdDefAvg:0.58, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/GODINEZ_LOOPY_04-11.png?itok=lEd5QqLm" },
-  { id:"francisco-prado", name:"Francisco Prado", div:"Lightweight", proj:14.2, wins:12, losses:5, sigStrAvg:50.4, tdAvg:3.4, kdAvg:0.2, ctrlAvg:336, subAttAvg:0.3, tdDefAvg:0.64, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/PRADO_FRANCISCO_04-11.png?itok=EYhU3Rp7" },
-  { id:"julius-walker", name:"Julius Walker", div:"Light Heavyweight", proj:12.0, wins:7, losses:3, sigStrAvg:44.8, tdAvg:0.6, kdAvg:0.4, ctrlAvg:66, subAttAvg:0.1, tdDefAvg:0.70, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/WALKER_JULIUS_06-27.png?itok=XxGZTaIJ" },
-  { id:"christian-leroy-duncan", name:"Christian Leroy Duncan", div:"Middleweight", proj:11.4, wins:15, losses:2, sigStrAvg:44.0, tdAvg:0.3, kdAvg:0.5, ctrlAvg:36, subAttAvg:0.0, tdDefAvg:0.59, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/DUNCAN_CHRISTIAN_LEROY_07-18.png?itok=kI5AHuWF" },
-  { id:"allen-frye-jr", name:"Allen Frye Jr.", div:"Heavyweight", proj:11.2, wins:6, losses:1, sigStrAvg:33.0, tdAvg:0.2, kdAvg:0.6, ctrlAvg:24, subAttAvg:0.0, tdDefAvg:0.52, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-12/FRYE_ALLEN_12-13.png?itok=Q_khC32T" },
-  { id:"andre-fili", name:"Andre Fili", div:"Featherweight", proj:10.1, wins:25, losses:14, sigStrAvg:32.9, tdAvg:0.5, kdAvg:0.3, ctrlAvg:54, subAttAvg:0.1, tdDefAvg:0.66, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/FILI_ANDRE_06-20.png?itok=cIwJBZaQ" },
-  { id:"ketlen-souza", name:"Ketlen Souza", div:"Women's Strawweight", proj:9.7, wins:17, losses:6, sigStrAvg:48.9, tdAvg:1.4, kdAvg:0.2, ctrlAvg:120, subAttAvg:0.3, tdDefAvg:0.57, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/SOUZA_KETLEN_06-06.png?itok=CMCV5MWD" },
-  { id:"rj-harris", name:"RJ Harris", div:"Heavyweight", proj:9.7, wins:6, losses:0, sigStrAvg:15.0, tdAvg:0.3, kdAvg:0.5, ctrlAvg:30, subAttAvg:0.0, tdDefAvg:0.48, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/HARRIS_RJ_07-18.png?itok=bTTS0s6k" },
-  { id:"jai-herbert", name:"Jai Herbert", div:"Lightweight", proj:9.4, wins:14, losses:6, sigStrAvg:30.5, tdAvg:0.7, kdAvg:0.4, ctrlAvg:78, subAttAvg:0.2, tdDefAvg:0.62, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/HERBERT_JAI_04-18.png?itok=c0gEpBtA" },
-  { id:"gerald-meerschaert", name:"Gerald Meerschaert", div:"Light Heavyweight", proj:9.3, wins:37, losses:22, sigStrAvg:26.1, tdAvg:1.6, kdAvg:0.2, ctrlAvg:168, subAttAvg:2.1, tdDefAvg:0.60, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/MEERSCHAERT_GERALD_05-02.png?itok=klCny6bI" },
-  { id:"matheus-camilo", name:"Matheus Camilo", div:"Lightweight", proj:8.7, wins:11, losses:3, sigStrAvg:9.4, tdAvg:2.4, kdAvg:0.1, ctrlAvg:252, subAttAvg:0.8, tdDefAvg:0.55, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/CAMILO_MATHEUS_06-27.png?itok=b4Q0urPf" },
-  { id:"kai-kamaka-iii", name:"Kai Kamaka III", div:"Featherweight", proj:8.5, wins:18, losses:8, sigStrAvg:72.2, tdAvg:0.9, kdAvg:0.3, ctrlAvg:96, subAttAvg:0.2, tdDefAvg:0.63, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/KAMAKA_KAI_07-11.png?itok=WhRqM7-a" },
-  { id:"malcolm-wellmaker", name:"Malcolm Wellmaker", div:"Bantamweight", proj:7.7, wins:10, losses:2, sigStrAvg:31.7, tdAvg:1.1, kdAvg:0.2, ctrlAvg:108, subAttAvg:0.3, tdDefAvg:0.59, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/WELLMAKER_MALCOM_05-16.png?itok=Csyg4dNZ" },
-  { id:"niko-price", name:"Niko Price", div:"Welterweight", proj:7.6, wins:16, losses:11, sigStrAvg:37.9, tdAvg:0.4, kdAvg:0.4, ctrlAvg:42, subAttAvg:0.1, tdDefAvg:0.54, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/PRICE_NIKO_03-28.png?itok=c4sQathc" },
-  { id:"felipe-franco", name:"Felipe Franco", div:"Light Heavyweight", proj:7.3, wins:11, losses:2, sigStrAvg:27.0, tdAvg:1.3, kdAvg:0.3, ctrlAvg:132, subAttAvg:0.4, tdDefAvg:0.61, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/FRANCO_FELIPE_03-21.png?itok=WUrHMJqw" },
-  { id:"brendson-ribeiro", name:"Brendson Ribeiro", div:"Light Heavyweight", proj:6.7, wins:17, losses:11, sigStrAvg:18.1, tdAvg:1.9, kdAvg:0.2, ctrlAvg:186, subAttAvg:0.7, tdDefAvg:0.58, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/RIBEIRO_BRENDSON_07-25.png?itok=3s0NZSMh" },
-  { id:"ismael-bonfim", name:"Ismael Bonfim", div:"Lightweight", proj:6.6, wins:20, losses:7, sigStrAvg:23.8, tdAvg:2.8, kdAvg:0.1, ctrlAvg:270, subAttAvg:0.5, tdDefAvg:0.67, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/BONFIM_ISMAEL_07-25.png?itok=oBgE67iG" },
-  { id:"daria-zhelezniakova", name:"Daria Zhelezniakova", div:"Women's Bantamweight", proj:6.2, wins:10, losses:3, sigStrAvg:36.3, tdAvg:1.0, kdAvg:0.2, ctrlAvg:102, subAttAvg:0.3, tdDefAvg:0.56, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/ZHELEZNIAKOVA_DARIA_04-18.png?itok=oZ7sT-sw" },
-  { id:"alice-pereira", name:"Alice Pereira", div:"Women's Bantamweight", proj:5.4, wins:7, losses:1, sigStrAvg:34.5, tdAvg:0.5, kdAvg:0.3, ctrlAvg:54, subAttAvg:0.1, tdDefAvg:0.60, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/PEREIRA_ALICE_04-04.png?itok=vuVTbCtw" },
-  { id:"leon-shahbazyan", name:"Leon Shahbazyan", div:"Welterweight", proj:5.0, wins:12, losses:5, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/SHAHBAZYAN_LEON_06-20.png?itok=OVKQdyWH" },
+  { id:"otari-tanzilovi", sbId:"7d207c97-0f8a-41c9-918d-8dd3c7f4885e", name:"Otari Tanzilovi", div:"Bantamweight", proj:21.5, wins:10, losses:2, sigStrAvg:58.0, tdAvg:1.2, kdAvg:0.3, ctrlAvg:90, subAttAvg:0.2, tdDefAvg:0.68, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/TANZILOVI_OTARI_06-20.png?itok=V2E-c9jE" },
+  { id:"melissa-gatto", sbId:"a0e0e830-dc73-439d-8630-0bfc374b1786", name:"Melissa Gatto", div:"Women's Bantamweight", proj:20.3, wins:9, losses:3, sigStrAvg:31.5, tdAvg:1.8, kdAvg:0.1, ctrlAvg:144, subAttAvg:0.4, tdDefAvg:0.55, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/GATTO_MELISSA_04-04.png?itok=asrqp-zJ" },
+  { id:"brendan-allen", sbId:"fc47780a-a61c-4255-962e-425cb345cabe", name:"Brendan Allen", div:"Middleweight", proj:18.5, wins:27, losses:7, sigStrAvg:55.0, tdAvg:2.1, kdAvg:0.2, ctrlAvg:288, subAttAvg:0.9, tdDefAvg:0.72, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/ALLEN_BRENDAN_06-06.png?itok=mXcOZvKs" },
+  { id:"ernesta-kareckaite", sbId:"0fcf88d2-f2e5-4c64-9128-cf686eee6df9", name:"Ernesta Kareckaitė", div:"Women's Flyweight", proj:17.1, wins:6, losses:2, sigStrAvg:89.0, tdAvg:0.4, kdAvg:0.2, ctrlAvg:48, subAttAvg:0.1, tdDefAvg:0.61, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-02/KARECKAITE_ERNESTA_02-28.png?itok=9-oSZvG3" },
+  { id:"loopy-godinez", sbId:"14fc4e74-5837-48fe-9464-b5f589a0f910", name:"Loopy Godinez", div:"Women's Strawweight", proj:17.0, wins:14, losses:6, sigStrAvg:60.9, tdAvg:2.6, kdAvg:0.1, ctrlAvg:234, subAttAvg:0.6, tdDefAvg:0.58, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/GODINEZ_LOOPY_04-11.png?itok=lEd5QqLm" },
+  { id:"francisco-prado", sbId:"ca0bc5a0-e6e3-48b3-8962-930f2b2f81ad", name:"Francisco Prado", div:"Lightweight", proj:14.2, wins:12, losses:5, sigStrAvg:50.4, tdAvg:3.4, kdAvg:0.2, ctrlAvg:336, subAttAvg:0.3, tdDefAvg:0.64, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/PRADO_FRANCISCO_04-11.png?itok=EYhU3Rp7" },
+  { id:"julius-walker", sbId:"beb61a19-487e-4001-9111-2ea95a210ba2", name:"Julius Walker", div:"Light Heavyweight", proj:12.0, wins:7, losses:3, sigStrAvg:44.8, tdAvg:0.6, kdAvg:0.4, ctrlAvg:66, subAttAvg:0.1, tdDefAvg:0.70, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/WALKER_JULIUS_06-27.png?itok=XxGZTaIJ" },
+  { id:"christian-leroy-duncan", sbId:"4bd3cb21-865a-4b59-9cd4-0ee71be6ce04", name:"Christian Leroy Duncan", div:"Middleweight", proj:11.4, wins:15, losses:2, sigStrAvg:44.0, tdAvg:0.3, kdAvg:0.5, ctrlAvg:36, subAttAvg:0.0, tdDefAvg:0.59, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/DUNCAN_CHRISTIAN_LEROY_07-18.png?itok=kI5AHuWF" },
+  { id:"allen-frye-jr", sbId:"99ba78bf-0664-4d9e-9885-fd7f067f6013", name:"Allen Frye Jr.", div:"Heavyweight", proj:11.2, wins:6, losses:1, sigStrAvg:33.0, tdAvg:0.2, kdAvg:0.6, ctrlAvg:24, subAttAvg:0.0, tdDefAvg:0.52, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-12/FRYE_ALLEN_12-13.png?itok=Q_khC32T" },
+  { id:"andre-fili", sbId:"a72c0080-9e95-4bbc-a998-77de2271d295", name:"Andre Fili", div:"Featherweight", proj:10.1, wins:25, losses:14, sigStrAvg:32.9, tdAvg:0.5, kdAvg:0.3, ctrlAvg:54, subAttAvg:0.1, tdDefAvg:0.66, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/FILI_ANDRE_06-20.png?itok=cIwJBZaQ" },
+  { id:"ketlen-souza", sbId:"dcc1a939-0910-4629-94e0-13d1fb360abc", name:"Ketlen Souza", div:"Women's Strawweight", proj:9.7, wins:17, losses:6, sigStrAvg:48.9, tdAvg:1.4, kdAvg:0.2, ctrlAvg:120, subAttAvg:0.3, tdDefAvg:0.57, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/SOUZA_KETLEN_06-06.png?itok=CMCV5MWD" },
+  { id:"rj-harris", sbId:"0c7f4f10-fc58-4411-ac33-67b039df682d", name:"RJ Harris", div:"Heavyweight", proj:9.7, wins:6, losses:0, sigStrAvg:15.0, tdAvg:0.3, kdAvg:0.5, ctrlAvg:30, subAttAvg:0.0, tdDefAvg:0.48, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/HARRIS_RJ_07-18.png?itok=bTTS0s6k" },
+  { id:"jai-herbert", sbId:"9bfc3414-9d3c-419b-a4ec-f73d309e20d1", name:"Jai Herbert", div:"Lightweight", proj:9.4, wins:14, losses:6, sigStrAvg:30.5, tdAvg:0.7, kdAvg:0.4, ctrlAvg:78, subAttAvg:0.2, tdDefAvg:0.62, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/HERBERT_JAI_04-18.png?itok=c0gEpBtA" },
+  { id:"gerald-meerschaert", sbId:"cba4cfab-f791-4110-a367-2f9bdc4040e5", name:"Gerald Meerschaert", div:"Light Heavyweight", proj:9.3, wins:37, losses:22, sigStrAvg:26.1, tdAvg:1.6, kdAvg:0.2, ctrlAvg:168, subAttAvg:2.1, tdDefAvg:0.60, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/MEERSCHAERT_GERALD_05-02.png?itok=klCny6bI" },
+  { id:"matheus-camilo", sbId:"5d778c14-597d-4d84-969d-b132200a6684", name:"Matheus Camilo", div:"Lightweight", proj:8.7, wins:11, losses:3, sigStrAvg:9.4, tdAvg:2.4, kdAvg:0.1, ctrlAvg:252, subAttAvg:0.8, tdDefAvg:0.55, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/CAMILO_MATHEUS_06-27.png?itok=b4Q0urPf" },
+  { id:"kai-kamaka-iii", sbId:"7efc7713-0c0d-43d2-856c-75deb6baf416", name:"Kai Kamaka III", div:"Featherweight", proj:8.5, wins:18, losses:8, sigStrAvg:72.2, tdAvg:0.9, kdAvg:0.3, ctrlAvg:96, subAttAvg:0.2, tdDefAvg:0.63, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/KAMAKA_KAI_07-11.png?itok=WhRqM7-a" },
+  { id:"malcolm-wellmaker", sbId:"54acdf0b-2d2f-4e0f-8713-06917c268319", name:"Malcolm Wellmaker", div:"Bantamweight", proj:7.7, wins:10, losses:2, sigStrAvg:31.7, tdAvg:1.1, kdAvg:0.2, ctrlAvg:108, subAttAvg:0.3, tdDefAvg:0.59, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/WELLMAKER_MALCOM_05-16.png?itok=Csyg4dNZ" },
+  { id:"niko-price", sbId:"adea7f2e-a4a9-4b6a-9759-62f8ce2d9d76", name:"Niko Price", div:"Welterweight", proj:7.6, wins:16, losses:11, sigStrAvg:37.9, tdAvg:0.4, kdAvg:0.4, ctrlAvg:42, subAttAvg:0.1, tdDefAvg:0.54, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/PRICE_NIKO_03-28.png?itok=c4sQathc" },
+  { id:"felipe-franco", sbId:"35bf8730-cbb9-464f-a372-0306c9377711", name:"Felipe Franco", div:"Light Heavyweight", proj:7.3, wins:11, losses:2, sigStrAvg:27.0, tdAvg:1.3, kdAvg:0.3, ctrlAvg:132, subAttAvg:0.4, tdDefAvg:0.61, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/FRANCO_FELIPE_03-21.png?itok=WUrHMJqw" },
+  { id:"brendson-ribeiro", sbId:"2b08aedd-e258-477c-8b25-929ed2569042", name:"Brendson Ribeiro", div:"Light Heavyweight", proj:6.7, wins:17, losses:11, sigStrAvg:18.1, tdAvg:1.9, kdAvg:0.2, ctrlAvg:186, subAttAvg:0.7, tdDefAvg:0.58, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/RIBEIRO_BRENDSON_07-25.png?itok=3s0NZSMh" },
+  { id:"ismael-bonfim", sbId:"4fa86abe-f609-4074-b9ad-babb04ee15a5", name:"Ismael Bonfim", div:"Lightweight", proj:6.6, wins:20, losses:7, sigStrAvg:23.8, tdAvg:2.8, kdAvg:0.1, ctrlAvg:270, subAttAvg:0.5, tdDefAvg:0.67, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/BONFIM_ISMAEL_07-25.png?itok=oBgE67iG" },
+  { id:"daria-zhelezniakova", sbId:"35d17d3a-4fad-493b-92c9-917b20129715", name:"Daria Zhelezniakova", div:"Women's Bantamweight", proj:6.2, wins:10, losses:3, sigStrAvg:36.3, tdAvg:1.0, kdAvg:0.2, ctrlAvg:102, subAttAvg:0.3, tdDefAvg:0.56, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/ZHELEZNIAKOVA_DARIA_04-18.png?itok=oZ7sT-sw" },
+  { id:"alice-pereira", sbId:"eeff83e2-7a3f-46ca-b10d-76398f616a01", name:"Alice Pereira", div:"Women's Bantamweight", proj:5.4, wins:7, losses:1, sigStrAvg:34.5, tdAvg:0.5, kdAvg:0.3, ctrlAvg:54, subAttAvg:0.1, tdDefAvg:0.60, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/PEREIRA_ALICE_04-04.png?itok=vuVTbCtw" },
+  { id:"leon-shahbazyan", sbId:"bf1e8350-87e9-48e1-91d9-ffbd412657a6", name:"Leon Shahbazyan", div:"Welterweight", proj:5.0, wins:12, losses:5, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/SHAHBAZYAN_LEON_06-20.png?itok=OVKQdyWH" },
 ];
 const FO_FIGHTERS_BY_ID = Object.fromEntries(FO_FIGHTERS.map((f) => [f.id, f]));
 const FO_DIV_LABEL = {
@@ -586,19 +601,20 @@ const FO_DIV_LABEL = {
 };
 // Real card order, top to bottom, for UFC Fight Night: Allen vs Duncan (Sat Oct 10, 2026).
 const FO_CARD_ORDER = [
-  { a:"brendan-allen", b:"christian-leroy-duncan", billing:"MAIN EVENT", section:"MAIN CARD" },
-  { a:"matheus-camilo", b:"jai-herbert", billing:"CO-MAIN EVENT" },
-  { a:"loopy-godinez", b:"ketlen-souza" },
-  { a:"andre-fili", b:"kai-kamaka-iii" },
-  { a:"julius-walker", b:"gerald-meerschaert" },
-  { a:"malcolm-wellmaker", b:"otari-tanzilovi" },
-  { a:"francisco-prado", b:"ismael-bonfim", section:"PRELIMINARY CARD" },
-  { a:"niko-price", b:"leon-shahbazyan" },
-  { a:"felipe-franco", b:"brendson-ribeiro" },
-  { a:"allen-frye-jr", b:"rj-harris" },
-  { a:"alice-pereira", b:"daria-zhelezniakova" },
-  { a:"ernesta-kareckaite", b:"melissa-gatto" },
+  { a:"brendan-allen", b:"christian-leroy-duncan", billing:"MAIN EVENT", section:"MAIN CARD", boutId:"53d6fcba-90c9-45e6-bfd0-128be4e8c607" },
+  { a:"matheus-camilo", b:"jai-herbert", billing:"CO-MAIN EVENT", boutId:"5608da2a-c7bd-4fb0-81ab-5f52868b425c" },
+  { a:"loopy-godinez", b:"ketlen-souza", boutId:"69a41489-a811-458d-9c4f-ef989c0a1de0" },
+  { a:"andre-fili", b:"kai-kamaka-iii", boutId:"ab11b1b7-97ea-4a26-bebb-86964df21f74" },
+  { a:"julius-walker", b:"gerald-meerschaert", boutId:"9b0b44c2-03f9-45d0-a085-20e3df83cd1a" },
+  { a:"malcolm-wellmaker", b:"otari-tanzilovi", boutId:"2a9da1f7-3b8d-490c-8321-00536805d0ee" },
+  { a:"francisco-prado", b:"ismael-bonfim", section:"PRELIMINARY CARD", boutId:"5a7f5c3c-ac33-4e1f-9be9-8c208155ed9c" },
+  { a:"niko-price", b:"leon-shahbazyan", boutId:"43b93562-4a5d-43af-b687-cc719a7759a5" },
+  { a:"felipe-franco", b:"brendson-ribeiro", boutId:"d1934e10-7c4e-4aad-82fe-ddc6c9c4c1a1" },
+  { a:"allen-frye-jr", b:"rj-harris", boutId:"980355e5-a87a-43d6-b89c-a67bdbdeab7a" },
+  { a:"alice-pereira", b:"daria-zhelezniakova", boutId:"d0f4a8cb-c12b-4ae4-bfb3-3a73622180c3" },
+  { a:"ernesta-kareckaite", b:"melissa-gatto", boutId:"19799435-ca63-43f2-98ba-b702299b8a98" },
 ];
+const FO_BOUT_IDS = FO_CARD_ORDER.map((e) => e.boutId);
 const FO_TIMER_CHOICES = [15, 30, 45, 60, 90, 120];
 const FO_MIN_ROSTER_SIZE = 4;
 const FO_MAX_ROSTER_SIZE_CAP = 9;
@@ -623,6 +639,122 @@ function foBotChoose(available){
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+/* ---- Real live scoring for tomorrow's card — same formula as live.html / calculate-team-score.js ---- */
+const FO_POINTS = {
+  SIG_STRIKE_LANDED: 0.1, TAKEDOWN_LANDED: 2, KNOCKDOWN: 8,
+  CONTROL_TIME_PER_MIN: 1, SUBMISSION_ATTEMPT: 1, REVERSAL: 6, TAKEDOWN_DEFENDED: 0.5,
+};
+function foIsFinishMethod(method){
+  if (!method) return false;
+  const m = method.toLowerCase();
+  return m.includes("ko") || m.includes("tko") || m.includes("sub");
+}
+function foBasePoints(stats, oppStats){
+  if (!stats) return { total: 0, breakdown: null };
+  const sig = Number(stats.sig_strikes_landed) || 0;
+  const td = Number(stats.takedowns_landed) || 0;
+  const kd = Number(stats.knockdowns) || 0;
+  const ctrlMin = (Number(stats.control_time_seconds) || 0) / 60;
+  const subAtt = Number(stats.submission_attempts) || 0;
+  const rev = Number(stats.reversals) || 0;
+  const oppAttempted = oppStats ? Number(oppStats.takedowns_attempted) || 0 : 0;
+  const oppLanded = oppStats ? Number(oppStats.takedowns_landed) || 0 : 0;
+  const tdDefended = Math.max(0, oppAttempted - oppLanded);
+  const breakdown = {
+    sigStrikes: sig * FO_POINTS.SIG_STRIKE_LANDED,
+    takedowns: td * FO_POINTS.TAKEDOWN_LANDED,
+    knockdowns: kd * FO_POINTS.KNOCKDOWN,
+    controlTime: ctrlMin * FO_POINTS.CONTROL_TIME_PER_MIN,
+    submissionAttempts: subAtt * FO_POINTS.SUBMISSION_ATTEMPT,
+    reversals: rev * FO_POINTS.REVERSAL,
+    takedownDefense: tdDefended * FO_POINTS.TAKEDOWN_DEFENDED,
+  };
+  const total = Object.values(breakdown).reduce((s, v) => s + v, 0);
+  return { total, breakdown };
+}
+// Standard mode role multiplier, matching live.html exactly: STRIKER/GRAPPLER
+// always 2x; FINISHER 2x only on an actual finish win; PRIMARY/unset 1x.
+function foLiveRoleMultiplier(role, bout, fighterSbId){
+  if (role === "striker" || role === "grappler") return 2.0;
+  if (role === "finisher") {
+    const finished = bout && bout.status === "completed" && bout.winner_id === fighterSbId && foIsFinishMethod(bout.method);
+    return finished ? 2.0 : 1.0;
+  }
+  return 1.0;
+}
+
+// Live data cache, populated from Supabase (seeded by combat-sync's live-poll.js
+// and the combat-live-connector WebSocket service) and kept fresh via Realtime.
+let foLive = { loaded: false, boutsById: {}, statsByKey: {} }; // statsByKey: "<boutId>:<fighterSbId>" -> mma_stats row
+let foRealtimeChannel = null;
+
+async function foLoadLiveScoring(){
+  try {
+    const client = CombatAuth.client;
+    const [{ data: boutsData, error: boutsErr }, { data: perfData, error: perfErr }] = await Promise.all([
+      client.from("bouts").select("id, status, method, winner_id, fighter_a, fighter_b").in("id", FO_BOUT_IDS),
+      client.from("performances").select("id, bout_id, fighter_id").in("bout_id", FO_BOUT_IDS),
+    ]);
+    if (boutsErr) throw boutsErr;
+    if (perfErr) throw perfErr;
+
+    const boutsById = {};
+    (boutsData || []).forEach((b) => { boutsById[b.id] = b; });
+
+    const perfIds = (perfData || []).map((p) => p.id);
+    let statsRows = [];
+    if (perfIds.length) {
+      const { data: statsData, error: statsErr } = await client
+        .from("mma_stats")
+        .select("*")
+        .in("performance_id", perfIds)
+        .eq("round_number", 0);
+      if (statsErr) throw statsErr;
+      statsRows = statsData || [];
+    }
+    const statsByPerf = {};
+    statsRows.forEach((s) => { statsByPerf[s.performance_id] = s; });
+
+    const statsByKey = {};
+    (perfData || []).forEach((p) => {
+      const stats = statsByPerf[p.id];
+      if (stats) statsByKey[`${p.bout_id}:${p.fighter_id}`] = stats;
+    });
+
+    foLive = { loaded: true, boutsById, statsByKey };
+  } catch (err) {
+    foLive = { loaded: true, boutsById: {}, statsByKey: {}, error: err.message || "Couldn't load live scoring." };
+  }
+  if (screen === "faceoff") renderFaceoff();
+}
+
+function foSubscribeRealtime(){
+  if (foRealtimeChannel) return;
+  foRealtimeChannel = CombatAuth.client
+    .channel("faceoff-live-scoring")
+    .on("postgres_changes", { event: "*", schema: "public", table: "mma_stats" }, () => { foLoadLiveScoring(); })
+    .on("postgres_changes", { event: "*", schema: "public", table: "bouts" }, () => { foLoadLiveScoring(); })
+    .subscribe();
+}
+function foUnsubscribeRealtime(){
+  if (foRealtimeChannel) { CombatAuth.client.removeChannel(foRealtimeChannel); foRealtimeChannel = null; }
+}
+
+// For a given bout entry + fighter sbId: the live bout row, this fighter's
+// mma_stats, the opponent's (for takedown-defense credit), and a status label.
+function foLiveContext(entry, fighterSbId, oppSbId){
+  const bout = foLive.boutsById[entry.boutId] || null;
+  const stats = foLive.statsByKey[`${entry.boutId}:${fighterSbId}`] || null;
+  const oppStats = foLive.statsByKey[`${entry.boutId}:${oppSbId}`] || null;
+  let statusLabel = "UPCOMING";
+  if (bout) {
+    if (bout.status === "completed") statusLabel = "FINAL";
+    else if (bout.status === "live" || bout.status === "in_progress") statusLabel = "LIVE";
+    else statusLabel = "SCHEDULED";
+  }
+  return { bout, stats, oppStats, statusLabel };
+}
+
 // Mutable Face-Off draft state. null until the user picks this mode.
 let fo = null;
 function initFaceoff(){
@@ -638,6 +770,8 @@ function initFaceoff(){
     editNameDraft: "",
     roles: {},
   };
+  foLoadLiveScoring();
+  foSubscribeRealtime();
 }
 
 function foDraftFighter(id){
@@ -673,7 +807,7 @@ function foFighterRoleMult(f, drafted, role){
 }
 
 /* Builds the per-fighter display data for one bout-card half. */
-function foFighterCardData(f){
+function foFighterCardData(f, entry, oppF){
   const drafted = fo.draftedBy[f.id];
   const divColor = DIVISION_COLOR[f.div] || "var(--gold)";
   let tagBg = "rgba(255,255,255,0.03)", tagColor = "var(--text-dim)", tagText = "DRAFT →", edgeColor = "var(--border)";
@@ -681,8 +815,19 @@ function foFighterCardData(f){
   else if (drafted === "B") { tagBg = "rgba(226,40,60,0.12)"; tagColor = "var(--red)"; tagText = esc(fo.teamNames.B.toUpperCase()); edgeColor = "var(--red)"; }
 
   const role = fo.roles[f.id] || null;
-  const mult = foFighterRoleMult(f, drafted, role);
-  const projValue = (f.proj * mult).toFixed(2);
+  const liveCtx = foLiveContext(entry, f.sbId, oppF.sbId);
+  // PROJ is the pre-fight hypothetical (any assigned role's full multiplier,
+  // same as before kickoff) — LIVE is the real score, gated on the actual
+  // bout result (finisher only pays off on an actual finish win).
+  const projMult = foFighterRoleMult(f, drafted, role);
+  const liveMult = (fo.gameMode === "standard" && drafted === "A" && role) ? foLiveRoleMultiplier(role, liveCtx.bout, f.sbId) : 1;
+  const projValue = (f.proj * projMult).toFixed(2);
+
+  const { total: liveTotal, breakdown: liveBreakdown } = foBasePoints(liveCtx.stats, liveCtx.oppStats);
+  const liveValue = (liveTotal * liveMult).toFixed(2);
+  const hasLiveStats = !!liveCtx.stats;
+  const isLive = liveCtx.statusLabel === "LIVE";
+  const liveColor = liveCtx.statusLabel === "FINAL" ? "var(--text)" : (isLive ? "var(--red)" : "var(--text-faint-2)");
 
   const showRolePicker = fo.gameMode === "standard" && drafted === "A";
   const roleButtonsHtml = showRolePicker ? FO_ROLES.map((r) => {
@@ -699,16 +844,28 @@ function foFighterCardData(f){
     { l: "TD DEF", v: fmtPct(f.tdDefAvg) },
   ];
 
+  // Real live breakdown rows (only once stats actually exist for this fighter in this bout).
+  const liveBreakdownHtml = hasLiveStats ? [
+    { l: "SIG STR", v: liveBreakdown.sigStrikes },
+    { l: "TD", v: liveBreakdown.takedowns },
+    { l: "KD", v: liveBreakdown.knockdowns },
+    { l: "CTRL", v: liveBreakdown.controlTime },
+    { l: "SUB ATT", v: liveBreakdown.submissionAttempts },
+    { l: "REV", v: liveBreakdown.reversals },
+    { l: "TD DEF", v: liveBreakdown.takedownDefense },
+  ].filter((r) => r.v > 0).map((r) => `<div style="display:flex;justify-content:space-between;gap:6px;min-width:62px;"><span class="l">${r.l}</span><span class="v" style="color:var(--gold);">+${r.v.toFixed(2)}</span></div>`).join("") : "";
+
   return {
     f, drafted, divColor, tagBg, tagColor, tagText, edgeColor, projValue, showRolePicker, roleButtonsHtml, statGrid,
+    statusLabel: liveCtx.statusLabel, liveValue, liveColor, isLive, hasLiveStats, liveBreakdownHtml,
   };
 }
 
 function foRenderFighterHalf(d){
   return `
     <div class="fo-half" data-fo-pick data-fighter-id="${esc(d.f.id)}" role="button" tabindex="0" style="text-align:center;">
-      <div class="fo-fighter-av" style="border:3px solid ${d.divColor};clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);">
-        <img src="${esc(d.f.photo)}" alt="">
+      <div class="fo-fighter-ring" style="background:radial-gradient(circle at 35% 28%, #fff 0%, ${d.divColor} 55%, #000 130%);">
+        <div class="fo-fighter-av"><img src="${esc(d.f.photo)}" alt=""></div>
       </div>
       <div class="fo-fighter-name">${esc(d.f.name)}</div>
       <div class="fo-fighter-div" style="color:${d.divColor};">${esc(DIV_SHORT[d.f.div] || "")}</div>
@@ -717,6 +874,12 @@ function foRenderFighterHalf(d){
         ${d.statGrid.map((s) => `<div style="display:flex;justify-content:space-between;gap:6px;min-width:62px;"><span class="l">${s.l}</span><span class="v">${s.v}</span></div>`).join("")}
       </div>
       <div class="fo-proj">PROJ ${d.projValue}</div>
+      <div class="fo-live-row">
+        ${d.isLive ? `<div class="fo-live-dot"></div>` : ""}
+        <div class="fo-live-val" style="color:${d.liveColor};">${d.liveValue}</div>
+      </div>
+      <div class="fo-live-lbl">${d.statusLabel}</div>
+      ${d.hasLiveStats ? `<div class="fo-stat-grid" style="margin-top:2px;">${d.liveBreakdownHtml}</div>` : ""}
       <div class="fo-tag" style="background:${d.tagBg};color:${d.tagColor};border:1px solid ${d.tagColor};">${d.tagText}</div>
       ${d.showRolePicker ? `<div class="fo-role-row">${d.roleButtonsHtml}</div>` : ""}
     </div>
@@ -833,7 +996,7 @@ function renderFaceoff(){
 
   const boutsHtml = FO_CARD_ORDER.map((entry) => {
     const f1 = FO_FIGHTERS_BY_ID[entry.a], f2 = FO_FIGHTERS_BY_ID[entry.b];
-    const d1 = foFighterCardData(f1), d2 = foFighterCardData(f2);
+    const d1 = foFighterCardData(f1, entry, f2), d2 = foFighterCardData(f2, entry, f1);
     let billingText, billingColor, billingSize;
     if (entry.billing === "MAIN EVENT") { billingText = "MAIN EVENT"; billingColor = "var(--gold)"; billingSize = "13px"; }
     else if (entry.billing === "CO-MAIN EVENT") { billingText = "CO-MAIN EVENT"; billingColor = "var(--gold)"; billingSize = "12px"; }
@@ -841,13 +1004,15 @@ function renderFaceoff(){
     const sectionHtml = !entry.section ? "" : `<div class="fo-section-div"><div class="ln"></div><div class="lbl">${esc(entry.section)}</div><div class="ln"></div></div>`;
     return `
       ${sectionHtml}
-      <div class="fo-bout" style="border-top:3px solid ${d1.edgeColor};border-left:3px solid ${d1.edgeColor};border-bottom:3px solid ${d2.edgeColor};border-right:3px solid ${d2.edgeColor};">
-        <div class="fo-bout-billing" style="font-size:${billingSize};letter-spacing:2px;color:${billingColor};">${billingText}</div>
-        <div class="fo-bout-row">
-          ${foRenderFighterHalf(d1)}
-          <div class="fo-bout-vs-line"></div>
-          <div class="fo-bout-vs-badge">VS</div>
-          ${foRenderFighterHalf(d2)}
+      <div class="fo-bout" style="background:linear-gradient(90deg, ${d1.edgeColor} 50%, ${d2.edgeColor} 50%);">
+        <div class="fo-bout-inner">
+          <div class="fo-bout-billing" style="font-size:${billingSize};letter-spacing:2px;color:${billingColor};">${billingText}</div>
+          <div class="fo-bout-row">
+            ${foRenderFighterHalf(d1)}
+            <div class="fo-bout-vs-line"></div>
+            <div class="fo-bout-vs-badge">VS</div>
+            ${foRenderFighterHalf(d2)}
+          </div>
         </div>
       </div>
     `;
@@ -879,7 +1044,7 @@ function renderFaceoff(){
       <div class="fo-head-inner">
         <div class="fo-team a">
           <div class="fo-avatar-wrap">
-            <div class="fo-avatar octagon"><img src="${esc(teamAvatars.A || FO_DEFAULT_AVATAR)}" alt=""></div>
+            <div class="fo-avatar-ring gold"><div class="fo-avatar"><img src="${esc(teamAvatars.A || FO_DEFAULT_AVATAR)}" alt=""></div></div>
             <button type="button" class="fo-pencil" id="foEditABtn" title="Edit team name &amp; photo">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4Z"></path></svg>
             </button>
@@ -897,7 +1062,7 @@ function renderFaceoff(){
         <div class="fo-vs"><div class="fo-vs-badge">VS</div></div>
         <div class="fo-team b">
           <div class="fo-avatar-wrap">
-            <div class="fo-avatar octagon"><img src="${esc(teamAvatars.B || FO_DEFAULT_AVATAR)}" alt=""></div>
+            <div class="fo-avatar-ring red"><div class="fo-avatar"><img src="${esc(teamAvatars.B || FO_DEFAULT_AVATAR)}" alt=""></div></div>
             <button type="button" class="fo-pencil" id="foEditBBtn" title="Edit team name &amp; photo">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4Z"></path></svg>
             </button>
@@ -940,7 +1105,7 @@ function renderFaceoff(){
 }
 
 function wireFaceoff(){
-  document.getElementById("foBackLink").addEventListener("click", () => { screen = "modePick"; render(); });
+  document.getElementById("foBackLink").addEventListener("click", () => { foUnsubscribeRealtime(); screen = "modePick"; render(); });
   document.getElementById("foSettingsBtn").addEventListener("click", () => { fo.settingsOpen = !fo.settingsOpen; renderFaceoff(); });
   document.getElementById("foEditABtn").addEventListener("click", () => foToggleEdit("A"));
   document.getElementById("foEditBBtn").addEventListener("click", () => foToggleEdit("B"));
