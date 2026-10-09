@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Combat — Live Scoring</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B0B0D">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0B0D; --panel:#141417; --panel-2:#1A1A1E; --border:#242428;
+    --text:#F5F2EA; --text-dim:#9A9AA2; --text-faint:#5A5A62; --gold:#D4AF37; --red:#E2283C; --green:#4CAF7D;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Barlow',-apple-system,sans-serif; min-height:100vh;
+  }
+  a{color:inherit;}
+  .h-font{font-family:'Oswald',sans-serif;text-transform:uppercase;}
+  .wrap{max-width:720px;margin:0 auto;padding:24px 20px 60px;}
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:10px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .name{font-size:19px;font-weight:700;letter-spacing:1px;color:var(--gold);}
+  .brand .sub{font-size:13px;letter-spacing:2px;color:var(--text-dim);}
+  .nav{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .nav a{font-size:12px;color:var(--text-dim);text-decoration:none;}
+
+  .loading, .msg{text-align:center;color:var(--text-dim);padding:60px 0;font-size:14px;}
+  .error{
+    background:rgba(226,40,60,0.1);border:1px solid rgba(226,40,60,0.3);color:#F0897D;
+    font-size:13px;padding:14px 16px;border-radius:8px;margin-bottom:16px;
+  }
+  .signed-out{text-align:center;padding:60px 20px;color:var(--text-dim);font-size:14px;}
+  .signed-out a{color:var(--gold);text-decoration:none;font-weight:600;}
+
+  .event-strip{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-bottom:18px;
+  }
+  .event-strip .ename{font-size:13px;font-weight:600;letter-spacing:0.5px;}
+  .event-strip .edate{font-size:11px;color:var(--text-faint);margin-top:2px;}
+  .live-pill{
+    display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:1.5px;font-weight:700;
+    color:var(--red);
+  }
+  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1.4s infinite;}
+  @keyframes pulse{0%{opacity:1;}50%{opacity:0.25;}100%{opacity:1;}}
+
+  .totals-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:20px;
+    display:flex;align-items:center;gap:16px;
+  }
+  .totals-card .tphoto{width:52px;height:52px;border-radius:10px;object-fit:cover;background:var(--panel-2);flex-shrink:0;border:1px solid var(--border);}
+  .totals-card .tphoto-ph{width:52px;height:52px;border-radius:10px;background:var(--panel-2);flex-shrink:0;}
+  .totals-card .tname{font-size:15px;font-weight:700;}
+  .totals-card .tsub{font-size:11px;color:var(--text-faint);margin-top:2px;}
+  .totals-card .score{margin-left:auto;text-align:right;}
+  .totals-card .score .val{font-size:30px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--gold);line-height:1;}
+  .totals-card .score .lbl{font-size:10px;letter-spacing:2px;color:var(--text-faint);margin-top:4px;}
+
+  .roster-list{display:flex;flex-direction:column;gap:10px;}
+  .fcard{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px;
+  }
+  .fcard.is-live{border-color:rgba(226,40,60,0.5);}
+  .frow{display:flex;align-items:center;gap:12px;}
+  .fphoto{width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--panel-2);flex-shrink:0;}
+  .fphoto-ph{width:44px;height:44px;border-radius:8px;background:var(--panel-2);flex-shrink:0;}
+  .fmain{flex:1;min-width:0;}
+  .fname{font-size:14.5px;font-weight:600;}
+  .fmeta{font-size:11px;color:var(--text-faint);margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .role-badge{
+    font-size:9.5px;letter-spacing:1px;font-weight:700;border-radius:4px;padding:2px 6px;
+    background:rgba(212,175,55,0.12);color:var(--gold);border:1px solid rgba(212,175,55,0.3);
+  }
+  .status-badge{font-size:9.5px;letter-spacing:1px;font-weight:700;border-radius:4px;padding:2px 6px;}
+  .status-badge.scheduled{background:rgba(154,154,162,0.1);color:var(--text-dim);border:1px solid var(--border);}
+  .status-badge.live{background:rgba(226,40,60,0.12);color:var(--red);border:1px solid rgba(226,40,60,0.4);}
+  .status-badge.completed{background:rgba(76,175,125,0.12);color:var(--green);border:1px solid rgba(76,175,125,0.4);}
+  .status-badge.none{background:rgba(154,154,162,0.06);color:var(--text-faint);border:1px solid var(--border);}
+
+  .fpoints{text-align:right;flex-shrink:0;}
+  .fpoints .val{font-size:20px;font-weight:700;font-family:'Oswald',sans-serif;}
+  .fpoints .val.live{color:var(--red);}
+  .fpoints .val.final{color:var(--text);}
+  .fpoints .val.pending{color:var(--text-faint);}
+  .fpoints .lbl{font-size:9px;letter-spacing:1.5px;color:var(--text-faint);margin-top:2px;}
+
+  .stat-grid{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px;padding-top:14px;
+    border-top:1px solid var(--panel-2);
+  }
+  .stat-grid .stat{text-align:center;}
+  .stat-grid .stat .v{font-size:14px;font-weight:700;font-family:'Oswald',sans-serif;}
+  .stat-grid .stat .l{font-size:9px;letter-spacing:1px;color:var(--text-faint);margin-top:2px;}
+
+  .opp-line{font-size:11.5px;color:var(--text-dim);margin-top:2px;}
+  .opp-line .vs{color:var(--text-faint);}
+
+  .empty-roster{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:40px 20px;
+    text-align:center;color:var(--text-dim);font-size:13.5px;
+  }
+  .empty-roster a{color:var(--gold);text-decoration:none;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <span class="name h-font">Combat</span>
+      <span class="sub h-font">Live Scoring</span>
+    </div>
+    <div class="nav">
+      <a href="index.html">Mock Draft</a>
+      <a href="draft.html">Draft</a>
+      <a href="news.html">News</a>
+      <a href="chat.html">League Chat</a>
+      <a href="settings.html">League Settings</a>
+      <a href="notifications.html">Notifications</a>
+      <a href="team.html">My Team</a>
+      <span id="authStatus"></span>
+    </div>
+  </div>
+
+  <div id="content"><div class="loading">Loading…</div></div>
+</div>
+
+<script>
+const { client } = CombatAuth;
+const LEAGUE_ID = "a18edea0-2355-45c7-a175-f880597aa86e";
+const content = document.getElementById("content");
+function escapeHtml(s){ return CombatAuth.escapeHtml(s); }
+
+// Standard mode scoring — same base formula proven in combat-sync's
+// calculate-team-score.js, plus the role multiplier decided for the
+// real build: STRIKER/GRAPPLER always 2.00x, FINISHER 2.00x only on a
+// finish win (KO/TKO/Submission), PRIMARY (or no role) 1.00x.
+const POINTS = {
+  SIG_STRIKE_LANDED: 0.1,
+  TAKEDOWN_LANDED: 2,
+  KNOCKDOWN: 8,
+  CONTROL_TIME_PER_MIN: 1,
+  SUBMISSION_ATTEMPT: 1,
+  REVERSAL: 6,
+  TAKEDOWN_DEFENDED: 0.5,
+};
+
+function isFinishMethod(method){
+  if (!method) return false;
+  const m = method.toLowerCase();
+  return m.includes("ko") || m.includes("tko") || m.includes("sub");
+}
+
+function basePoints(stats, oppStats){
+  if (!stats) return { total: 0, breakdown: null };
+  const sig = Number(stats.sig_strikes_landed) || 0;
+  const td = Number(stats.takedowns_landed) || 0;
+  const kd = Number(stats.knockdowns) || 0;
+  const ctrlMin = (Number(stats.control_time_seconds) || 0) / 60;
+  const subAtt = Number(stats.submission_attempts) || 0;
+  const rev = Number(stats.reversals) || 0;
+  const oppAttempted = oppStats ? Number(oppStats.takedowns_attempted) || 0 : 0;
+  const oppLanded = oppStats ? Number(oppStats.takedowns_landed) || 0 : 0;
+  const tdDefended = Math.max(0, oppAttempted - oppLanded);
+
+  const breakdown = {
+    sigStrikes: sig * POINTS.SIG_STRIKE_LANDED,
+    takedowns: td * POINTS.TAKEDOWN_LANDED,
+    knockdowns: kd * POINTS.KNOCKDOWN,
+    controlTime: ctrlMin * POINTS.CONTROL_TIME_PER_MIN,
+    submissionAttempts: subAtt * POINTS.SUBMISSION_ATTEMPT,
+    reversals: rev * POINTS.REVERSAL,
+    takedownDefense: tdDefended * POINTS.TAKEDOWN_DEFENDED,
+  };
+  const total = Object.values(breakdown).reduce((s, v) => s + v, 0);
+  return { total, breakdown };
+}
+
+function roleMultiplier(role, bout, fighterId){
+  if (role === "STRIKER" || role === "GRAPPLER") return 2.0;
+  if (role === "FINISHER") {
+    const finished = bout && bout.status === "completed" && bout.winner_id === fighterId && isFinishMethod(bout.method);
+    return finished ? 2.0 : 1.0;
+  }
+  return 1.0; // PRIMARY or unset
+}
+
+function fightPoints(role, stats, oppStats, bout, fighterId){
+  const { total } = basePoints(stats, oppStats);
+  const mult = roleMultiplier(role, bout, fighterId);
+  return Math.round(total * mult * 100) / 100;
+}
+
+// ---- Data loading ----
+
+async function getMyTeam(userId){
+  const { data, error } = await client
+    .from("teams")
+    .select("id, name, photo_url")
+    .eq("league_id", LEAGUE_ID)
+    .eq("owner_user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function getActiveRoster(teamId){
+  const { data, error } = await client
+    .from("rosters")
+    .select("id, division, fighter_id, role")
+    .eq("team_id", teamId)
+    .eq("slot_type", "active");
+  if (error) throw error;
+  return data || [];
+}
+
+async function loadScoringData(roster){
+  const fighterIds = roster.map((r) => r.fighter_id).filter(Boolean);
+  if (fighterIds.length === 0) {
+    return { fighters: {}, bouts: {}, perfByBoutFighter: {}, statsByPerf: {} };
+  }
+
+  const { data: fighters } = await client
+    .from("fighters")
+    .select("id, full_name, photo_url")
+    .in("id", fighterIds);
+  const fightersById = Object.fromEntries((fighters || []).map((f) => [f.id, f]));
+
+  // Only bouts seeded for a live card carry a cito_bout_id — this
+  // naturally scopes to the current/next event rather than career history.
+  const orFilter = fighterIds.map((id) => `fighter_a.eq.${id},fighter_b.eq.${id}`).join(",");
+  const { data: boutRows } = await client
+    .from("bouts")
+    .select("id, event_name, bout_date, status, fighter_a, fighter_b, winner_id, method, end_round, end_time")
+    .or(orFilter)
+    .not("cito_bout_id", "is", null)
+    .order("bout_date", { ascending: false });
+
+  const boutByFighter = {};
+  const allBouts = {};
+  for (const b of boutRows || []) {
+    allBouts[b.id] = b;
+    if (fighterIds.includes(b.fighter_a) && !boutByFighter[b.fighter_a]) boutByFighter[b.fighter_a] = b;
+    if (fighterIds.includes(b.fighter_b) && !boutByFighter[b.fighter_b]) boutByFighter[b.fighter_b] = b;
+  }
+
+  const boutIds = Object.keys(allBouts);
+  let perfByBoutFighter = {};
+  let statsByPerf = {};
+  if (boutIds.length > 0) {
+    const { data: perfRows } = await client
+      .from("performances")
+      .select("id, bout_id, fighter_id")
+      .in("bout_id", boutIds);
+    for (const p of perfRows || []) perfByBoutFighter[`${p.bout_id}:${p.fighter_id}`] = p.id;
+
+    const perfIds = (perfRows || []).map((p) => p.id);
+    if (perfIds.length > 0) {
+      const { data: statsRows } = await client
+        .from("mma_stats")
+        .select("*")
+        .in("performance_id", perfIds)
+        .eq("round_number", 0);
+      for (const s of statsRows || []) statsByPerf[s.performance_id] = s;
+    }
+  }
+
+  return { fighters: fightersById, bouts: boutByFighter, perfByBoutFighter, statsByPerf, allBouts };
+}
+
+// ---- Rendering ----
+
+function statusLabel(bout){
+  if (!bout) return { cls: "none", text: "NOT ON CARD" };
+  if (bout.status === "live") return { cls: "live", text: "LIVE" };
+  if (bout.status === "completed") return { cls: "completed", text: "FINAL" };
+  return { cls: "scheduled", text: "SCHEDULED" };
+}
+
+function renderRosterRow(slot, data){
+  const fighter = data.fighters[slot.fighter_id];
+  const bout = data.bouts[slot.fighter_id];
+  const perfId = bout ? data.perfByBoutFighter[`${bout.id}:${slot.fighter_id}`] : null;
+  const stats = perfId ? data.statsByPerf[perfId] : null;
+
+  const oppId = bout ? (bout.fighter_a === slot.fighter_id ? bout.fighter_b : bout.fighter_a) : null;
+  const oppPerfId = bout && oppId ? data.perfByBoutFighter[`${bout.id}:${oppId}`] : null;
+  const oppStats = oppPerfId ? data.statsByPerf[oppPerfId] : null;
+  const oppFighter = oppId ? data.fighters[oppId] : null;
+
+  const pts = fightPoints(slot.role, stats, oppStats, bout, slot.fighter_id);
+  const st = statusLabel(bout);
+
+  let ptsCls = "pending";
+  if (st.cls === "live") ptsCls = "live";
+  else if (st.cls === "completed") ptsCls = "final";
+
+  const statGrid = stats ? `
+    <div class="stat-grid">
+      <div class="stat"><div class="v">${stats.sig_strikes_landed || 0}</div><div class="l">SIG STR</div></div>
+      <div class="stat"><div class="v">${stats.takedowns_landed || 0}</div><div class="l">TD</div></div>
+      <div class="stat"><div class="v">${stats.knockdowns || 0}</div><div class="l">KD</div></div>
+      <div class="stat"><div class="v">${Math.round((stats.control_time_seconds || 0) / 60)}m</div><div class="l">CTRL</div></div>
+      <div class="stat"><div class="v">${stats.submission_attempts || 0}</div><div class="l">SUB ATT</div></div>
+    </div>
+  ` : "";
+
+  return `
+    <div class="fcard ${st.cls === 'live' ? 'is-live' : ''}" data-fighter-id="${slot.fighter_id}">
+      <div class="frow">
+        ${fighter && fighter.photo_url
+          ? `<img class="fphoto" src="${escapeHtml(fighter.photo_url)}" alt="">`
+          : `<div class="fphoto-ph"></div>`}
+        <div class="fmain">
+          <div class="fname">${fighter ? escapeHtml(fighter.full_name) : "Unknown fighter"}</div>
+          <div class="fmeta">
+            <span class="role-badge">${escapeHtml(slot.role || "PRIMARY")}</span>
+            <span class="status-badge ${st.cls}">${st.text}</span>
+          </div>
+          ${oppFighter ? `<div class="opp-line">vs <span class="vs">${escapeHtml(oppFighter.full_name)}</span></div>` : ""}
+        </div>
+        <div class="fpoints">
+          <div class="val ${ptsCls}">${pts.toFixed(2)}</div>
+          <div class="lbl">PTS</div>
+        </div>
+      </div>
+      ${statGrid}
+    </div>
+  `;
+}
+
+function render(team, roster, data){
+  const total = Math.round(
+    roster.reduce((sum, slot) => {
+      const bout = data.bouts[slot.fighter_id];
+      const perfId = bout ? data.perfByBoutFighter[`${bout.id}:${slot.fighter_id}`] : null;
+      const stats = perfId ? data.statsByPerf[perfId] : null;
+      const oppId = bout ? (bout.fighter_a === slot.fighter_id ? bout.fighter_b : bout.fighter_a) : null;
+      const oppPerfId = bout && oppId ? data.perfByBoutFighter[`${bout.id}:${oppId}`] : null;
+      const oppStats = oppPerfId ? data.statsByPerf[oppPerfId] : null;
+      return sum + fightPoints(slot.role, stats, oppStats, bout, slot.fighter_id);
+    }, 0) * 100
+  ) / 100;
+
+  const anyLive = roster.some((slot) => {
+    const bout = data.bouts[slot.fighter_id];
+    return bout && bout.status === "live";
+  });
+
+  const firstBout = Object.values(data.allBouts || {})[0];
+
+  content.innerHTML = `
+    <div class="event-strip">
+      <div>
+        <div class="ename">${firstBout ? escapeHtml(firstBout.event_name || "") : "No live card seeded yet"}</div>
+        <div class="edate">${firstBout ? escapeHtml(firstBout.bout_date || "") : ""}</div>
+      </div>
+      ${anyLive ? `<span class="live-pill"><span class="live-dot"></span>LIVE NOW</span>` : ""}
+    </div>
+
+    <div class="totals-card">
+      ${team.photo_url ? `<img class="tphoto" src="${escapeHtml(team.photo_url)}" alt="">` : `<div class="tphoto-ph"></div>`}
+      <div>
+        <div class="tname">${escapeHtml(team.name)}</div>
+        <div class="tsub">Active roster — live Fight Points</div>
+      </div>
+      <div class="score">
+        <div class="val">${total.toFixed(2)}</div>
+        <div class="lbl">TOTAL PTS</div>
+      </div>
+    </div>
+
+    ${roster.length === 0
+      ? `<div class="empty-roster">No active roster set yet. Head to <a href="draft.html">Draft</a> to fill your active slots.</div>`
+      : `<div class="roster-list">${roster.map((slot) => renderRosterRow(slot, data)).join("")}</div>`
+    }
+  `;
+}
+
+// ---- Boot ----
+
+let currentTeam = null, currentRoster = [], currentData = null, realtimeChannel = null;
+
+async function refreshAndRender(){
+  currentData = await loadScoringData(currentRoster);
+  render(currentTeam, currentRoster, currentData);
+}
+
+function subscribeRealtime(){
+  if (realtimeChannel) client.removeChannel(realtimeChannel);
+  realtimeChannel = client
+    .channel("live-scoring")
+    .on("postgres_changes", { event: "*", schema: "public", table: "mma_stats" }, () => { refreshAndRender(); })
+    .on("postgres_changes", { event: "*", schema: "public", table: "bouts" }, () => { refreshAndRender(); })
+    .subscribe();
+}
+
+async function load(){
+  content.innerHTML = `<div class="loading">Loading…</div>`;
+  const user = await CombatAuth.getUser();
+  if (!user) {
+    content.innerHTML = `
+      <div class="signed-out">
+        Sign in to see your team's live Fight Points.<br><br>
+        <a href="login.html">Sign in →</a>
+      </div>`;
+    return;
+  }
+
+  try {
+    const team = await getMyTeam(user.id);
+    if (!team) {
+      content.innerHTML = `
+        <div class="signed-out">
+          You don't have a team yet.<br><br>
+          <a href="team.html">Create your team →</a>
+        </div>`;
+      return;
+    }
+
+    currentTeam = team;
+    currentRoster = await getActiveRoster(team.id);
+    currentData = await loadScoringData(currentRoster);
+    render(currentTeam, currentRoster, currentData);
+    subscribeRealtime();
+  } catch (err) {
+    content.innerHTML = `<div class="error">Couldn't load live scoring: ${escapeHtml(err.message || "")}</div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>
