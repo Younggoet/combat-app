@@ -684,6 +684,16 @@ function foLiveRoleMultiplier(role, bout, fighterSbId){
   return 1.0;
 }
 
+// Live points for one drafted fighter, same math foFighterCardData uses for
+// a single bout card — pulled out so the roster-level live total can sum
+// across all of a team's fighters (who are each in a different bout).
+function foLiveValueForFighter(f, entry, oppF, team, role){
+  const liveCtx = foLiveContext(entry, f.sbId, oppF.sbId);
+  const liveMult = (fo.gameMode === "standard" && team === "A" && role) ? foLiveRoleMultiplier(role, liveCtx.bout, f.sbId) : 1;
+  const { total } = foBasePoints(liveCtx.stats, liveCtx.oppStats);
+  return total * liveMult;
+}
+
 // Live data cache, populated from Supabase (seeded by combat-sync's live-poll.js
 // and the combat-live-connector WebSocket service) and kept fresh via Realtime.
 let foLive = { loaded: false, boutsById: {}, statsByKey: {} }; // statsByKey: "<boutId>:<fighterSbId>" -> mma_stats row
@@ -960,6 +970,22 @@ function renderFaceoff(){
     if (team === "A") { rosterA.push(f); const mult = foFighterRoleMult(f, "A", roles[f.id]); totalA += f.proj * mult; }
     else if (team === "B") { rosterB.push(f); totalB += f.proj; }
   });
+  // Live roster totals: sum each drafted fighter's real-time score across
+  // their own bout (unlike PROJ, which is fixed at draft time, this ticks
+  // up fighter by fighter as each bout goes live, same source as the
+  // per-fighter LIVE number on their bout card).
+  let liveTotalA = 0, liveTotalB = 0, anyLiveA = false, anyLiveB = false;
+  FO_CARD_ORDER.forEach((entry) => {
+    const f1 = FO_FIGHTERS_BY_ID[entry.a], f2 = FO_FIGHTERS_BY_ID[entry.b];
+    [[f1, f2], [f2, f1]].forEach(([f, opp]) => {
+      const team = draftedBy[f.id];
+      if (!team) return;
+      const hasStats = !!foLive.statsByKey[`${entry.boutId}:${f.sbId}`];
+      const v = foLiveValueForFighter(f, entry, opp, team, roles[f.id] || null);
+      if (team === "A") { liveTotalA += v; if (hasStats) anyLiveA = true; }
+      else { liveTotalB += v; if (hasStats) anyLiveB = true; }
+    });
+  });
   const draftedCount = Object.keys(draftedBy).length;
   const boutCount = FO_CARD_ORDER.length;
   const maxRosterSize = Math.min(FO_MAX_ROSTER_SIZE_CAP, boutCount);
@@ -1096,9 +1122,14 @@ function renderFaceoff(){
           <div style="min-width:0;">
             <div class="fo-name">${esc(teamNames.A)}</div>
             <div class="fo-record">${rosterA.length}/${rosterSize} PICKED</div>
-            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:2px;">
               <div class="fo-total" style="color:var(--gold);">${totalA.toFixed(2)}</div>
               <div class="fo-total-lbl">PROJECTED PTS</div>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;">
+              ${anyLiveA ? `<div class="fo-live-dot"></div>` : ""}
+              <div style="font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:${anyLiveA ? "var(--red)" : "var(--text-faint-2)"};">${liveTotalA.toFixed(2)}</div>
+              <div class="fo-total-lbl">LIVE PTS</div>
             </div>
             <div class="fo-roster-strip">${teamARosterHtml}</div>
           </div>
@@ -1114,9 +1145,14 @@ function renderFaceoff(){
           <div style="min-width:0;">
             <div class="fo-name">${esc(teamNames.B)}</div>
             <div class="fo-record">${rosterB.length}/${rosterSize} PICKED &middot; BOT</div>
-            <div style="display:flex;align-items:baseline;justify-content:flex-end;gap:10px;margin-bottom:4px;">
+            <div style="display:flex;align-items:baseline;justify-content:flex-end;gap:10px;margin-bottom:2px;">
               <div class="fo-total-lbl">PROJECTED PTS</div>
               <div class="fo-total" style="color:var(--red);">${totalB.toFixed(2)}</div>
+            </div>
+            <div style="display:flex;align-items:baseline;justify-content:flex-end;gap:8px;margin-bottom:4px;">
+              <div class="fo-total-lbl">LIVE PTS</div>
+              <div style="font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:${anyLiveB ? "var(--red)" : "var(--text-faint-2)"};">${liveTotalB.toFixed(2)}</div>
+              ${anyLiveB ? `<div class="fo-live-dot"></div>` : ""}
             </div>
             <div class="fo-roster-strip b">${teamBRosterHtml}</div>
           </div>
