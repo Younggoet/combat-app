@@ -761,10 +761,10 @@ let fo = null;
 function initFaceoff(){
   fo = {
     draftedBy: {},
-    settingsOpen: false,
+    settingsOpen: true, // league settings start open so they're set before the first pick locks them in
     pickTimerSeconds: 45,
     rosterSize: 6,
-    gameMode: "standard", // "standard" (role multipliers) or "regular" (flat scoring)
+    gameMode: "regular", // "regular" (flat scoring) by default — "standard" (role multipliers) is opt-in
     teamNames: { A: "Cage Rattlers", B: "Knockout Kings" },
     teamAvatars: { A: null, B: null },
     editingTeam: null,
@@ -929,12 +929,20 @@ function renderFaceoff(){
   const draftedCount = Object.keys(draftedBy).length;
   const boutCount = FO_CARD_ORDER.length;
   const maxRosterSize = Math.min(FO_MAX_ROSTER_SIZE_CAP, boutCount);
+  const settingsLocked = draftedCount > 0; // locks in once the first pick is made
 
   const settingsHtml = !settingsOpen ? "" : `
     <div class="fo-settings">
+      <div class="fo-settings-col" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:4px;">
+        <div class="fo-settings-label" style="margin:0;">LEAGUE SETTINGS</div>
+        ${settingsLocked
+          ? `<div style="display:flex;align-items:center;gap:6px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="2.4"><rect x="5" y="11" width="14" height="9" rx="1.5"></rect><path d="M8 11V7a4 4 0 118 0v4"></path></svg><span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;color:var(--text-faint);">LOCKED FOR THIS DRAFT</span></div>`
+          : `<span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;color:var(--gold);">SET BEFORE YOUR FIRST PICK</span>`}
+      </div>
+      <div style="width:100%;height:1px;background:var(--border-2);"></div>
       <div class="fo-settings-col">
         <div class="fo-settings-label">PICK TIMER</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;${settingsLocked ? "opacity:0.45;pointer-events:none;" : ""}">
           ${FO_TIMER_CHOICES.map((sec) => {
             const active = sec === pickTimerSeconds;
             return `<button type="button" class="fo-pill" data-fo-timer="${sec}"><div style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;padding:8px 14px;border-radius:7px;background:${active ? "rgba(212,175,55,0.16)" : "transparent"};border:1.5px solid ${active ? "var(--gold)" : "var(--border)"};color:${active ? "var(--gold)" : "var(--text-dim)"};">${fmtClock(sec)}</div></button>`;
@@ -944,7 +952,7 @@ function renderFaceoff(){
       <div style="width:1px;background:var(--border-2);"></div>
       <div class="fo-settings-col">
         <div class="fo-settings-label">FIGHTERS PER TEAM</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;${settingsLocked ? "opacity:0.45;pointer-events:none;" : ""}">
           ${Array.from({ length: maxRosterSize - FO_MIN_ROSTER_SIZE + 1 }, (_, i) => FO_MIN_ROSTER_SIZE + i).map((n) => {
             const active = n === rosterSize;
             return `<button type="button" class="fo-pill" data-fo-roster-size="${n}"><div style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:7px;background:${active ? "rgba(212,175,55,0.16)" : "transparent"};border:1.5px solid ${active ? "var(--gold)" : "var(--border)"};color:${active ? "var(--gold)" : "var(--text-dim)"};">${n}</div></button>`;
@@ -955,7 +963,7 @@ function renderFaceoff(){
       <div style="width:100%;height:1px;background:var(--border-2);"></div>
       <div class="fo-settings-col" style="width:100%;">
         <div class="fo-settings-label">SCORING MODE</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;${settingsLocked ? "opacity:0.45;pointer-events:none;" : ""}">
           ${[
             { id: "regular", label: "REGULAR", desc: "Flat point accumulation. +10 bonus for a KO/TKO or submission win." },
             { id: "standard", label: "STANDARD", desc: "Each pick also gets a role — Grappler, Striker, or Finisher. Any role you assign boosts that fighter's points 2x." },
@@ -965,6 +973,7 @@ function renderFaceoff(){
           }).join("")}
         </div>
       </div>
+      ${!settingsLocked ? `<div class="fo-settings-col" style="width:100%;padding-top:4px;"><button type="button" class="fo-pill" id="foLockSettingsBtn"><div style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;padding:10px 22px;border-radius:7px;background:rgba(212,175,55,0.14);border:1.5px solid var(--gold);color:var(--gold);display:inline-block;">LOCK IN &amp; START DRAFTING</div></button></div>` : ""}
     </div>
   `;
 
@@ -1108,6 +1117,8 @@ function renderFaceoff(){
 function wireFaceoff(){
   document.getElementById("foBackLink").addEventListener("click", () => { foUnsubscribeRealtime(); screen = "modePick"; render(); });
   document.getElementById("foSettingsBtn").addEventListener("click", () => { fo.settingsOpen = !fo.settingsOpen; renderFaceoff(); });
+  const lockBtn = document.getElementById("foLockSettingsBtn");
+  if (lockBtn) lockBtn.addEventListener("click", () => { fo.settingsOpen = false; renderFaceoff(); });
   document.getElementById("foEditABtn").addEventListener("click", () => foToggleEdit("A"));
   document.getElementById("foEditBBtn").addEventListener("click", () => foToggleEdit("B"));
 
