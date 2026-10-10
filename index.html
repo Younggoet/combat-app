@@ -328,7 +328,7 @@
   .fo-mode-opt{padding:12px 16px;border-radius:9px;min-width:150px;}
   /* True octagon frame — a bold border split cleanly gold (team A side) /
      red (team B side) down the middle, not a diagonal gradient bleed. */
-  .fo-head{position:relative;margin-bottom:22px;padding:4px;background:linear-gradient(90deg, var(--gold) 50%, var(--red) 50%);clip-path:polygon(120px 0, calc(100% - 120px) 0, 100% 120px, 100% calc(100% - 120px), calc(100% - 120px) 100%, 120px 100%, 0 calc(100% - 120px), 0 120px);box-shadow:var(--shadow-lg);}
+  .fo-head{position:relative;margin-bottom:22px;padding:4px;background:linear-gradient(90deg, #F6DE8C 0%, var(--gold) 24%, #2A2015 48%, #2A1317 52%, var(--red) 76%, #FF8A96 100%);clip-path:polygon(120px 0, calc(100% - 120px) 0, 100% 120px, 100% calc(100% - 120px), calc(100% - 120px) 100%, 120px 100%, 0 calc(100% - 120px), 0 120px);box-shadow:var(--shadow-lg);}
   .fo-head-inner{display:flex;align-items:center;min-height:360px;background:var(--panel);clip-path:polygon(117px 0, calc(100% - 117px) 0, 100% 117px, 100% calc(100% - 117px), calc(100% - 117px) 100%, 117px 100%, 0 calc(100% - 117px), 0 117px);}
   @media (max-width:760px){
     .fo-head{padding:3px;clip-path:polygon(32px 0, calc(100% - 32px) 0, 100% 32px, 100% calc(100% - 32px), calc(100% - 32px) 100%, 32px 100%, 0 calc(100% - 32px), 0 32px);}
@@ -384,9 +384,10 @@
   .fo-fighter-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;line-height:1.15;margin-bottom:4px;}
   .fo-fighter-div{font-size:10.5px;margin-bottom:2px;}
   .fo-fighter-record{font-size:10.5px;color:var(--text-faint);margin-bottom:6px;}
-  .fo-stat-grid{display:inline-grid;grid-template-columns:auto auto;column-gap:10px;row-gap:1px;margin:0 auto 8px;text-align:left;}
-  .fo-stat-grid .l{font-size:8px;letter-spacing:0.3px;color:var(--text-faint);}
-  .fo-stat-grid .v{font-size:8.5px;font-weight:700;color:var(--text-dim);}
+  .fo-stat-grid{display:inline-grid;grid-template-columns:auto auto;column-gap:10px;row-gap:3px;margin:0 auto 8px;text-align:left;}
+  .fo-stat-grid .l{font-size:9px;font-weight:700;letter-spacing:0.3px;color:var(--text-dim);}
+  .fo-stat-grid .v{font-size:11px;font-weight:700;color:var(--text);}
+  .fo-stat-grid .v.live{color:var(--gold);}
   .fo-proj{font-size:9px;letter-spacing:0.5px;color:var(--text-faint);margin-bottom:2px;}
   .fo-live-row{display:flex;align-items:center;justify-content:center;gap:5px;}
   .fo-live-val{font-family:'Oswald',sans-serif;font-size:17px;font-weight:700;}
@@ -835,7 +836,18 @@ function foFighterCardData(f, entry, oppF){
     return `<button type="button" class="fo-role-btn" data-fo-role-btn data-fighter-id="${esc(f.id)}" data-role="${r.id}" style="background:${active ? "rgba(212,175,55,0.16)" : "transparent"};border:1px solid ${active ? "var(--gold)" : "var(--border)"};color:${active ? "var(--gold)" : "var(--text-dim)"};">${r.label}</button>`;
   }).join("") : "";
 
-  const statGrid = [
+  // The same 6 stat cells track live once the fight starts: season averages
+  // before the fight, real in-fight numbers (ticking as combat-live-connector
+  // feeds mma_stats in) once there's an actual performance row for this bout.
+  const s = liveCtx.stats;
+  const statGrid = hasLiveStats ? [
+    { l: "SIG STR", v: fmtNum(s.sig_strikes_landed, 0) },
+    { l: "TD", v: fmtNum(s.takedowns_landed, 0) },
+    { l: "KD", v: fmtNum(s.knockdowns, 0) },
+    { l: "CTRL", v: fmtCtrl(s.control_time_seconds) },
+    { l: "SUB ATT", v: fmtNum(s.submission_attempts, 0) },
+    { l: "TD DEF", v: fmtNum(Math.max(0, (Number(liveCtx.oppStats?.takedowns_attempted) || 0) - (Number(liveCtx.oppStats?.takedowns_landed) || 0)), 0) },
+  ] : [
     { l: "SIG STR", v: fmtNum(f.sigStrAvg, 1) },
     { l: "TD", v: fmtNum(f.tdAvg, 1) },
     { l: "KD", v: fmtNum(f.kdAvg, 1) },
@@ -844,20 +856,9 @@ function foFighterCardData(f, entry, oppF){
     { l: "TD DEF", v: fmtPct(f.tdDefAvg) },
   ];
 
-  // Real live breakdown rows (only once stats actually exist for this fighter in this bout).
-  const liveBreakdownHtml = hasLiveStats ? [
-    { l: "SIG STR", v: liveBreakdown.sigStrikes },
-    { l: "TD", v: liveBreakdown.takedowns },
-    { l: "KD", v: liveBreakdown.knockdowns },
-    { l: "CTRL", v: liveBreakdown.controlTime },
-    { l: "SUB ATT", v: liveBreakdown.submissionAttempts },
-    { l: "REV", v: liveBreakdown.reversals },
-    { l: "TD DEF", v: liveBreakdown.takedownDefense },
-  ].filter((r) => r.v > 0).map((r) => `<div style="display:flex;justify-content:space-between;gap:6px;min-width:62px;"><span class="l">${r.l}</span><span class="v" style="color:var(--gold);">+${r.v.toFixed(2)}</span></div>`).join("") : "";
-
   return {
     f, drafted, divColor, tagBg, tagColor, tagText, edgeColor, projValue, showRolePicker, roleButtonsHtml, statGrid,
-    statusLabel: liveCtx.statusLabel, liveValue, liveColor, isLive, hasLiveStats, liveBreakdownHtml,
+    statusLabel: liveCtx.statusLabel, liveValue, liveColor, isLive, hasLiveStats,
   };
 }
 
@@ -870,8 +871,9 @@ function foRenderFighterHalf(d){
       <div class="fo-fighter-name">${esc(d.f.name)}</div>
       <div class="fo-fighter-div" style="color:${d.divColor};">${esc(DIV_SHORT[d.f.div] || "")}</div>
       <div class="fo-fighter-record">${esc(fmtRecord(d.f))}</div>
+      ${d.hasLiveStats ? `<div style="font-family:'Oswald',sans-serif;font-size:8px;font-weight:700;letter-spacing:1px;color:var(--gold);margin-bottom:3px;">${d.isLive ? "● LIVE STATS" : "FINAL STATS"}</div>` : ""}
       <div class="fo-stat-grid">
-        ${d.statGrid.map((s) => `<div style="display:flex;justify-content:space-between;gap:6px;min-width:62px;"><span class="l">${s.l}</span><span class="v">${s.v}</span></div>`).join("")}
+        ${d.statGrid.map((s) => `<div style="display:flex;justify-content:space-between;gap:6px;min-width:62px;"><span class="l">${s.l}</span><span class="v${d.hasLiveStats ? " live" : ""}">${s.v}</span></div>`).join("")}
       </div>
       <div class="fo-proj">PROJ ${d.projValue}</div>
       <div class="fo-live-row">
@@ -879,7 +881,6 @@ function foRenderFighterHalf(d){
         <div class="fo-live-val" style="color:${d.liveColor};">${d.liveValue}</div>
       </div>
       <div class="fo-live-lbl">${d.statusLabel}</div>
-      ${d.hasLiveStats ? `<div class="fo-stat-grid" style="margin-top:2px;">${d.liveBreakdownHtml}</div>` : ""}
       <div class="fo-tag" style="background:${d.tagBg};color:${d.tagColor};border:1px solid ${d.tagColor};">${d.tagText}</div>
       ${d.showRolePicker ? `<div class="fo-role-row">${d.roleButtonsHtml}</div>` : ""}
     </div>
