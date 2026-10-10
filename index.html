@@ -758,7 +758,30 @@ function foLiveContext(entry, fighterSbId, oppSbId){
 
 // Mutable Face-Off draft state. null until the user picks this mode.
 let fo = null;
+// Local-only persistence: if a friend accidentally closes the tab or
+// refreshes mid-draft, their own in-progress Face-Off draft resumes right
+// where they left off. This is per-browser only — it does not sync between
+// people; a real shared multi-person draft room is a separate, bigger build.
+const FO_LOCAL_KEY = "combat_faceoff_draft_v1";
+function foSaveLocal(){
+  if (!fo) return;
+  try {
+    const { draftedBy, pickTimerSeconds, rosterSize, gameMode, teamNames, teamAvatars, roles } = fo;
+    localStorage.setItem(FO_LOCAL_KEY, JSON.stringify({ draftedBy, pickTimerSeconds, rosterSize, gameMode, teamNames, teamAvatars, roles }));
+  } catch (e) { /* storage unavailable (private mode, etc.) — just skip */ }
+}
+function foLoadLocal(){
+  try {
+    const raw = localStorage.getItem(FO_LOCAL_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function foClearLocal(){
+  try { localStorage.removeItem(FO_LOCAL_KEY); } catch (e) { /* ignore */ }
+}
+
 function initFaceoff(){
+  const saved = foLoadLocal();
   fo = {
     draftedBy: {},
     settingsOpen: true, // league settings start open so they're set before the first pick locks them in
@@ -771,6 +794,11 @@ function initFaceoff(){
     editNameDraft: "",
     roles: {},
   };
+  if (saved) {
+    Object.assign(fo, saved);
+    // A resumed draft already has its rules locked in — don't reopen settings.
+    fo.settingsOpen = Object.keys(fo.draftedBy || {}).length === 0;
+  }
   foLoadLiveScoring();
   foSubscribeRealtime();
 }
@@ -917,6 +945,7 @@ function renderModePick(){
 }
 
 function renderFaceoff(){
+  foSaveLocal();
   const { draftedBy, settingsOpen, pickTimerSeconds, rosterSize, gameMode, teamNames, teamAvatars, editingTeam, roles } = fo;
 
   const rosterA = [], rosterB = [];
@@ -1099,6 +1128,7 @@ function renderFaceoff(){
       </div>
       <div style="display:flex;align-items:center;gap:14px;">
         <span class="h-font" style="font-size:11px;letter-spacing:1px;color:var(--text-dim);">YOU'RE DRAFTING ${esc(teamNames.A.toUpperCase())} &middot; BOT DRAFTS ${esc(teamNames.B.toUpperCase())}</span>
+        ${rosterA.length >= rosterSize && rosterB.length >= rosterSize ? `<button type="button" class="fo-pill" id="foNewDraftBtn"><span class="h-font" style="font-size:11px;letter-spacing:1px;color:var(--gold);text-decoration:underline;">START A NEW DRAFT</span></button>` : ""}
       </div>
     </div>
 
@@ -1119,6 +1149,8 @@ function wireFaceoff(){
   document.getElementById("foSettingsBtn").addEventListener("click", () => { fo.settingsOpen = !fo.settingsOpen; renderFaceoff(); });
   const lockBtn = document.getElementById("foLockSettingsBtn");
   if (lockBtn) lockBtn.addEventListener("click", () => { fo.settingsOpen = false; renderFaceoff(); });
+  const newDraftBtn = document.getElementById("foNewDraftBtn");
+  if (newDraftBtn) newDraftBtn.addEventListener("click", () => { foClearLocal(); initFaceoff(); renderFaceoff(); });
   document.getElementById("foEditABtn").addEventListener("click", () => foToggleEdit("A"));
   document.getElementById("foEditBBtn").addEventListener("click", () => foToggleEdit("B"));
 
@@ -2121,7 +2153,20 @@ function renderComplete(){
 }
 
 /* ---------------- Router ---------------- */
+// Deep links: the URL hash mirrors `screen` (set via history.replaceState,
+// which doesn't fire hashchange or scroll-jump) so a link like
+// /#faceoff drops someone straight into the Face-Off picker on load.
+const SCREEN_HASH = { landing: "", modePick: "pick", faceoff: "faceoff", setup: "dynasty", draft: "dynasty", board: "board", complete: "complete" };
+function syncHash(){
+  const h = SCREEN_HASH[screen] || "";
+  const current = (location.hash || "").replace(/^#/, "");
+  if (current !== h) {
+    history.replaceState(null, "", h ? `#${h}` : location.pathname + location.search);
+  }
+}
+
 function render(){
+  syncHash();
   if (screen === "landing") return renderLanding();
   if (screen === "modePick") return renderModePick();
   if (screen === "faceoff") return renderFaceoff();
@@ -2131,7 +2176,13 @@ function render(){
   if (screen === "complete") return renderComplete();
 }
 
-render();
+// Boot: a #faceoff or #pick link in the URL jumps straight past the hero.
+(function boot(){
+  const h = (location.hash || "").replace(/^#/, "");
+  if (h === "faceoff") { initFaceoff(); screen = "faceoff"; }
+  else if (h === "pick") { screen = "modePick"; }
+  render();
+})();
 </script>
 </body>
 </html>
