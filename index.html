@@ -855,8 +855,13 @@ function foFighterCardData(f, entry, oppF){
   const { total: liveTotal, breakdown: liveBreakdown } = foBasePoints(liveCtx.stats, liveCtx.oppStats);
   const liveValue = (liveTotal * liveMult).toFixed(2);
   const hasLiveStats = !!liveCtx.stats;
-  const isLive = liveCtx.statusLabel === "LIVE";
-  const liveColor = liveCtx.statusLabel === "FINAL" ? "var(--text)" : (isLive ? "var(--red)" : "var(--text-faint-2)");
+  const isFinal = liveCtx.statusLabel === "FINAL";
+  // Once real stats exist, treat the bout as live for display purposes even
+  // if the bouts.status write hasn't landed yet (writes to mma_stats and
+  // bouts happen in the same poll but can arrive via Realtime a beat apart) —
+  // only an explicit "FINAL" (bout completed) should ever show "FINAL STATS".
+  const isLive = hasLiveStats && !isFinal;
+  const liveColor = isFinal ? "var(--text)" : (isLive ? "var(--red)" : "var(--text-faint-2)");
 
   const showRolePicker = fo.gameMode === "standard" && drafted === "A";
   const roleButtonsHtml = showRolePicker ? FO_ROLES.map((r) => {
@@ -886,7 +891,7 @@ function foFighterCardData(f, entry, oppF){
 
   return {
     f, drafted, divColor, tagBg, tagColor, tagText, edgeColor, projValue, showRolePicker, roleButtonsHtml, statGrid,
-    statusLabel: liveCtx.statusLabel, liveValue, liveColor, isLive, hasLiveStats,
+    statusLabel: liveCtx.statusLabel, liveValue, liveColor, isLive, hasLiveStats, isFinal,
   };
 }
 
@@ -899,7 +904,7 @@ function foRenderFighterHalf(d){
       <div class="fo-fighter-name">${esc(d.f.name)}</div>
       <div class="fo-fighter-div" style="color:${d.divColor};">${esc(DIV_SHORT[d.f.div] || "")}</div>
       <div class="fo-fighter-record">${esc(fmtRecord(d.f))}</div>
-      ${d.hasLiveStats ? `<div style="font-family:'Oswald',sans-serif;font-size:8px;font-weight:700;letter-spacing:1px;color:var(--gold);margin-bottom:3px;">${d.isLive ? "● LIVE STATS" : "FINAL STATS"}</div>` : ""}
+      ${d.hasLiveStats ? `<div style="font-family:'Oswald',sans-serif;font-size:8px;font-weight:700;letter-spacing:1px;color:var(--gold);margin-bottom:3px;">${d.isFinal ? "FINAL STATS" : "● LIVE STATS"}</div>` : ""}
       <div class="fo-stat-grid">
         ${d.statGrid.map((s) => `<div style="display:flex;justify-content:space-between;gap:6px;min-width:62px;"><span class="l">${s.l}</span><span class="v${d.hasLiveStats ? " live" : ""}">${s.v}</span></div>`).join("")}
       </div>
