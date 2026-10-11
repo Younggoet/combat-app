@@ -329,7 +329,12 @@
   /* True octagon frame — a bold border split cleanly gold (team A side) /
      red (team B side) down the middle, not a diagonal gradient bleed. */
   .fo-head{position:relative;margin-bottom:22px;padding:4px;background:linear-gradient(90deg, #F6DE8C 0%, var(--gold) 24%, #2A2015 48%, #2A1317 52%, var(--red) 76%, #FF8A96 100%);clip-path:polygon(120px 0, calc(100% - 120px) 0, 100% 120px, 100% calc(100% - 120px), calc(100% - 120px) 100%, 120px 100%, 0 calc(100% - 120px), 0 120px);box-shadow:var(--shadow-lg);}
-  .fo-head-inner{display:flex;align-items:center;min-height:360px;background:var(--panel);clip-path:polygon(117px 0, calc(100% - 117px) 0, 100% 117px, 100% calc(100% - 117px), calc(100% - 117px) 100%, 117px 100%, 0 calc(100% - 117px), 0 117px);}
+  /* Event background photo sits behind the team panels — a dark scrim
+     (--fo-bg-url is set inline per-render from FO_EVENT_BG_URL) keeps the
+     gold/red frame, avatars and text legible over whatever city shot is
+     set for the current card. Falls back to the plain panel color when
+     no background is set (var(--fo-bg-url, none)). */
+  .fo-head-inner{display:flex;align-items:center;min-height:360px;background-color:var(--panel);background-image:linear-gradient(rgba(10,9,8,0.82), rgba(10,9,8,0.90)), var(--fo-bg-url, none);background-size:cover;background-position:center;clip-path:polygon(117px 0, calc(100% - 117px) 0, 100% 117px, 100% calc(100% - 117px), calc(100% - 117px) 100%, 117px 100%, 0 calc(100% - 117px), 0 117px);}
   @media (max-width:760px){
     .fo-head{padding:3px;clip-path:polygon(32px 0, calc(100% - 32px) 0, 100% 32px, 100% calc(100% - 32px), calc(100% - 32px) 100%, 32px 100%, 0 calc(100% - 32px), 0 32px);}
     .fo-head-inner{flex-direction:column;min-height:0;clip-path:polygon(30px 0, calc(100% - 30px) 0, 100% 30px, 100% calc(100% - 30px), calc(100% - 30px) 100%, 30px 100%, 0 calc(100% - 30px), 0 30px);}
@@ -616,6 +621,11 @@ const FO_CARD_ORDER = [
   { a:"ernesta-kareckaite", b:"melissa-gatto", boutId:"19799435-ca63-43f2-98ba-b702299b8a98" },
 ];
 const FO_BOUT_IDS = FO_CARD_ORDER.map((e) => e.boutId);
+// Event background photo behind the Face-Off head banner, swapped per
+// card. Current: Edmonton skyline at night (Justin Hu, Unsplash License —
+// free for commercial use, https://unsplash.com/photos/city-skyline-during-night-time-kczeUEAhDZI)
+// chosen ahead of UFC Fight Night: Buckley vs Malott (Edmonton, Oct 17 2026).
+const FO_EVENT_BG_URL = "https://images.unsplash.com/photo-1617336422396-e1dfc4210ec5?fm=jpg&q=80&w=2400&auto=format&fit=crop";
 const FO_TIMER_CHOICES = [15, 30, 45, 60, 90, 120];
 const FO_MIN_ROSTER_SIZE = 4;
 const FO_MAX_ROSTER_SIZE_CAP = 9;
@@ -1123,7 +1133,7 @@ function renderFaceoff(){
     ${settingsHtml}
 
     <div class="fo-head">
-      <div class="fo-head-inner">
+      <div class="fo-head-inner" style="--fo-bg-url:url('${FO_EVENT_BG_URL}');">
         <div class="fo-team a">
           <div class="fo-avatar-wrap">
             <div class="fo-avatar-ring gold"><div class="fo-avatar"><img src="${esc(teamAvatars.A || FO_DEFAULT_AVATAR)}" alt=""></div></div>
