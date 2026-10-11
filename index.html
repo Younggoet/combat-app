@@ -645,10 +645,21 @@ const FO_POINTS = {
   SIG_STRIKE_LANDED: 0.1, TAKEDOWN_LANDED: 2, KNOCKDOWN: 8,
   CONTROL_TIME_PER_MIN: 1, SUBMISSION_ATTEMPT: 1, REVERSAL: 6, TAKEDOWN_DEFENDED: 0.5,
 };
+// Regular mode's advertised "+10 bonus for a KO/TKO or submission win"
+// (see the rule-row banner and scoring-mode description) — Standard mode
+// doesn't get this; it already rewards a finish via the Finisher role's 2x.
+const FO_FINISH_BONUS_REGULAR = 10;
 function foIsFinishMethod(method){
   if (!method) return false;
   const m = method.toLowerCase();
   return m.includes("ko") || m.includes("tko") || m.includes("sub");
+}
+// Flat +10 for actually winning by finish, Regular mode only.
+function foFinishBonusPoints(fighterSbId, bout){
+  if (fo.gameMode !== "regular") return 0;
+  if (!bout || bout.status !== "completed") return 0;
+  if (bout.winner_id !== fighterSbId) return 0;
+  return foIsFinishMethod(bout.method) ? FO_FINISH_BONUS_REGULAR : 0;
 }
 function foBasePoints(stats, oppStats){
   if (!stats) return { total: 0, breakdown: null };
@@ -691,7 +702,7 @@ function foLiveValueForFighter(f, entry, oppF, team, role){
   const liveCtx = foLiveContext(entry, f.sbId, oppF.sbId);
   const liveMult = (fo.gameMode === "standard" && team === "A" && role) ? foLiveRoleMultiplier(role, liveCtx.bout, f.sbId) : 1;
   const { total } = foBasePoints(liveCtx.stats, liveCtx.oppStats);
-  return total * liveMult;
+  return total * liveMult + foFinishBonusPoints(f.sbId, liveCtx.bout);
 }
 
 // Live data cache, populated from Supabase (seeded by combat-sync's live-poll.js
@@ -863,7 +874,8 @@ function foFighterCardData(f, entry, oppF){
   const projValue = (f.proj * projMult).toFixed(2);
 
   const { total: liveTotal, breakdown: liveBreakdown } = foBasePoints(liveCtx.stats, liveCtx.oppStats);
-  const liveValue = (liveTotal * liveMult).toFixed(2);
+  const finishBonus = foFinishBonusPoints(f.sbId, liveCtx.bout);
+  const liveValue = (liveTotal * liveMult + finishBonus).toFixed(2);
   const hasLiveStats = !!liveCtx.stats;
   const isFinal = liveCtx.statusLabel === "FINAL";
   // Once real stats exist, treat the bout as live for display purposes even
