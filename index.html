@@ -416,6 +416,10 @@
   .fo-tape-item{text-align:center;min-width:30px;}
   .fo-tape-item .l{display:block;font-size:8px;font-weight:700;letter-spacing:0.4px;color:var(--text-faint);margin-bottom:1px;}
   .fo-tape-item .v{display:block;font-size:10.5px;font-weight:700;color:var(--text-dim);}
+  /* Shown instead of the stat grid for a fighter with zero recorded UFC
+     fights — no in-cage averages exist to show, so a clear badge reads
+     better than six dashes in a row. */
+  .fo-debut-badge{display:inline-flex;align-items:center;gap:5px;font-family:'Oswald',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:1.2px;padding:6px 11px;border-radius:6px;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.35);color:var(--gold);margin-bottom:9px;}
   .fo-stat-grid{display:inline-grid;grid-template-columns:auto auto;column-gap:10px;row-gap:3px;margin:0 auto 8px;text-align:left;}
   .fo-stat-grid .l{font-size:9px;font-weight:700;letter-spacing:0.3px;color:var(--text-dim);}
   .fo-stat-grid .v{font-size:11px;font-weight:700;color:var(--text);}
@@ -981,9 +985,15 @@ function foFighterCardData(f, entry, oppF){
     { l: "TD DEF", v: fmtPct(f.tdDefAvg) },
   ];
 
+  // True UFC debut: no in-fight performance yet AND no career averages to
+  // fall back on either (as opposed to a fighter who just has a bye week —
+  // those still carry season averages). Used to swap the dash-filled stat
+  // grid for a clear "UFC DEBUT" badge instead of six "—" rows.
+  const isDebut = !hasLiveStats && f.sigStrAvg === null && f.tdAvg === null && f.kdAvg === null;
+
   return {
     f, drafted, divColor, tagBg, tagColor, tagText, edgeColor, projValue, showRolePicker, roleButtonsHtml, statGrid,
-    statusLabel: liveCtx.statusLabel, liveValue, liveColor, isLive, hasLiveStats, isFinal,
+    statusLabel: liveCtx.statusLabel, liveValue, liveColor, isLive, hasLiveStats, isFinal, isDebut,
   };
 }
 
@@ -1008,9 +1018,14 @@ function foRenderFighterHalf(d){
         ${d.f.stance ? `<div class="fo-tape-item"><span class="l">STANCE</span><span class="v">${esc(d.f.stance)}</span></div>` : ""}
       </div>` : ""}
       ${d.hasLiveStats ? `<div style="font-family:'Oswald',sans-serif;font-size:8px;font-weight:700;letter-spacing:1px;color:var(--gold);margin-bottom:3px;">${d.isFinal ? "FINAL STATS" : "● LIVE STATS"}</div>` : ""}
+      ${d.isDebut ? `
+      <div class="fo-debut-badge">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"></path></svg>
+        UFC DEBUT
+      </div>` : `
       <div class="fo-stat-grid">
         ${d.statGrid.map((s) => `<div style="display:flex;justify-content:space-between;gap:6px;min-width:62px;"><span class="l">${s.l}</span><span class="v${d.hasLiveStats ? " live" : ""}">${s.v}</span></div>`).join("")}
-      </div>
+      </div>`}
       <div class="fo-proj">PROJ ${d.projValue}</div>
       <div class="fo-live-row">
         ${d.isLive ? `<div class="fo-live-dot"></div>` : ""}
