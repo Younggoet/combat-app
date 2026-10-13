@@ -329,19 +329,13 @@
   /* True octagon frame — a bold border split cleanly gold (team A side) /
      red (team B side) down the middle, not a diagonal gradient bleed. */
   .fo-head{position:relative;margin-bottom:22px;padding:4px;background:linear-gradient(90deg, #F6DE8C 0%, var(--gold) 24%, #2A2015 48%, #2A1317 52%, var(--red) 76%, #FF8A96 100%);clip-path:polygon(120px 0, calc(100% - 120px) 0, 100% 120px, 100% calc(100% - 120px), calc(100% - 120px) 100%, 120px 100%, 0 calc(100% - 120px), 0 120px);box-shadow:var(--shadow-lg);}
-  .fo-head-inner{position:relative;overflow:hidden;display:flex;align-items:center;min-height:360px;background-color:var(--panel);clip-path:polygon(117px 0, calc(100% - 117px) 0, 100% 117px, 100% calc(100% - 117px), calc(100% - 117px) 100%, 117px 100%, 0 calc(100% - 117px), 0 117px);}
-  /* Fight-poster backdrop for the team banner: each fighter's own photo
-     (the same headshots used elsewhere on their fighter cards), bled to
-     the bottom edge and mask-faded toward center, with a dark vignette
-     so the team names/stats sitting on top stay legible. Images are set
-     inline per-render (left = this card's co-billed fighter, right = the
-     other). Clipped to the octagon shape by the parent's clip-path. */
-  .fo-poster-fighter{position:absolute;bottom:0;height:112%;width:auto;max-width:50%;object-fit:cover;object-position:top center;opacity:0.92;filter:grayscale(0.12) contrast(1.05);z-index:0;}
-  .fo-poster-fighter.left{left:0;-webkit-mask-image:linear-gradient(to right, black 50%, transparent 96%);mask-image:linear-gradient(to right, black 50%, transparent 96%);}
-  .fo-poster-fighter.right{right:0;-webkit-mask-image:linear-gradient(to left, black 50%, transparent 96%);mask-image:linear-gradient(to left, black 50%, transparent 96%);}
-  .fo-poster-scrim{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg, rgba(10,10,12,0.12), rgba(10,10,12,0.5) 68%, rgba(10,10,12,0.82)), linear-gradient(90deg, rgba(10,10,12,0.3), transparent 32%, transparent 68%, rgba(10,10,12,0.3));}
+  .fo-head-inner{position:relative;overflow:hidden;display:flex;align-items:center;min-height:360px;background-color:var(--panel);background-image:var(--fo-arena-bg-url, none);background-size:cover;background-position:center 38%;clip-path:polygon(117px 0, calc(100% - 117px) 0, 100% 117px, 100% calc(100% - 117px), calc(100% - 117px) 100%, 117px 100%, 0 calc(100% - 117px), 0 117px);}
+  /* Arena/octagon backdrop for the team banner — a generic cage photo
+     (see FO_ARENA_BG_URL), darkened by the scrim below so the team
+     names/stats sitting on top stay legible. Clipped to the octagon
+     shape by the parent's clip-path. */
+  .fo-poster-scrim{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg, rgba(10,10,12,0.25), rgba(10,10,12,0.55) 68%, rgba(10,10,12,0.85)), linear-gradient(90deg, rgba(10,10,12,0.35), transparent 32%, transparent 68%, rgba(10,10,12,0.35));}
   .fo-team{position:relative;z-index:1;}
-  @media (max-width:760px){ .fo-poster-fighter{display:none;} }
   /* Event background photo is a fixed, full-viewport backdrop layer behind
      the whole app — position:fixed escapes .wrap's max-width/padding so it
      reaches every edge of the screen, not just the padded content column.
@@ -677,6 +671,15 @@ const FO_BOUT_IDS = FO_CARD_ORDER.map((e) => e.boutId);
 // free for commercial use, https://unsplash.com/photos/city-skyline-during-night-time-kczeUEAhDZI)
 // — matches this card, UFC Fight Night: Buckley vs Malott (Edmonton, Oct 17 2026).
 const FO_EVENT_BG_URL = "https://images.unsplash.com/photo-1617336422396-e1dfc4210ec5?fm=jpg&q=80&w=2400&auto=format&fit=crop";
+
+// Team-banner backdrop photo (behind the two team scores, inside the
+// octagon-framed .fo-head panel). We don't have a usable real photo of
+// Rogers Place's own cage from UFC's last Edmonton card (Moreno vs Albazi,
+// Nov 2024) — what exists of that is Getty/AP editorial sports photography,
+// not something safe to embed. This is a generic cage/octagon stock photo
+// instead (Redd Francisco, Unsplash License — free for commercial use,
+// https://unsplash.com/photos/a-couple-of-men-standing-next-to-each-other-in-a-cage-wEvO6fsQiG4).
+const FO_ARENA_BG_URL = "https://images.unsplash.com/photo-1680022702604-292f21514497?fm=jpg&q=80&w=2400&auto=format&fit=crop";
 const FO_TIMER_CHOICES = [15, 30, 45, 60, 90, 120];
 const FO_MIN_ROSTER_SIZE = 4;
 const FO_MAX_ROSTER_SIZE_CAP = 9;
@@ -1254,13 +1257,6 @@ function renderFaceoff(){
     `;
   }).join("");
 
-  // Fight-poster photos for the team-banner backdrop: this card's main
-  // event, right fighter on the right, left fighter on the left (matches
-  // FO_CARD_ORDER's a/b convention for the first bout on the card).
-  const foPosterBout = FO_CARD_ORDER[0];
-  const foPosterRight = FO_FIGHTERS_BY_ID[foPosterBout.a];
-  const foPosterLeft = FO_FIGHTERS_BY_ID[foPosterBout.b];
-
   content.innerHTML = `
   <div class="fo-page-bg">
     <div class="fo-bg-fixed" style="--fo-bg-url:url('${FO_EVENT_BG_URL}');"></div>
@@ -1291,9 +1287,7 @@ function renderFaceoff(){
     ${settingsHtml}
 
     <div class="fo-head">
-      <div class="fo-head-inner">
-        ${foPosterLeft ? `<img class="fo-poster-fighter left" src="${esc(foPosterLeft.photo)}" alt="">` : ""}
-        ${foPosterRight ? `<img class="fo-poster-fighter right" src="${esc(foPosterRight.photo)}" alt="">` : ""}
+      <div class="fo-head-inner" style="--fo-arena-bg-url:url('${FO_ARENA_BG_URL}');">
         <div class="fo-poster-scrim"></div>
         <div class="fo-team a">
           <div class="fo-avatar-wrap">
