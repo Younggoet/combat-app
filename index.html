@@ -329,12 +329,7 @@
   /* True octagon frame — a bold border split cleanly gold (team A side) /
      red (team B side) down the middle, not a diagonal gradient bleed. */
   .fo-head{position:relative;margin-bottom:22px;padding:4px;background:linear-gradient(90deg, #F6DE8C 0%, var(--gold) 24%, #2A2015 48%, #2A1317 52%, var(--red) 76%, #FF8A96 100%);clip-path:polygon(120px 0, calc(100% - 120px) 0, 100% 120px, 100% calc(100% - 120px), calc(100% - 120px) 100%, 120px 100%, 0 calc(100% - 120px), 0 120px);box-shadow:var(--shadow-lg);}
-  .fo-head-inner{position:relative;overflow:hidden;display:flex;align-items:center;min-height:360px;background-color:var(--panel);background-image:var(--fo-arena-bg-url, none);background-size:cover;background-position:center center;clip-path:polygon(117px 0, calc(100% - 117px) 0, 100% 117px, 100% calc(100% - 117px), calc(100% - 117px) 100%, 117px 100%, 0 calc(100% - 117px), 0 117px);}
-  /* Arena/octagon backdrop for the team banner — a generic cage photo
-     (see FO_ARENA_BG_URL), darkened by the scrim below so the team
-     names/stats sitting on top stay legible. Clipped to the octagon
-     shape by the parent's clip-path. */
-  .fo-poster-scrim{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg, rgba(20,20,23,0.8), rgba(20,20,23,0.9) 68%, rgba(20,20,23,0.97)), linear-gradient(90deg, rgba(20,20,23,0.82), transparent 32%, transparent 68%, rgba(20,20,23,0.82));}
+  .fo-head-inner{position:relative;overflow:hidden;display:flex;align-items:center;min-height:360px;background-color:var(--panel);clip-path:polygon(117px 0, calc(100% - 117px) 0, 100% 117px, 100% calc(100% - 117px), calc(100% - 117px) 100%, 117px 100%, 0 calc(100% - 117px), 0 117px);}
   .fo-team{position:relative;z-index:1;}
   /* Event background photo is a fixed, full-viewport backdrop layer behind
      the whole app — position:fixed escapes .wrap's max-width/padding so it
@@ -672,12 +667,6 @@ const FO_BOUT_IDS = FO_CARD_ORDER.map((e) => e.boutId);
 // — matches this card, UFC Fight Night: Buckley vs Malott (Edmonton, Oct 17 2026).
 const FO_EVENT_BG_URL = "https://images.unsplash.com/photo-1617336422396-e1dfc4210ec5?fm=jpg&q=80&w=2400&auto=format&fit=crop";
 
-// Team-banner backdrop photo (behind the two team scores, inside the
-// octagon-framed .fo-head panel): UFC's own official promo graphic for
-// this exact card, hosted on ufc.com (same site/pattern as the fighter
-// headshots used throughout the app) —
-// https://www.ufc.com/news/pivotal-welterweight-bout-between-joaquin-buckley-and-mike-malott-headlines-ufc-return
-const FO_ARENA_BG_URL = "https://ufc.com/images/styles/background_image_sm/s3/2026-07/101726-ufc-fight-night-buckley-vs-malott-TEMP-HERO.jpg?h=d1cb525d&itok=wjnq4H19";
 const FO_TIMER_CHOICES = [15, 30, 45, 60, 90, 120];
 const FO_MIN_ROSTER_SIZE = 4;
 const FO_MAX_ROSTER_SIZE_CAP = 9;
@@ -1285,8 +1274,7 @@ function renderFaceoff(){
     ${settingsHtml}
 
     <div class="fo-head">
-      <div class="fo-head-inner" style="--fo-arena-bg-url:url('${FO_ARENA_BG_URL}');">
-        <div class="fo-poster-scrim"></div>
+      <div class="fo-head-inner">
         <div class="fo-team a">
           <div class="fo-avatar-wrap">
             <div class="fo-avatar-ring gold"><div class="fo-avatar"><img src="${esc(teamAvatars.A || FO_DEFAULT_AVATAR)}" alt=""></div></div>
