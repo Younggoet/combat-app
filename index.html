@@ -329,13 +329,27 @@
   /* True octagon frame — a bold border split cleanly gold (team A side) /
      red (team B side) down the middle, not a diagonal gradient bleed. */
   .fo-head{position:relative;margin-bottom:22px;padding:4px;background:linear-gradient(90deg, #F6DE8C 0%, var(--gold) 24%, #2A2015 48%, #2A1317 52%, var(--red) 76%, #FF8A96 100%);clip-path:polygon(120px 0, calc(100% - 120px) 0, 100% 120px, 100% calc(100% - 120px), calc(100% - 120px) 100%, 120px 100%, 0 calc(100% - 120px), 0 120px);box-shadow:var(--shadow-lg);}
-  .fo-head-inner{display:flex;align-items:center;min-height:360px;background-color:var(--panel);clip-path:polygon(117px 0, calc(100% - 117px) 0, 100% 117px, 100% calc(100% - 117px), calc(100% - 117px) 100%, 117px 100%, 0 calc(100% - 117px), 0 117px);}
-  /* Event background photo is the ambient backdrop for the WHOLE Face-Off
-     screen, not any one panel — a dark scrim (--fo-bg-url is set inline
-     per-render from FO_EVENT_BG_URL) keeps everything on top of it
-     legible over whatever city shot is set for the current card. Falls
-     back to the plain page color when no background is set. */
-  .fo-page-bg{position:relative;border-radius:18px;padding:24px;background-color:var(--bg);background-image:linear-gradient(rgba(11,11,13,0.88), rgba(11,11,13,0.94)), var(--fo-bg-url, none);background-size:cover;background-position:center top;}
+  .fo-head-inner{position:relative;overflow:hidden;display:flex;align-items:center;min-height:360px;background-color:var(--panel);clip-path:polygon(117px 0, calc(100% - 117px) 0, 100% 117px, 100% calc(100% - 117px), calc(100% - 117px) 100%, 117px 100%, 0 calc(100% - 117px), 0 117px);}
+  /* Fight-poster backdrop for the team banner: each fighter's own photo
+     (the same headshots used elsewhere on their fighter cards), bled to
+     the bottom edge and mask-faded toward center, with a dark vignette
+     so the team names/stats sitting on top stay legible. Images are set
+     inline per-render (left = this card's co-billed fighter, right = the
+     other). Clipped to the octagon shape by the parent's clip-path. */
+  .fo-poster-fighter{position:absolute;bottom:0;height:112%;width:auto;max-width:50%;object-fit:cover;object-position:top center;opacity:0.92;filter:grayscale(0.12) contrast(1.05);z-index:0;}
+  .fo-poster-fighter.left{left:0;-webkit-mask-image:linear-gradient(to right, black 50%, transparent 96%);mask-image:linear-gradient(to right, black 50%, transparent 96%);}
+  .fo-poster-fighter.right{right:0;-webkit-mask-image:linear-gradient(to left, black 50%, transparent 96%);mask-image:linear-gradient(to left, black 50%, transparent 96%);}
+  .fo-poster-scrim{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg, rgba(10,10,12,0.12), rgba(10,10,12,0.5) 68%, rgba(10,10,12,0.82)), linear-gradient(90deg, rgba(10,10,12,0.3), transparent 32%, transparent 68%, rgba(10,10,12,0.3));}
+  .fo-team{position:relative;z-index:1;}
+  @media (max-width:760px){ .fo-poster-fighter{display:none;} }
+  /* Event background photo is a fixed, full-viewport backdrop layer behind
+     the whole app — position:fixed escapes .wrap's max-width/padding so it
+     reaches every edge of the screen, not just the padded content column.
+     A light gradient (not a heavy scrim) keeps the UI legible while still
+     showing the photo at close to its real brightness. --fo-bg-url is set
+     inline per-render from FO_EVENT_BG_URL. */
+  .fo-bg-fixed{position:fixed;inset:0;z-index:-1;pointer-events:none;background-color:var(--bg);background-image:linear-gradient(to bottom, rgba(11,11,13,0.32), rgba(11,11,13,0.7)), var(--fo-bg-url, none);background-size:cover;background-position:center top;}
+  .fo-page-bg{position:relative;border-radius:18px;padding:24px;}
   @media (max-width:760px){ .fo-page-bg{padding:16px;border-radius:12px;} }
   @media (max-width:760px){
     .fo-head{padding:3px;clip-path:polygon(32px 0, calc(100% - 32px) 0, 100% 32px, 100% calc(100% - 32px), calc(100% - 32px) 100%, 32px 100%, 0 calc(100% - 32px), 0 32px);}
@@ -362,7 +376,7 @@
   .fo-roster-strip.b{justify-content:flex-end;}
   .fo-mini{width:34px;height:34px;background:#1C1C20;border:2px solid var(--border);box-sizing:border-box;flex-shrink:0;overflow:hidden;clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);}
   .fo-mini img{width:100%;height:100%;object-fit:cover;}
-  .fo-vs{width:1px;background:var(--border-2);align-self:stretch;position:relative;flex-shrink:0;}
+  .fo-vs{width:1px;background:var(--border-2);align-self:stretch;position:relative;z-index:1;flex-shrink:0;}
   .fo-vs-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);border:3px solid var(--red);border-radius:50%;width:58px;height:58px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;color:var(--red);}
   @media (max-width:760px){ .fo-vs{display:none;} }
   .fo-editor{background:var(--panel);border:1px solid var(--gold);border-radius:var(--r-md);padding:22px 26px;margin-bottom:22px;}
@@ -1150,8 +1164,16 @@ function renderFaceoff(){
     `;
   }).join("");
 
+  // Fight-poster photos for the team-banner backdrop: this card's main
+  // event, right fighter on the right, left fighter on the left (matches
+  // FO_CARD_ORDER's a/b convention for the first bout on the card).
+  const foPosterBout = FO_CARD_ORDER[0];
+  const foPosterRight = FO_FIGHTERS_BY_ID[foPosterBout.a];
+  const foPosterLeft = FO_FIGHTERS_BY_ID[foPosterBout.b];
+
   content.innerHTML = `
-  <div class="fo-page-bg" style="--fo-bg-url:url('${FO_EVENT_BG_URL}');">
+  <div class="fo-page-bg">
+    <div class="fo-bg-fixed" style="--fo-bg-url:url('${FO_EVENT_BG_URL}');"></div>
     <a class="back-link" id="foBackLink">&larr; Back to mode select</a>
     <div class="fo-topbar">
       <div style="display:flex;align-items:center;gap:14px;">
@@ -1175,6 +1197,9 @@ function renderFaceoff(){
 
     <div class="fo-head">
       <div class="fo-head-inner">
+        ${foPosterLeft ? `<img class="fo-poster-fighter left" src="${esc(foPosterLeft.photo)}" alt="">` : ""}
+        ${foPosterRight ? `<img class="fo-poster-fighter right" src="${esc(foPosterRight.photo)}" alt="">` : ""}
+        <div class="fo-poster-scrim"></div>
         <div class="fo-team a">
           <div class="fo-avatar-wrap">
             <div class="fo-avatar-ring gold"><div class="fo-avatar"><img src="${esc(teamAvatars.A || FO_DEFAULT_AVATAR)}" alt=""></div></div>
