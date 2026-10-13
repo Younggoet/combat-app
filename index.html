@@ -868,6 +868,7 @@ function initFaceoff(){
   fo = {
     draftedBy: {},
     settingsOpen: true, // league settings start open so they're set before the first pick locks them in
+    pointsOpen: false, // the "how scoring works" reference panel — independent of settingsOpen, never locks
     pickTimerSeconds: 45,
     rosterSize: 6,
     gameMode: "regular", // "regular" (flat scoring) by default — "standard" (role multipliers) is opt-in
@@ -1069,7 +1070,7 @@ function renderModePick(){
 
 function renderFaceoff(){
   foSaveLocal();
-  const { draftedBy, settingsOpen, pickTimerSeconds, rosterSize, gameMode, finishBonus, teamNames, teamAvatars, editingTeam, roles } = fo;
+  const { draftedBy, settingsOpen, pointsOpen, pickTimerSeconds, rosterSize, gameMode, finishBonus, teamNames, teamAvatars, editingTeam, roles } = fo;
 
   const rosterA = [], rosterB = [];
   let totalA = 0, totalB = 0;
@@ -1159,6 +1160,49 @@ function renderFaceoff(){
     </div>
   `;
 
+  // Reference panel for what actually counts toward points — separate from
+  // fo-settings (which locks after the first pick) since this is just
+  // explaining the rules, not configuring them, so it stays available the
+  // whole draft and during live scoring.
+  const pointsHtml = !pointsOpen ? "" : `
+    <div class="fo-settings" style="border-color:var(--border);">
+      <div class="fo-settings-col" style="width:100%;padding-bottom:4px;">
+        <div class="fo-settings-label" style="margin:0;">HOW SCORING WORKS</div>
+      </div>
+      <div style="width:100%;height:1px;background:var(--border-2);"></div>
+      <div class="fo-settings-col" style="min-width:260px;">
+        <div class="fo-settings-label">REGULAR &middot; WHAT COUNTS</div>
+        <div style="display:grid;grid-template-columns:auto auto;column-gap:14px;row-gap:6px;font-size:12px;">
+          <span style="color:var(--text-dim);">Sig. strike landed</span><span style="color:var(--text);font-weight:700;">0.1 pt</span>
+          <span style="color:var(--text-dim);">Takedown landed</span><span style="color:var(--text);font-weight:700;">2 pts</span>
+          <span style="color:var(--text-dim);">Knockdown</span><span style="color:var(--text);font-weight:700;">8 pts</span>
+          <span style="color:var(--text-dim);">Control time</span><span style="color:var(--text);font-weight:700;">1 pt/min</span>
+          <span style="color:var(--text-dim);">Submission attempt</span><span style="color:var(--text);font-weight:700;">1 pt</span>
+          <span style="color:var(--text-dim);">Reversal</span><span style="color:var(--text);font-weight:700;">6 pts</span>
+          <span style="color:var(--text-dim);">Takedown defended</span><span style="color:var(--text);font-weight:700;">0.5 pt</span>
+          <span style="color:var(--text-dim);">Win by KO/TKO or sub</span><span style="color:var(--gold);font-weight:700;">+10 pts${finishBonus ? "" : " (off)"}</span>
+        </div>
+        <div style="font-size:10.5px;color:var(--text-faint);margin-top:10px;max-width:300px;">Every fighter scores flat — no role, no multiplier. The +10 finish bonus is a league setting and can be turned off.</div>
+      </div>
+      <div style="width:1px;background:var(--border-2);"></div>
+      <div class="fo-settings-col" style="min-width:260px;">
+        <div class="fo-settings-label">STANDARD &middot; WHAT COUNTS</div>
+        <div style="font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;">Same 7 stats as Regular, but each pick also gets assigned a role, and that role doubles everything that fighter scores:</div>
+        <div style="display:grid;grid-template-columns:auto auto;column-gap:14px;row-gap:6px;font-size:12px;">
+          <span style="color:var(--text-dim);">Striker role</span><span style="color:var(--text);font-weight:700;">2x, always</span>
+          <span style="color:var(--text-dim);">Grappler role</span><span style="color:var(--text);font-weight:700;">2x, always</span>
+          <span style="color:var(--text-dim);">Finisher role</span><span style="color:var(--text);font-weight:700;">2x only on a finish win</span>
+        </div>
+        <div style="font-size:10.5px;color:var(--text-faint);margin-top:10px;max-width:300px;">No separate +10 bonus in Standard — Finisher's 2x already covers rewarding a finish.</div>
+      </div>
+      <div style="width:100%;height:1px;background:var(--border-2);"></div>
+      <div class="fo-settings-col" style="width:100%;">
+        <div class="fo-settings-label">ONE MORE THING</div>
+        <div style="font-size:12px;color:var(--text-dim);line-height:1.5;max-width:620px;">Nothing stops you from drafting <b style="color:var(--text);">both fighters out of the same bout</b> onto your own roster if you want — there's no rule tying the two corners of a fight together. You'll bank stat points from whichever one wins, but only one side can ever get the win-related bonus (the +10 in Regular, or Finisher's 2x in Standard).</div>
+      </div>
+    </div>
+  `;
+
   const editorHtml = !editingTeam ? "" : `
     <div class="fo-editor">
       <div class="fo-settings-label">EDIT ${esc(teamNames[editingTeam].toUpperCase())}</div>
@@ -1232,6 +1276,10 @@ function renderFaceoff(){
           <div class="h-font" style="font-size:11px;letter-spacing:1.5px;color:var(--gold);">${esc(FO_EVENT_NAME)}</div>
           <div style="font-size:12px;color:var(--text-faint);margin-top:2px;">${esc(FO_EVENT_SUB)}</div>
         </div>
+        <button type="button" class="fo-gear ${pointsOpen ? "active" : ""}" id="foPointsBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${pointsOpen ? "var(--gold)" : "var(--text-dim)"}" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+          <span class="h-font" style="font-size:10px;letter-spacing:1px;color:${pointsOpen ? "var(--gold)" : "var(--text-dim)"};">POINTS &amp; RULES</span>
+        </button>
         <button type="button" class="fo-gear ${settingsOpen ? "active" : ""}" id="foSettingsBtn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${settingsOpen ? "var(--gold)" : "var(--text-dim)"}" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
           <span class="h-font" style="font-size:10px;letter-spacing:1px;color:${settingsOpen ? "var(--gold)" : "var(--text-dim)"};">LEAGUE SETTINGS</span>
@@ -1239,6 +1287,7 @@ function renderFaceoff(){
       </div>
     </div>
 
+    ${pointsHtml}
     ${settingsHtml}
 
     <div class="fo-head">
@@ -1323,6 +1372,7 @@ function renderFaceoff(){
 function wireFaceoff(){
   document.getElementById("foBackLink").addEventListener("click", () => { foUnsubscribeRealtime(); screen = "modePick"; render(); });
   document.getElementById("foSettingsBtn").addEventListener("click", () => { fo.settingsOpen = !fo.settingsOpen; renderFaceoff(); });
+  document.getElementById("foPointsBtn").addEventListener("click", () => { fo.pointsOpen = !fo.pointsOpen; renderFaceoff(); });
   const lockBtn = document.getElementById("foLockSettingsBtn");
   if (lockBtn) lockBtn.addEventListener("click", () => { fo.settingsOpen = false; renderFaceoff(); });
   const newDraftBtn = document.getElementById("foNewDraftBtn");
