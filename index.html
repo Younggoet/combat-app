@@ -366,7 +366,10 @@
   .fo-mini{width:34px;height:34px;background:#1C1C20;border:2px solid var(--border);box-sizing:border-box;flex-shrink:0;overflow:hidden;clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);}
   .fo-mini img{width:100%;height:100%;object-fit:cover;}
   .fo-vs{width:1px;background:var(--border-2);align-self:stretch;position:relative;z-index:1;flex-shrink:0;}
-  .fo-vs-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);border:3px solid var(--red);border-radius:50%;width:58px;height:58px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;color:var(--red);}
+  .fo-vs-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(90deg, var(--gold) 50%, var(--red) 50%);clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);width:58px;height:58px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;}
+  .fo-vs-badge span{text-shadow:0 1px 2px rgba(0,0,0,0.65);-webkit-text-stroke:0.4px rgba(0,0,0,0.4);}
+  .fo-vs-badge span.v{color:var(--gold);}
+  .fo-vs-badge span.s{color:var(--red);}
   @media (max-width:760px){ .fo-vs{display:none;} }
   .fo-editor{background:var(--panel);border:1px solid var(--gold);border-radius:var(--r-md);padding:22px 26px;margin-bottom:22px;}
   .fo-swatch{all:unset;cursor:pointer;}
@@ -1297,7 +1300,7 @@ function renderFaceoff(){
             <div class="fo-roster-strip">${teamARosterHtml}</div>
           </div>
         </div>
-        <div class="fo-vs"><div class="fo-vs-badge">VS</div></div>
+        <div class="fo-vs"><div class="fo-vs-badge"><span class="v">V</span><span class="s">S</span></div></div>
         <div class="fo-team b">
           <div class="fo-avatar-wrap">
             <div class="fo-avatar-ring red"><div class="fo-avatar"><img src="${esc(teamAvatars.B || FO_DEFAULT_AVATAR)}" alt=""></div></div>
