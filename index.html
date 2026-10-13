@@ -402,9 +402,20 @@
   .fo-fighter-ring{width:84px;height:84px;margin:0 auto 10px;padding:3px;box-sizing:border-box;clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);}
   .fo-fighter-av{width:100%;height:100%;background:#0F0F12;box-sizing:border-box;overflow:hidden;clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);}
   .fo-fighter-av img{width:100%;height:100%;object-fit:cover;}
-  .fo-fighter-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;line-height:1.15;margin-bottom:4px;}
+  .fo-fighter-name-row{display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:4px;}
+  .fo-fighter-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;line-height:1.15;}
+  .fo-flag{width:16px;height:12px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(255,255,255,0.14);flex-shrink:0;}
   .fo-fighter-div{font-size:10.5px;margin-bottom:2px;}
   .fo-fighter-record{font-size:10.5px;color:var(--text-faint);margin-bottom:6px;}
+  /* Tale-of-the-tape: pre-fight bio stats (height/weight/reach/age/stance),
+     distinct from the fo-stat-grid below it (that one is in-cage performance
+     averages). Only fields present in FO_FIGHTERS render — debut fighters
+     with no UFC.com bio yet (Nick Galanti, Cody Chovancek) just skip this
+     row rather than show fabricated numbers. */
+  .fo-tape{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin:0 auto 8px;padding-bottom:7px;border-bottom:1px solid var(--border-2);max-width:220px;}
+  .fo-tape-item{text-align:center;min-width:30px;}
+  .fo-tape-item .l{display:block;font-size:8px;font-weight:700;letter-spacing:0.4px;color:var(--text-faint);margin-bottom:1px;}
+  .fo-tape-item .v{display:block;font-size:10.5px;font-weight:700;color:var(--text-dim);}
   .fo-stat-grid{display:inline-grid;grid-template-columns:auto auto;column-gap:10px;row-gap:3px;margin:0 auto 8px;text-align:left;}
   .fo-stat-grid .l{font-size:9px;font-weight:700;letter-spacing:0.3px;color:var(--text-dim);}
   .fo-stat-grid .v{font-size:11px;font-weight:700;color:var(--text);}
@@ -543,6 +554,15 @@ function fmtRecord(f){
   if (f.wins === null || f.wins === undefined || f.losses === null || f.losses === undefined) return "—";
   return `${f.wins}-${f.losses}-0`;
 }
+// Tale-of-the-tape height: stored as decimal inches (UFC.com's own bio
+// format, e.g. 70 for 5'10") -> "5'10&Prime;".
+function fmtHeight(totalInches){
+  if (totalInches === null || totalInches === undefined) return "—";
+  const whole = Math.round(totalInches);
+  const ft = Math.floor(whole / 12);
+  const inch = whole % 12;
+  return `${ft}&#39;${inch}&Prime;`;
+}
 function fmtClock(totalSeconds){
   const s = Math.max(0, Math.round(totalSeconds));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -589,31 +609,31 @@ function projectedFantasyPoints(f){
    into the fighters table instead of a pick-time role.
    ========================================================================= */
 const FO_FIGHTERS = [
-  { id:"joaquin-buckley", sbId:"953fd943-f899-4bf1-9de6-10244739dfcd", name:"Joaquin Buckley", div:"Welterweight", proj:10.0, wins:7, losses:14, sigStrAvg:39.8, tdAvg:1.1, kdAvg:0.29, ctrlAvg:89, subAttAvg:0.0, tdDefAvg:0.695, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/BUCKLEY_JOAQUIN_05-09.png?itok=3xDwxvT-" },
-  { id:"mike-malott", sbId:"34329675-e41a-4aa0-9738-1d2ee9accda9", name:"Mike Malott", div:"Welterweight", proj:12.2, wins:4, losses:1, sigStrAvg:39.8, tdAvg:1.2, kdAvg:0.40, ctrlAvg:135, subAttAvg:0.4, tdDefAvg:0.100, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/MALOTT_MIKE_04-18.png?itok=yln7kIM0" },
-  { id:"erin-blanchfield", sbId:"26d0b025-b493-486d-af96-d3b164ba0687", name:"Erin Blanchfield", div:"Women's Flyweight", proj:15.4, wins:13, losses:2, sigStrAvg:76.7, tdAvg:1.5, kdAvg:0.00, ctrlAvg:243, subAttAvg:0.7, tdDefAvg:0.811, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-11/BLANCHFIELD_ERIN_11-15.png?itok=5knUFSsZ" },
-  { id:"jasmine-jasudavicius", sbId:"22d13562-eccd-41b7-a582-a1afd3f32c5b", name:"Jasmine Jasudavicius", div:"Women's Flyweight", proj:12.7, wins:14, losses:7, sigStrAvg:32.1, tdAvg:1.8, kdAvg:0.05, ctrlAvg:308, subAttAvg:0.4, tdDefAvg:0.667, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/JASUDAVICIUS_JASMINE_04-18.png?itok=JHUifF5g" },
-  { id:"kyle-nelson", sbId:"d7a009b9-d488-4ec6-b846-731098133d64", name:"Kyle Nelson", div:"Lightweight", proj:9.3, wins:5, losses:11, sigStrAvg:38.5, tdAvg:0.9, kdAvg:0.17, ctrlAvg:136, subAttAvg:0.0, tdDefAvg:0.736, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/NELSON_KYLE_03-28.png?itok=MnXya2nC" },
-  { id:"cristian-perez-gonzalez", sbId:"3a53ed2d-a3d4-4575-af3e-24a625bd969f", name:"Cristian Perez Gonzalez", div:"Lightweight", proj:6.0, wins:null, losses:null, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-08/PEREZ_CRISTIAN_08-18.png?itok=gP9LvHPG" },
-  { id:"marc-andre-barriault", sbId:"250ce8db-11d8-497e-820c-7cfa62eb8818", name:"Marc-Andre Barriault", div:"Middleweight", proj:3.7, wins:0, losses:16, sigStrAvg:31.0, tdAvg:0.1, kdAvg:0.00, ctrlAvg:24, subAttAvg:0.0, tdDefAvg:0.578, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-02/BARRIAULT_MARC-ANDRE_02-07.png?itok=CFaKFsp0" },
-  { id:"kyle-daukaus", sbId:"6d995d43-aa50-4718-894c-f6c3a7cfdf60", name:"Kyle Daukaus", div:"Middleweight", proj:6.8, wins:4, losses:4, sigStrAvg:11.8, tdAvg:0.4, kdAvg:0.30, ctrlAvg:83, subAttAvg:1.0, tdDefAvg:0.333, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/DAUKAUS_KYLE_06-14.png?itok=HhcLsgnT" },
-  { id:"louis-jourdain", sbId:"d663aa5b-dd92-4a3c-96a8-ea40309399c9", name:"Louis Jourdain", div:"Bantamweight", proj:6.0, wins:null, losses:null, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-10/JOURDAIN_LOUIS_09-30.png?itok=KXMwtlxK" },
-  { id:"timmy-cuamba", sbId:"7760dbba-2748-4788-bed1-dcc63c3098c4", name:"Timmy Cuamba", div:"Bantamweight", proj:12.1, wins:8, losses:5, sigStrAvg:28.6, tdAvg:1.4, kdAvg:0.44, ctrlAvg:176, subAttAvg:0.0, tdDefAvg:0.705, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/CUAMBA_TIMOTHY_05-16.png?itok=i1Kuepca" },
-  { id:"mandel-nallo", sbId:"c3fb1a6e-4236-4b20-a22d-3a6481308bfe", name:"Mandel Nallo", div:"Lightweight", proj:9.8, wins:0, losses:3, sigStrAvg:16.0, tdAvg:0.0, kdAvg:1.00, ctrlAvg:10, subAttAvg:0.0, tdDefAvg:null, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/NALLO_MANDEL_04-18.png?itok=Zy274sFF" },
-  { id:"nate-landwehr", sbId:"a816ec9b-4b7a-43a4-b5d6-d03ac41ac709", name:"Nate Landwehr", div:"Lightweight", proj:10.2, wins:7, losses:10, sigStrAvg:55.0, tdAvg:0.8, kdAvg:0.06, ctrlAvg:114, subAttAvg:0.7, tdDefAvg:0.611, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/LANDWEHR_NATE_04-11.png?itok=aAYASdzO" },
+  { id:"joaquin-buckley", sbId:"953fd943-f899-4bf1-9de6-10244739dfcd", name:"Joaquin Buckley", div:"Welterweight", proj:10.0, wins:7, losses:14, sigStrAvg:39.8, tdAvg:1.1, kdAvg:0.29, ctrlAvg:89, subAttAvg:0.0, tdDefAvg:0.695, country:"US", heightIn:70, weightLb:171, reachIn:76, age:32, stance:"Southpaw", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/BUCKLEY_JOAQUIN_05-09.png?itok=3xDwxvT-" },
+  { id:"mike-malott", sbId:"34329675-e41a-4aa0-9738-1d2ee9accda9", name:"Mike Malott", div:"Welterweight", proj:12.2, wins:4, losses:1, sigStrAvg:39.8, tdAvg:1.2, kdAvg:0.40, ctrlAvg:135, subAttAvg:0.4, tdDefAvg:0.100, country:"CA", heightIn:73, weightLb:171, reachIn:73, age:34, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/MALOTT_MIKE_04-18.png?itok=yln7kIM0" },
+  { id:"erin-blanchfield", sbId:"26d0b025-b493-486d-af96-d3b164ba0687", name:"Erin Blanchfield", div:"Women's Flyweight", proj:15.4, wins:13, losses:2, sigStrAvg:76.7, tdAvg:1.5, kdAvg:0.00, ctrlAvg:243, subAttAvg:0.7, tdDefAvg:0.811, country:"US", heightIn:64, weightLb:125.8, reachIn:66, age:27, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-11/BLANCHFIELD_ERIN_11-15.png?itok=5knUFSsZ" },
+  { id:"jasmine-jasudavicius", sbId:"22d13562-eccd-41b7-a582-a1afd3f32c5b", name:"Jasmine Jasudavicius", div:"Women's Flyweight", proj:12.7, wins:14, losses:7, sigStrAvg:32.1, tdAvg:1.8, kdAvg:0.05, ctrlAvg:308, subAttAvg:0.4, tdDefAvg:0.667, country:"CA", heightIn:67, weightLb:125.5, reachIn:68, age:37, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/JASUDAVICIUS_JASMINE_04-18.png?itok=JHUifF5g" },
+  { id:"kyle-nelson", sbId:"d7a009b9-d488-4ec6-b846-731098133d64", name:"Kyle Nelson", div:"Lightweight", proj:9.3, wins:5, losses:11, sigStrAvg:38.5, tdAvg:0.9, kdAvg:0.17, ctrlAvg:136, subAttAvg:0.0, tdDefAvg:0.736, country:"CA", heightIn:71, weightLb:155.5, reachIn:71, age:35, stance:"Switch", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/NELSON_KYLE_03-28.png?itok=MnXya2nC" },
+  { id:"cristian-perez-gonzalez", sbId:"3a53ed2d-a3d4-4575-af3e-24a625bd969f", name:"Cristian Perez Gonzalez", div:"Lightweight", proj:6.0, wins:null, losses:null, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, country:"MX", heightIn:69, weightLb:155, reachIn:72, age:27, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-08/PEREZ_CRISTIAN_08-18.png?itok=gP9LvHPG" },
+  { id:"marc-andre-barriault", sbId:"250ce8db-11d8-497e-820c-7cfa62eb8818", name:"Marc-Andre Barriault", div:"Middleweight", proj:3.7, wins:0, losses:16, sigStrAvg:31.0, tdAvg:0.1, kdAvg:0.00, ctrlAvg:24, subAttAvg:0.0, tdDefAvg:0.578, country:"CA", heightIn:73, weightLb:185, reachIn:74, age:36, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-02/BARRIAULT_MARC-ANDRE_02-07.png?itok=CFaKFsp0" },
+  { id:"kyle-daukaus", sbId:"6d995d43-aa50-4718-894c-f6c3a7cfdf60", name:"Kyle Daukaus", div:"Middleweight", proj:6.8, wins:4, losses:4, sigStrAvg:11.8, tdAvg:0.4, kdAvg:0.30, ctrlAvg:83, subAttAvg:1.0, tdDefAvg:0.333, country:"US", heightIn:75, weightLb:186, reachIn:76, age:33, stance:"Southpaw", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/DAUKAUS_KYLE_06-14.png?itok=HhcLsgnT" },
+  { id:"louis-jourdain", sbId:"d663aa5b-dd92-4a3c-96a8-ea40309399c9", name:"Louis Jourdain", div:"Bantamweight", proj:6.0, wins:null, losses:null, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, country:"CA", heightIn:69, weightLb:135.5, reachIn:69.5, age:29, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-10/JOURDAIN_LOUIS_09-30.png?itok=KXMwtlxK" },
+  { id:"timmy-cuamba", sbId:"7760dbba-2748-4788-bed1-dcc63c3098c4", name:"Timmy Cuamba", div:"Bantamweight", proj:12.1, wins:8, losses:5, sigStrAvg:28.6, tdAvg:1.4, kdAvg:0.44, ctrlAvg:176, subAttAvg:0.0, tdDefAvg:0.705, country:"US", heightIn:69, weightLb:136, reachIn:71, age:27, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/CUAMBA_TIMOTHY_05-16.png?itok=i1Kuepca" },
+  { id:"mandel-nallo", sbId:"c3fb1a6e-4236-4b20-a22d-3a6481308bfe", name:"Mandel Nallo", div:"Lightweight", proj:9.8, wins:0, losses:3, sigStrAvg:16.0, tdAvg:0.0, kdAvg:1.00, ctrlAvg:10, subAttAvg:0.0, tdDefAvg:null, country:"CA", heightIn:72, weightLb:155, reachIn:75, age:37, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/NALLO_MANDEL_04-18.png?itok=Zy274sFF" },
+  { id:"nate-landwehr", sbId:"a816ec9b-4b7a-43a4-b5d6-d03ac41ac709", name:"Nate Landwehr", div:"Lightweight", proj:10.2, wins:7, losses:10, sigStrAvg:55.0, tdAvg:0.8, kdAvg:0.06, ctrlAvg:114, subAttAvg:0.7, tdDefAvg:0.611, country:"US", heightIn:69, weightLb:146, reachIn:72, age:38, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/LANDWEHR_NATE_04-11.png?itok=aAYASdzO" },
   // Preliminary card (5 of the real 7 bouts — Mahjoub vs Faglier and
   // Cerminara vs Stiller are left out: Joel Faglier and Mackenzie Stiller
   // aren't in the fighters table at all yet, unlike everyone else here).
-  { id:"tanner-boser", sbId:"7f640643-bdf4-4845-8cd5-d51bb9b84feb", name:"Tanner Boser", div:"Heavyweight", proj:3.8, wins:0, losses:5, sigStrAvg:32.4, tdAvg:0.0, kdAvg:0.00, ctrlAvg:36, subAttAvg:0.0, tdDefAvg:0.600, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/BOSER_TANNER_04-18.png?itok=SGS7_HgT" },
-  { id:"jhonata-diniz", sbId:"6807d9e1-d13b-40a6-83cb-2778286ccff4", name:"Jhonata Diniz", div:"Heavyweight", proj:3.9, wins:2, losses:6, sigStrAvg:35.8, tdAvg:0.0, kdAvg:0.00, ctrlAvg:20, subAttAvg:0.0, tdDefAvg:0.621, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-10/DINIZ_JHONATA_10-11.png?itok=eUzgQ9Ue" },
-  { id:"julien-leblanc", sbId:"fc317268-0ce0-40ad-9ba7-9d7c307bcecd", name:"Julien Leblanc", div:"Middleweight", proj:0.4, wins:0, losses:4, sigStrAvg:4.0, tdAvg:0.0, kdAvg:0.00, ctrlAvg:0, subAttAvg:0.0, tdDefAvg:null, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/LEBLANC_JULIEN_04-18.png?itok=0J35tdDJ" },
+  { id:"tanner-boser", sbId:"7f640643-bdf4-4845-8cd5-d51bb9b84feb", name:"Tanner Boser", div:"Heavyweight", proj:3.8, wins:0, losses:5, sigStrAvg:32.4, tdAvg:0.0, kdAvg:0.00, ctrlAvg:36, subAttAvg:0.0, tdDefAvg:0.600, country:"CA", heightIn:74, weightLb:204.5, reachIn:75.5, age:35, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/BOSER_TANNER_04-18.png?itok=SGS7_HgT" },
+  { id:"jhonata-diniz", sbId:"6807d9e1-d13b-40a6-83cb-2778286ccff4", name:"Jhonata Diniz", div:"Heavyweight", proj:3.9, wins:2, losses:6, sigStrAvg:35.8, tdAvg:0.0, kdAvg:0.00, ctrlAvg:20, subAttAvg:0.0, tdDefAvg:0.621, country:"BR", heightIn:76, weightLb:257, reachIn:79.5, age:34, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-10/DINIZ_JHONATA_10-11.png?itok=eUzgQ9Ue" },
+  { id:"julien-leblanc", sbId:"fc317268-0ce0-40ad-9ba7-9d7c307bcecd", name:"Julien Leblanc", div:"Middleweight", proj:0.4, wins:0, losses:4, sigStrAvg:4.0, tdAvg:0.0, kdAvg:0.00, ctrlAvg:0, subAttAvg:0.0, tdDefAvg:null, country:"CA", heightIn:74, weightLb:185, reachIn:74.5, age:34, stance:"Southpaw", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/LEBLANC_JULIEN_04-18.png?itok=0J35tdDJ" },
   { id:"nick-galanti", sbId:"8a6aa731-3861-480d-9dd1-872c4312080b", name:"Nick Galanti", div:"Middleweight", proj:6.0, wins:null, losses:null, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, photo:"https://ufc.com/images/styles/teaser/s3/2026-09/GALANTI_NICK_08-25.png?h=a30e7339&itok=oQjasD7S" },
-  { id:"chad-anheliger", sbId:"7d08d136-d7b3-4e6c-8df3-02ac1136c63f", name:"Chad Anheliger", div:"Bantamweight", proj:3.9, wins:0, losses:4, sigStrAvg:39.0, tdAvg:0.0, kdAvg:0.00, ctrlAvg:0, subAttAvg:0.0, tdDefAvg:0.000, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2024-10/ANHELIGER_CHAD_11-02.png?itok=WCoq26O4" },
-  { id:"steven-koslow", sbId:"13470b97-c385-4363-be14-8727bc58212b", name:"Steven Koslow", div:"Bantamweight", proj:16.8, wins:0, losses:2, sigStrAvg:11.0, tdAvg:5.0, kdAvg:0.00, ctrlAvg:280, subAttAvg:1.0, tdDefAvg:null, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2022-12/KOSLOW_STEVEN_12-10.png?itok=Popujz1Z" },
-  { id:"melissa-croden", sbId:"b2fcfb67-ddc6-4830-93f1-3b0dc452ccfa", name:"Melissa Croden", div:"Women's Bantamweight", proj:18.0, wins:6, losses:2, sigStrAvg:64.8, tdAvg:2.5, kdAvg:0.25, ctrlAvg:243, subAttAvg:0.5, tdDefAvg:0.661, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-10/CRODEN_MELISSA_10-18.png?itok=j_REw9Gb" },
-  { id:"chelsea-chandler", sbId:"f8894b1d-9275-44a8-b39b-67b7de23fde6", name:"Chelsea Chandler", div:"Women's Bantamweight", proj:6.9, wins:3, losses:8, sigStrAvg:25.1, tdAvg:0.4, kdAvg:0.18, ctrlAvg:115, subAttAvg:0.2, tdDefAvg:0.000, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/CHANDLER_CHELSEA_06-06.png?itok=baxryhp9" },
-  { id:"cody-chovancek", sbId:"96289323-9bf8-44fa-9e7f-38208c028253", name:"Cody Chovancek", div:"Bantamweight", proj:6.0, wins:null, losses:null, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-09/CHOVANCEK_CODY_09-16.png?itok=DgOPCbWP" },
-  { id:"suyoung-you", sbId:"7a48b34c-db7c-4931-a57a-6c0a341682c7", name:"SuYoung You", div:"Bantamweight", proj:9.4, wins:2, losses:4, sigStrAvg:21.3, tdAvg:2.7, kdAvg:0.00, ctrlAvg:110, subAttAvg:0.0, tdDefAvg:null, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/YOU_SUYOUNG_03-14.png?itok=VzYK7pUi" },
+  { id:"chad-anheliger", sbId:"7d08d136-d7b3-4e6c-8df3-02ac1136c63f", name:"Chad Anheliger", div:"Bantamweight", proj:3.9, wins:0, losses:4, sigStrAvg:39.0, tdAvg:0.0, kdAvg:0.00, ctrlAvg:0, subAttAvg:0.0, tdDefAvg:0.000, country:"CA", heightIn:66, weightLb:135, reachIn:64.5, age:38, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2024-10/ANHELIGER_CHAD_11-02.png?itok=WCoq26O4" },
+  { id:"steven-koslow", sbId:"13470b97-c385-4363-be14-8727bc58212b", name:"Steven Koslow", div:"Bantamweight", proj:16.8, wins:0, losses:2, sigStrAvg:11.0, tdAvg:5.0, kdAvg:0.00, ctrlAvg:280, subAttAvg:1.0, tdDefAvg:null, country:"US", heightIn:67.5, weightLb:136, reachIn:69, age:26, stance:"Switch", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2022-12/KOSLOW_STEVEN_12-10.png?itok=Popujz1Z" },
+  { id:"melissa-croden", sbId:"b2fcfb67-ddc6-4830-93f1-3b0dc452ccfa", name:"Melissa Croden", div:"Women's Bantamweight", proj:18.0, wins:6, losses:2, sigStrAvg:64.8, tdAvg:2.5, kdAvg:0.25, ctrlAvg:243, subAttAvg:0.5, tdDefAvg:0.661, country:"CA", heightIn:69, weightLb:135, reachIn:68.5, age:35, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-10/CRODEN_MELISSA_10-18.png?itok=j_REw9Gb" },
+  { id:"chelsea-chandler", sbId:"f8894b1d-9275-44a8-b39b-67b7de23fde6", name:"Chelsea Chandler", div:"Women's Bantamweight", proj:6.9, wins:3, losses:8, sigStrAvg:25.1, tdAvg:0.4, kdAvg:0.18, ctrlAvg:115, subAttAvg:0.2, tdDefAvg:0.000, country:"US", heightIn:68.5, weightLb:134, reachIn:68, age:35, stance:"Southpaw", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/CHANDLER_CHELSEA_06-06.png?itok=baxryhp9" },
+  { id:"cody-chovancek", sbId:"96289323-9bf8-44fa-9e7f-38208c028253", name:"Cody Chovancek", div:"Bantamweight", proj:6.0, wins:null, losses:null, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, country:"CA", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-09/CHOVANCEK_CODY_09-16.png?itok=DgOPCbWP" },
+  { id:"suyoung-you", sbId:"7a48b34c-db7c-4931-a57a-6c0a341682c7", name:"SuYoung You", div:"Bantamweight", proj:9.4, wins:2, losses:4, sigStrAvg:21.3, tdAvg:2.7, kdAvg:0.00, ctrlAvg:110, subAttAvg:0.0, tdDefAvg:null, country:"KR", heightIn:66, weightLb:135.5, reachIn:65, age:30, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/YOU_SUYOUNG_03-14.png?itok=VzYK7pUi" },
 ];
 const FO_FIGHTERS_BY_ID = Object.fromEntries(FO_FIGHTERS.map((f) => [f.id, f]));
 const FO_DIV_LABEL = {
@@ -973,9 +993,20 @@ function foRenderFighterHalf(d){
       <div class="fo-fighter-ring" style="background:radial-gradient(circle at 35% 28%, #fff 0%, ${d.divColor} 55%, #000 130%);">
         <div class="fo-fighter-av"><img src="${esc(d.f.photo)}" alt=""></div>
       </div>
-      <div class="fo-fighter-name">${esc(d.f.name)}</div>
+      <div class="fo-fighter-name-row">
+        ${d.f.country ? `<img class="fo-flag" src="https://flagcdn.com/24x18/${esc(d.f.country.toLowerCase())}.png" alt="${esc(d.f.country)}">` : ""}
+        <span class="fo-fighter-name">${esc(d.f.name)}</span>
+      </div>
       <div class="fo-fighter-div" style="color:${d.divColor};">${esc(DIV_SHORT[d.f.div] || "")}</div>
       <div class="fo-fighter-record">${esc(fmtRecord(d.f))}</div>
+      ${(d.f.heightIn || d.f.weightLb || d.f.reachIn || d.f.age || d.f.stance) ? `
+      <div class="fo-tape">
+        ${d.f.heightIn ? `<div class="fo-tape-item"><span class="l">HT</span><span class="v">${fmtHeight(d.f.heightIn)}</span></div>` : ""}
+        ${d.f.weightLb ? `<div class="fo-tape-item"><span class="l">WT</span><span class="v">${Math.round(d.f.weightLb)}</span></div>` : ""}
+        ${d.f.reachIn ? `<div class="fo-tape-item"><span class="l">REACH</span><span class="v">${d.f.reachIn}&Prime;</span></div>` : ""}
+        ${d.f.age ? `<div class="fo-tape-item"><span class="l">AGE</span><span class="v">${d.f.age}</span></div>` : ""}
+        ${d.f.stance ? `<div class="fo-tape-item"><span class="l">STANCE</span><span class="v">${esc(d.f.stance)}</span></div>` : ""}
+      </div>` : ""}
       ${d.hasLiveStats ? `<div style="font-family:'Oswald',sans-serif;font-size:8px;font-weight:700;letter-spacing:1px;color:var(--gold);margin-bottom:3px;">${d.isFinal ? "FINAL STATS" : "● LIVE STATS"}</div>` : ""}
       <div class="fo-stat-grid">
         ${d.statGrid.map((s) => `<div style="display:flex;justify-content:space-between;gap:6px;min-width:62px;"><span class="l">${s.l}</span><span class="v${d.hasLiveStats ? " live" : ""}">${s.v}</span></div>`).join("")}
