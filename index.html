@@ -573,30 +573,18 @@ function projectedFantasyPoints(f){
    into the fighters table instead of a pick-time role.
    ========================================================================= */
 const FO_FIGHTERS = [
-  { id:"otari-tanzilovi", sbId:"7d207c97-0f8a-41c9-918d-8dd3c7f4885e", name:"Otari Tanzilovi", div:"Bantamweight", proj:21.5, wins:10, losses:2, sigStrAvg:58.0, tdAvg:1.2, kdAvg:0.3, ctrlAvg:90, subAttAvg:0.2, tdDefAvg:0.68, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/TANZILOVI_OTARI_06-20.png?itok=V2E-c9jE" },
-  { id:"melissa-gatto", sbId:"a0e0e830-dc73-439d-8630-0bfc374b1786", name:"Melissa Gatto", div:"Women's Bantamweight", proj:20.3, wins:9, losses:3, sigStrAvg:31.5, tdAvg:1.8, kdAvg:0.1, ctrlAvg:144, subAttAvg:0.4, tdDefAvg:0.55, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/GATTO_MELISSA_04-04.png?itok=asrqp-zJ" },
-  { id:"brendan-allen", sbId:"fc47780a-a61c-4255-962e-425cb345cabe", name:"Brendan Allen", div:"Middleweight", proj:18.5, wins:27, losses:7, sigStrAvg:55.0, tdAvg:2.1, kdAvg:0.2, ctrlAvg:288, subAttAvg:0.9, tdDefAvg:0.72, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/ALLEN_BRENDAN_06-06.png?itok=mXcOZvKs" },
-  { id:"ernesta-kareckaite", sbId:"0fcf88d2-f2e5-4c64-9128-cf686eee6df9", name:"Ernesta Kareckaitė", div:"Women's Flyweight", proj:17.1, wins:6, losses:2, sigStrAvg:89.0, tdAvg:0.4, kdAvg:0.2, ctrlAvg:48, subAttAvg:0.1, tdDefAvg:0.61, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-02/KARECKAITE_ERNESTA_02-28.png?itok=9-oSZvG3" },
-  { id:"loopy-godinez", sbId:"14fc4e74-5837-48fe-9464-b5f589a0f910", name:"Loopy Godinez", div:"Women's Strawweight", proj:17.0, wins:14, losses:6, sigStrAvg:60.9, tdAvg:2.6, kdAvg:0.1, ctrlAvg:234, subAttAvg:0.6, tdDefAvg:0.58, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/GODINEZ_LOOPY_04-11.png?itok=lEd5QqLm" },
-  { id:"francisco-prado", sbId:"ca0bc5a0-e6e3-48b3-8962-930f2b2f81ad", name:"Francisco Prado", div:"Lightweight", proj:14.2, wins:12, losses:5, sigStrAvg:50.4, tdAvg:3.4, kdAvg:0.2, ctrlAvg:336, subAttAvg:0.3, tdDefAvg:0.64, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/PRADO_FRANCISCO_04-11.png?itok=EYhU3Rp7" },
-  { id:"julius-walker", sbId:"beb61a19-487e-4001-9111-2ea95a210ba2", name:"Julius Walker", div:"Light Heavyweight", proj:12.0, wins:7, losses:3, sigStrAvg:44.8, tdAvg:0.6, kdAvg:0.4, ctrlAvg:66, subAttAvg:0.1, tdDefAvg:0.70, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/WALKER_JULIUS_06-27.png?itok=XxGZTaIJ" },
-  { id:"christian-leroy-duncan", sbId:"4bd3cb21-865a-4b59-9cd4-0ee71be6ce04", name:"Christian Leroy Duncan", div:"Middleweight", proj:11.4, wins:15, losses:2, sigStrAvg:44.0, tdAvg:0.3, kdAvg:0.5, ctrlAvg:36, subAttAvg:0.0, tdDefAvg:0.59, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/DUNCAN_CHRISTIAN_LEROY_07-18.png?itok=kI5AHuWF" },
-  { id:"allen-frye-jr", sbId:"99ba78bf-0664-4d9e-9885-fd7f067f6013", name:"Allen Frye Jr.", div:"Heavyweight", proj:11.2, wins:6, losses:1, sigStrAvg:33.0, tdAvg:0.2, kdAvg:0.6, ctrlAvg:24, subAttAvg:0.0, tdDefAvg:0.52, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-12/FRYE_ALLEN_12-13.png?itok=Q_khC32T" },
-  { id:"andre-fili", sbId:"a72c0080-9e95-4bbc-a998-77de2271d295", name:"Andre Fili", div:"Featherweight", proj:10.1, wins:25, losses:14, sigStrAvg:32.9, tdAvg:0.5, kdAvg:0.3, ctrlAvg:54, subAttAvg:0.1, tdDefAvg:0.66, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/FILI_ANDRE_06-20.png?itok=cIwJBZaQ" },
-  { id:"ketlen-souza", sbId:"dcc1a939-0910-4629-94e0-13d1fb360abc", name:"Ketlen Souza", div:"Women's Strawweight", proj:9.7, wins:17, losses:6, sigStrAvg:48.9, tdAvg:1.4, kdAvg:0.2, ctrlAvg:120, subAttAvg:0.3, tdDefAvg:0.57, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/SOUZA_KETLEN_06-06.png?itok=CMCV5MWD" },
-  { id:"rj-harris", sbId:"0c7f4f10-fc58-4411-ac33-67b039df682d", name:"RJ Harris", div:"Heavyweight", proj:9.7, wins:6, losses:0, sigStrAvg:15.0, tdAvg:0.3, kdAvg:0.5, ctrlAvg:30, subAttAvg:0.0, tdDefAvg:0.48, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/HARRIS_RJ_07-18.png?itok=bTTS0s6k" },
-  { id:"jai-herbert", sbId:"9bfc3414-9d3c-419b-a4ec-f73d309e20d1", name:"Jai Herbert", div:"Lightweight", proj:9.4, wins:14, losses:6, sigStrAvg:30.5, tdAvg:0.7, kdAvg:0.4, ctrlAvg:78, subAttAvg:0.2, tdDefAvg:0.62, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/HERBERT_JAI_04-18.png?itok=c0gEpBtA" },
-  { id:"gerald-meerschaert", sbId:"cba4cfab-f791-4110-a367-2f9bdc4040e5", name:"Gerald Meerschaert", div:"Light Heavyweight", proj:9.3, wins:37, losses:22, sigStrAvg:26.1, tdAvg:1.6, kdAvg:0.2, ctrlAvg:168, subAttAvg:2.1, tdDefAvg:0.60, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/MEERSCHAERT_GERALD_05-02.png?itok=klCny6bI" },
-  { id:"matheus-camilo", sbId:"5d778c14-597d-4d84-969d-b132200a6684", name:"Matheus Camilo", div:"Lightweight", proj:8.7, wins:11, losses:3, sigStrAvg:9.4, tdAvg:2.4, kdAvg:0.1, ctrlAvg:252, subAttAvg:0.8, tdDefAvg:0.55, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/CAMILO_MATHEUS_06-27.png?itok=b4Q0urPf" },
-  { id:"kai-kamaka-iii", sbId:"7efc7713-0c0d-43d2-856c-75deb6baf416", name:"Kai Kamaka III", div:"Featherweight", proj:8.5, wins:18, losses:8, sigStrAvg:72.2, tdAvg:0.9, kdAvg:0.3, ctrlAvg:96, subAttAvg:0.2, tdDefAvg:0.63, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/KAMAKA_KAI_07-11.png?itok=WhRqM7-a" },
-  { id:"malcolm-wellmaker", sbId:"54acdf0b-2d2f-4e0f-8713-06917c268319", name:"Malcolm Wellmaker", div:"Bantamweight", proj:7.7, wins:10, losses:2, sigStrAvg:31.7, tdAvg:1.1, kdAvg:0.2, ctrlAvg:108, subAttAvg:0.3, tdDefAvg:0.59, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/WELLMAKER_MALCOM_05-16.png?itok=Csyg4dNZ" },
-  { id:"niko-price", sbId:"adea7f2e-a4a9-4b6a-9759-62f8ce2d9d76", name:"Niko Price", div:"Welterweight", proj:7.6, wins:16, losses:11, sigStrAvg:37.9, tdAvg:0.4, kdAvg:0.4, ctrlAvg:42, subAttAvg:0.1, tdDefAvg:0.54, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/PRICE_NIKO_03-28.png?itok=c4sQathc" },
-  { id:"felipe-franco", sbId:"35bf8730-cbb9-464f-a372-0306c9377711", name:"Felipe Franco", div:"Light Heavyweight", proj:7.3, wins:11, losses:2, sigStrAvg:27.0, tdAvg:1.3, kdAvg:0.3, ctrlAvg:132, subAttAvg:0.4, tdDefAvg:0.61, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/FRANCO_FELIPE_03-21.png?itok=WUrHMJqw" },
-  { id:"brendson-ribeiro", sbId:"2b08aedd-e258-477c-8b25-929ed2569042", name:"Brendson Ribeiro", div:"Light Heavyweight", proj:6.7, wins:17, losses:11, sigStrAvg:18.1, tdAvg:1.9, kdAvg:0.2, ctrlAvg:186, subAttAvg:0.7, tdDefAvg:0.58, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/RIBEIRO_BRENDSON_07-25.png?itok=3s0NZSMh" },
-  { id:"ismael-bonfim", sbId:"4fa86abe-f609-4074-b9ad-babb04ee15a5", name:"Ismael Bonfim", div:"Lightweight", proj:6.6, wins:20, losses:7, sigStrAvg:23.8, tdAvg:2.8, kdAvg:0.1, ctrlAvg:270, subAttAvg:0.5, tdDefAvg:0.67, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/BONFIM_ISMAEL_07-25.png?itok=oBgE67iG" },
-  { id:"daria-zhelezniakova", sbId:"35d17d3a-4fad-493b-92c9-917b20129715", name:"Daria Zhelezniakova", div:"Women's Bantamweight", proj:6.2, wins:10, losses:3, sigStrAvg:36.3, tdAvg:1.0, kdAvg:0.2, ctrlAvg:102, subAttAvg:0.3, tdDefAvg:0.56, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/ZHELEZNIAKOVA_DARIA_04-18.png?itok=oZ7sT-sw" },
-  { id:"alice-pereira", sbId:"eeff83e2-7a3f-46ca-b10d-76398f616a01", name:"Alice Pereira", div:"Women's Bantamweight", proj:5.4, wins:7, losses:1, sigStrAvg:34.5, tdAvg:0.5, kdAvg:0.3, ctrlAvg:54, subAttAvg:0.1, tdDefAvg:0.60, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/PEREIRA_ALICE_04-04.png?itok=vuVTbCtw" },
-  { id:"leon-shahbazyan", sbId:"bf1e8350-87e9-48e1-91d9-ffbd412657a6", name:"Leon Shahbazyan", div:"Welterweight", proj:5.0, wins:12, losses:5, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/SHAHBAZYAN_LEON_06-20.png?itok=OVKQdyWH" },
+  { id:"joaquin-buckley", sbId:"953fd943-f899-4bf1-9de6-10244739dfcd", name:"Joaquin Buckley", div:"Welterweight", proj:10.0, wins:7, losses:14, sigStrAvg:39.8, tdAvg:1.1, kdAvg:0.29, ctrlAvg:89, subAttAvg:0.0, tdDefAvg:0.695, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/BUCKLEY_JOAQUIN_05-09.png?itok=3xDwxvT-" },
+  { id:"mike-malott", sbId:"34329675-e41a-4aa0-9738-1d2ee9accda9", name:"Mike Malott", div:"Welterweight", proj:12.2, wins:4, losses:1, sigStrAvg:39.8, tdAvg:1.2, kdAvg:0.40, ctrlAvg:135, subAttAvg:0.4, tdDefAvg:0.100, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/MALOTT_MIKE_04-18.png?itok=yln7kIM0" },
+  { id:"erin-blanchfield", sbId:"26d0b025-b493-486d-af96-d3b164ba0687", name:"Erin Blanchfield", div:"Women's Flyweight", proj:15.4, wins:13, losses:2, sigStrAvg:76.7, tdAvg:1.5, kdAvg:0.00, ctrlAvg:243, subAttAvg:0.7, tdDefAvg:0.811, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-11/BLANCHFIELD_ERIN_11-15.png?itok=5knUFSsZ" },
+  { id:"jasmine-jasudavicius", sbId:"22d13562-eccd-41b7-a582-a1afd3f32c5b", name:"Jasmine Jasudavicius", div:"Women's Flyweight", proj:12.7, wins:14, losses:7, sigStrAvg:32.1, tdAvg:1.8, kdAvg:0.05, ctrlAvg:308, subAttAvg:0.4, tdDefAvg:0.667, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/JASUDAVICIUS_JASMINE_04-18.png?itok=JHUifF5g" },
+  { id:"kyle-nelson", sbId:"d7a009b9-d488-4ec6-b846-731098133d64", name:"Kyle Nelson", div:"Lightweight", proj:9.3, wins:5, losses:11, sigStrAvg:38.5, tdAvg:0.9, kdAvg:0.17, ctrlAvg:136, subAttAvg:0.0, tdDefAvg:0.736, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/NELSON_KYLE_03-28.png?itok=MnXya2nC" },
+  { id:"cristian-perez-gonzalez", sbId:"3a53ed2d-a3d4-4575-af3e-24a625bd969f", name:"Cristian Perez Gonzalez", div:"Lightweight", proj:6.0, wins:null, losses:null, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-08/PEREZ_CRISTIAN_08-18.png?itok=gP9LvHPG" },
+  { id:"marc-andre-barriault", sbId:"250ce8db-11d8-497e-820c-7cfa62eb8818", name:"Marc-Andre Barriault", div:"Middleweight", proj:3.7, wins:0, losses:16, sigStrAvg:31.0, tdAvg:0.1, kdAvg:0.00, ctrlAvg:24, subAttAvg:0.0, tdDefAvg:0.578, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-02/BARRIAULT_MARC-ANDRE_02-07.png?itok=CFaKFsp0" },
+  { id:"kyle-daukaus", sbId:"6d995d43-aa50-4718-894c-f6c3a7cfdf60", name:"Kyle Daukaus", div:"Middleweight", proj:6.8, wins:4, losses:4, sigStrAvg:11.8, tdAvg:0.4, kdAvg:0.30, ctrlAvg:83, subAttAvg:1.0, tdDefAvg:0.333, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/DAUKAUS_KYLE_06-14.png?itok=HhcLsgnT" },
+  { id:"louis-jourdain", sbId:"d663aa5b-dd92-4a3c-96a8-ea40309399c9", name:"Louis Jourdain", div:"Bantamweight", proj:6.0, wins:null, losses:null, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-10/JOURDAIN_LOUIS_09-30.png?itok=KXMwtlxK" },
+  { id:"timmy-cuamba", sbId:"7760dbba-2748-4788-bed1-dcc63c3098c4", name:"Timmy Cuamba", div:"Bantamweight", proj:12.1, wins:8, losses:5, sigStrAvg:28.6, tdAvg:1.4, kdAvg:0.44, ctrlAvg:176, subAttAvg:0.0, tdDefAvg:0.705, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/CUAMBA_TIMOTHY_05-16.png?itok=i1Kuepca" },
+  { id:"mandel-nallo", sbId:"c3fb1a6e-4236-4b20-a22d-3a6481308bfe", name:"Mandel Nallo", div:"Lightweight", proj:9.8, wins:0, losses:3, sigStrAvg:16.0, tdAvg:0.0, kdAvg:1.00, ctrlAvg:10, subAttAvg:0.0, tdDefAvg:null, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/NALLO_MANDEL_04-18.png?itok=Zy274sFF" },
+  { id:"nate-landwehr", sbId:"a816ec9b-4b7a-43a4-b5d6-d03ac41ac709", name:"Nate Landwehr", div:"Lightweight", proj:10.2, wins:7, losses:10, sigStrAvg:55.0, tdAvg:0.8, kdAvg:0.06, ctrlAvg:114, subAttAvg:0.7, tdDefAvg:0.611, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/LANDWEHR_NATE_04-11.png?itok=aAYASdzO" },
 ];
 const FO_FIGHTERS_BY_ID = Object.fromEntries(FO_FIGHTERS.map((f) => [f.id, f]));
 const FO_DIV_LABEL = {
@@ -605,26 +593,27 @@ const FO_DIV_LABEL = {
   "Bantamweight":"BANTAMWEIGHT BOUT","Women's Strawweight":"WOMEN'S STRAWWEIGHT BOUT",
   "Women's Flyweight":"WOMEN'S FLYWEIGHT BOUT","Women's Bantamweight":"WOMEN'S BANTAMWEIGHT BOUT",
 };
-// Real card order, top to bottom, for UFC Fight Night: Allen vs Duncan (Sat Oct 10, 2026).
+// Real card order, top to bottom, for UFC Fight Night: Buckley vs Malott
+// (Sat Oct 17, 2026, Edmonton). Swapped in from Allen vs Duncan (Oct 10,
+// now past). NOTE: these 6 bouts are not yet rows in the `bouts` table —
+// combat-sync hasn't created them yet, so live scoring reads 0 for this
+// card until that sync runs; boutIds below are placeholders reserved for
+// that sync to fill in (see also: UFC 333, Volkanovski vs Evloev, Oct 24
+// Abu Dhabi, is next up after this one — not wired in yet, one live card
+// at a time).
 const FO_CARD_ORDER = [
-  { a:"brendan-allen", b:"christian-leroy-duncan", billing:"MAIN EVENT", section:"MAIN CARD", boutId:"53d6fcba-90c9-45e6-bfd0-128be4e8c607" },
-  { a:"matheus-camilo", b:"jai-herbert", billing:"CO-MAIN EVENT", boutId:"5608da2a-c7bd-4fb0-81ab-5f52868b425c" },
-  { a:"loopy-godinez", b:"ketlen-souza", boutId:"69a41489-a811-458d-9c4f-ef989c0a1de0" },
-  { a:"andre-fili", b:"kai-kamaka-iii", boutId:"ab11b1b7-97ea-4a26-bebb-86964df21f74" },
-  { a:"julius-walker", b:"gerald-meerschaert", boutId:"9b0b44c2-03f9-45d0-a085-20e3df83cd1a" },
-  { a:"malcolm-wellmaker", b:"otari-tanzilovi", boutId:"2a9da1f7-3b8d-490c-8321-00536805d0ee" },
-  { a:"francisco-prado", b:"ismael-bonfim", section:"PRELIMINARY CARD", boutId:"5a7f5c3c-ac33-4e1f-9be9-8c208155ed9c" },
-  { a:"niko-price", b:"leon-shahbazyan", boutId:"43b93562-4a5d-43af-b687-cc719a7759a5" },
-  { a:"felipe-franco", b:"brendson-ribeiro", boutId:"d1934e10-7c4e-4aad-82fe-ddc6c9c4c1a1" },
-  { a:"allen-frye-jr", b:"rj-harris", boutId:"980355e5-a87a-43d6-b89c-a67bdbdeab7a" },
-  { a:"alice-pereira", b:"daria-zhelezniakova", boutId:"d0f4a8cb-c12b-4ae4-bfb3-3a73622180c3" },
-  { a:"ernesta-kareckaite", b:"melissa-gatto", boutId:"19799435-ca63-43f2-98ba-b702299b8a98" },
+  { a:"joaquin-buckley", b:"mike-malott", billing:"MAIN EVENT", section:"MAIN CARD", boutId:"120654d3-0cc0-40d1-ab79-414923fc73a7" },
+  { a:"erin-blanchfield", b:"jasmine-jasudavicius", billing:"CO-MAIN EVENT", boutId:"fe7d8441-fa19-419b-a4ce-5194bfce0bb6" },
+  { a:"kyle-nelson", b:"cristian-perez-gonzalez", boutId:"1ba49e0e-6cb9-4ff3-8fa4-ebd99d182d09" },
+  { a:"marc-andre-barriault", b:"kyle-daukaus", boutId:"4884dada-3c87-4a65-9bd9-fdf830ddbadd" },
+  { a:"louis-jourdain", b:"timmy-cuamba", boutId:"6a4a2a45-52ad-499c-8a8a-ca29c9d53ae3" },
+  { a:"mandel-nallo", b:"nate-landwehr", boutId:"c319b8df-c6da-4c36-b62c-0fc98c592c09" },
 ];
 const FO_BOUT_IDS = FO_CARD_ORDER.map((e) => e.boutId);
 // Event background photo behind the Face-Off head banner, swapped per
 // card. Current: Edmonton skyline at night (Justin Hu, Unsplash License —
 // free for commercial use, https://unsplash.com/photos/city-skyline-during-night-time-kczeUEAhDZI)
-// chosen ahead of UFC Fight Night: Buckley vs Malott (Edmonton, Oct 17 2026).
+// — matches this card, UFC Fight Night: Buckley vs Malott (Edmonton, Oct 17 2026).
 const FO_EVENT_BG_URL = "https://images.unsplash.com/photo-1617336422396-e1dfc4210ec5?fm=jpg&q=80&w=2400&auto=format&fit=crop";
 const FO_TIMER_CHOICES = [15, 30, 45, 60, 90, 120];
 const FO_MIN_ROSTER_SIZE = 4;
@@ -667,6 +656,7 @@ function foIsFinishMethod(method){
 // Flat +10 for actually winning by finish, Regular mode only.
 function foFinishBonusPoints(fighterSbId, bout){
   if (fo.gameMode !== "regular") return 0;
+  if (!fo.finishBonus) return 0;
   if (!bout || bout.status !== "completed") return 0;
   if (bout.winner_id !== fighterSbId) return 0;
   return foIsFinishMethod(bout.method) ? FO_FINISH_BONUS_REGULAR : 0;
@@ -797,8 +787,8 @@ const FO_LOCAL_KEY = "combat_faceoff_draft_v1";
 function foSaveLocal(){
   if (!fo) return;
   try {
-    const { draftedBy, pickTimerSeconds, rosterSize, gameMode, teamNames, teamAvatars, roles } = fo;
-    localStorage.setItem(FO_LOCAL_KEY, JSON.stringify({ draftedBy, pickTimerSeconds, rosterSize, gameMode, teamNames, teamAvatars, roles }));
+    const { draftedBy, pickTimerSeconds, rosterSize, gameMode, finishBonus, teamNames, teamAvatars, roles } = fo;
+    localStorage.setItem(FO_LOCAL_KEY, JSON.stringify({ draftedBy, pickTimerSeconds, rosterSize, gameMode, finishBonus, teamNames, teamAvatars, roles }));
   } catch (e) { /* storage unavailable (private mode, etc.) — just skip */ }
 }
 function foLoadLocal(){
@@ -819,6 +809,7 @@ function initFaceoff(){
     pickTimerSeconds: 45,
     rosterSize: 6,
     gameMode: "regular", // "regular" (flat scoring) by default — "standard" (role multipliers) is opt-in
+    finishBonus: true, // YES/NO league setting — OFF means pure flat stat points, no +10 for a KO/TKO/Sub win
     teamNames: { A: "Cage Rattlers", B: "Knockout Kings" },
     teamAvatars: { A: null, B: null },
     editingTeam: null,
@@ -983,7 +974,7 @@ function renderModePick(){
 
 function renderFaceoff(){
   foSaveLocal();
-  const { draftedBy, settingsOpen, pickTimerSeconds, rosterSize, gameMode, teamNames, teamAvatars, editingTeam, roles } = fo;
+  const { draftedBy, settingsOpen, pickTimerSeconds, rosterSize, gameMode, finishBonus, teamNames, teamAvatars, editingTeam, roles } = fo;
 
   const rosterA = [], rosterB = [];
   let totalA = 0, totalB = 0;
@@ -1054,6 +1045,20 @@ function renderFaceoff(){
             return `<button type="button" class="fo-pill" data-fo-mode="${m.id}"><div class="fo-mode-opt" style="background:${active ? "rgba(212,175,55,0.14)" : "var(--panel-2)"};border:1.5px solid ${active ? "var(--gold)" : "var(--border)"};"><div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;"><span style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:${active ? "var(--gold)" : "var(--text)"};">${m.label}</span></div><div style="font-size:10.5px;color:var(--text-faint);text-align:left;line-height:1.35;">${m.desc}</div></div></button>`;
           }).join("")}
         </div>
+      </div>
+      <div style="width:100%;height:1px;background:var(--border-2);"></div>
+      <div class="fo-settings-col" style="width:100%;">
+        <div class="fo-settings-label">FINISH BONUS</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;${settingsLocked ? "opacity:0.45;pointer-events:none;" : ""}">
+          ${[
+            { id: "yes", label: "YES", desc: "+10 pts when your fighter wins by KO/TKO or submission." },
+            { id: "no", label: "NO", desc: "Flat stat points only. Simplest option if you just want points scored, no finish tracking." },
+          ].map((o) => {
+            const active = (o.id === "yes") === !!finishBonus;
+            return `<button type="button" class="fo-pill" data-fo-finish-bonus="${o.id}"><div class="fo-mode-opt" style="background:${active ? "rgba(212,175,55,0.14)" : "var(--panel-2)"};border:1.5px solid ${active ? "var(--gold)" : "var(--border)"};"><div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;"><span style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:${active ? "var(--gold)" : "var(--text)"};">${o.label}</span></div><div style="font-size:10.5px;color:var(--text-faint);text-align:left;line-height:1.35;">${o.desc}</div></div></button>`;
+          }).join("")}
+        </div>
+        ${gameMode === "standard" ? `<div style="font-size:10.5px;color:var(--text-faint);margin-top:8px;max-width:420px;">Standard mode already rewards a finish through the Finisher role's 2x, so this setting only changes Regular-mode scoring.</div>` : ""}
       </div>
       ${!settingsLocked ? `<div class="fo-settings-col" style="width:100%;padding-top:4px;"><button type="button" class="fo-pill" id="foLockSettingsBtn"><div style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;padding:10px 22px;border-radius:7px;background:rgba(212,175,55,0.14);border:1.5px solid var(--gold);color:var(--gold);display:inline-block;">LOCK IN &amp; START DRAFTING</div></button></div>` : ""}
     </div>
@@ -1187,7 +1192,7 @@ function renderFaceoff(){
     <div class="fo-rule-row">
       <div class="fo-rule-chip">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"></path></svg>
-        WIN BY KO/TKO OR SUBMISSION &middot; +10 PTS
+        ${gameMode === "regular" && finishBonus ? "WIN BY KO/TKO OR SUBMISSION &middot; +10 PTS" : "FLAT STAT SCORING &middot; NO FINISH BONUS"}
       </div>
       <div style="display:flex;align-items:center;gap:14px;">
         <span class="h-font" style="font-size:11px;letter-spacing:1px;color:var(--text-dim);">YOU'RE DRAFTING ${esc(teamNames.A.toUpperCase())} &middot; BOT DRAFTS ${esc(teamNames.B.toUpperCase())}</span>
@@ -1225,6 +1230,9 @@ function wireFaceoff(){
   });
   document.querySelectorAll("[data-fo-mode]").forEach((btn) => {
     btn.addEventListener("click", () => { fo.gameMode = btn.dataset.foMode; renderFaceoff(); });
+  });
+  document.querySelectorAll("[data-fo-finish-bonus]").forEach((btn) => {
+    btn.addEventListener("click", () => { fo.finishBonus = btn.dataset.foFinishBonus === "yes"; renderFaceoff(); });
   });
 
   const nameInput = document.getElementById("foTeamNameInput");
