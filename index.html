@@ -673,31 +673,25 @@ function projectedFantasyPoints(f){
    into the fighters table instead of a pick-time role.
    ========================================================================= */
 const FO_FIGHTERS = [
-  { id:"joaquin-buckley", sbId:"953fd943-f899-4bf1-9de6-10244739dfcd", name:"Joaquin Buckley", div:"Welterweight", proj:10.0, wins:21, losses:8, sigStrAvg:39.8, tdAvg:1.1, kdAvg:0.29, ctrlAvg:89, subAttAvg:0.0, tdDefAvg:0.695, country:"US", heightIn:70, weightLb:171, reachIn:76, age:32, stance:"Southpaw", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/BUCKLEY_JOAQUIN_05-09.png?itok=3xDwxvT-" },
-  { id:"mike-malott", sbId:"34329675-e41a-4aa0-9738-1d2ee9accda9", name:"Mike Malott", div:"Welterweight", proj:12.2, wins:13, losses:2, draws:1, sigStrAvg:39.8, tdAvg:1.2, kdAvg:0.40, ctrlAvg:135, subAttAvg:0.4, tdDefAvg:0.100, country:"CA", heightIn:73, weightLb:171, reachIn:73, age:34, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/MALOTT_MIKE_04-18.png?itok=yln7kIM0" },
-  { id:"erin-blanchfield", sbId:"26d0b025-b493-486d-af96-d3b164ba0687", name:"Erin Blanchfield", div:"Women's Flyweight", proj:15.4, wins:14, losses:2, sigStrAvg:76.7, tdAvg:1.5, kdAvg:0.00, ctrlAvg:243, subAttAvg:0.7, tdDefAvg:0.811, country:"US", heightIn:64, weightLb:125.8, reachIn:66, age:27, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-11/BLANCHFIELD_ERIN_11-15.png?itok=5knUFSsZ" },
-  { id:"jasmine-jasudavicius", sbId:"22d13562-eccd-41b7-a582-a1afd3f32c5b", name:"Jasmine Jasudavicius", div:"Women's Flyweight", proj:12.7, wins:15, losses:4, sigStrAvg:32.1, tdAvg:1.8, kdAvg:0.05, ctrlAvg:308, subAttAvg:0.4, tdDefAvg:0.667, country:"CA", heightIn:67, weightLb:125.5, reachIn:68, age:37, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/JASUDAVICIUS_JASMINE_04-18.png?itok=JHUifF5g" },
-  { id:"kyle-nelson", sbId:"d7a009b9-d488-4ec6-b846-731098133d64", name:"Kyle Nelson", div:"Lightweight", proj:9.3, wins:17, losses:7, draws:1, sigStrAvg:38.5, tdAvg:0.9, kdAvg:0.17, ctrlAvg:136, subAttAvg:0.0, tdDefAvg:0.736, country:"CA", heightIn:71, weightLb:155.5, reachIn:71, age:35, stance:"Switch", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/NELSON_KYLE_03-28.png?itok=MnXya2nC" },
-  { id:"cristian-perez-gonzalez", sbId:"3a53ed2d-a3d4-4575-af3e-24a625bd969f", name:"Cristian Perez Gonzalez", div:"Lightweight", proj:6.0, wins:14, losses:2, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, country:"MX", heightIn:69, weightLb:155, reachIn:72, age:27, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-08/PEREZ_CRISTIAN_08-18.png?itok=gP9LvHPG" },
-  { id:"marc-andre-barriault", sbId:"250ce8db-11d8-497e-820c-7cfa62eb8818", name:"Marc-Andre Barriault", div:"Middleweight", proj:3.7, wins:17, losses:11, sigStrAvg:31.0, tdAvg:0.1, kdAvg:0.00, ctrlAvg:24, subAttAvg:0.0, tdDefAvg:0.578, country:"CA", heightIn:73, weightLb:185, reachIn:74, age:36, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-02/BARRIAULT_MARC-ANDRE_02-07.png?itok=CFaKFsp0" },
-  { id:"kyle-daukaus", sbId:"6d995d43-aa50-4718-894c-f6c3a7cfdf60", name:"Kyle Daukaus", div:"Middleweight", proj:6.8, wins:17, losses:5, sigStrAvg:11.8, tdAvg:0.4, kdAvg:0.30, ctrlAvg:83, subAttAvg:1.0, tdDefAvg:0.333, country:"US", heightIn:75, weightLb:186, reachIn:76, age:33, stance:"Southpaw", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/DAUKAUS_KYLE_06-14.png?itok=HhcLsgnT" },
-  { id:"louis-jourdain", sbId:"d663aa5b-dd92-4a3c-96a8-ea40309399c9", name:"Louis Jourdain", div:"Bantamweight", proj:6.0, wins:9, losses:3, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, country:"CA", heightIn:69, weightLb:135.5, reachIn:69.5, age:29, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-10/JOURDAIN_LOUIS_09-30.png?itok=KXMwtlxK" },
-  { id:"timmy-cuamba", sbId:"7760dbba-2748-4788-bed1-dcc63c3098c4", name:"Timmy Cuamba", div:"Bantamweight", proj:12.1, wins:10, losses:4, sigStrAvg:28.6, tdAvg:1.4, kdAvg:0.44, ctrlAvg:176, subAttAvg:0.0, tdDefAvg:0.705, country:"US", heightIn:69, weightLb:136, reachIn:71, age:27, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/CUAMBA_TIMOTHY_05-16.png?itok=i1Kuepca" },
-  { id:"mandel-nallo", sbId:"c3fb1a6e-4236-4b20-a22d-3a6481308bfe", name:"Mandel Nallo", div:"Lightweight", proj:9.8, wins:12, losses:3, sigStrAvg:16.0, tdAvg:0.0, kdAvg:1.00, ctrlAvg:10, subAttAvg:0.0, tdDefAvg:null, country:"CA", heightIn:72, weightLb:155, reachIn:75, age:37, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/NALLO_MANDEL_04-18.png?itok=Zy274sFF" },
-  { id:"nate-landwehr", sbId:"a816ec9b-4b7a-43a4-b5d6-d03ac41ac709", name:"Nate Landwehr", div:"Lightweight", proj:10.2, wins:18, losses:8, sigStrAvg:55.0, tdAvg:0.8, kdAvg:0.06, ctrlAvg:114, subAttAvg:0.7, tdDefAvg:0.611, country:"US", heightIn:69, weightLb:146, reachIn:72, age:38, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/LANDWEHR_NATE_04-11.png?itok=aAYASdzO" },
-  // Preliminary card (5 of the real 7 bouts — Mahjoub vs Faglier and
-  // Cerminara vs Stiller are left out: Joel Faglier and Mackenzie Stiller
-  // aren't in the fighters table at all yet, unlike everyone else here).
-  { id:"tanner-boser", sbId:"7f640643-bdf4-4845-8cd5-d51bb9b84feb", name:"Tanner Boser", div:"Heavyweight", proj:3.8, wins:22, losses:11, draws:1, sigStrAvg:32.4, tdAvg:0.0, kdAvg:0.00, ctrlAvg:36, subAttAvg:0.0, tdDefAvg:0.600, country:"CA", heightIn:74, weightLb:204.5, reachIn:75.5, age:35, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/BOSER_TANNER_04-18.png?itok=SGS7_HgT" },
-  { id:"jhonata-diniz", sbId:"6807d9e1-d13b-40a6-83cb-2778286ccff4", name:"Jhonata Diniz", div:"Heavyweight", proj:3.9, wins:9, losses:2, sigStrAvg:35.8, tdAvg:0.0, kdAvg:0.00, ctrlAvg:20, subAttAvg:0.0, tdDefAvg:0.621, country:"BR", heightIn:76, weightLb:257, reachIn:79.5, age:34, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-10/DINIZ_JHONATA_10-11.png?itok=eUzgQ9Ue" },
-  { id:"julien-leblanc", sbId:"fc317268-0ce0-40ad-9ba7-9d7c307bcecd", name:"Julien Leblanc", div:"Middleweight", proj:0.4, wins:10, losses:3, sigStrAvg:4.0, tdAvg:0.0, kdAvg:0.00, ctrlAvg:0, subAttAvg:0.0, tdDefAvg:null, country:"CA", heightIn:74, weightLb:185, reachIn:74.5, age:34, stance:"Southpaw", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/LEBLANC_JULIEN_04-18.png?itok=0J35tdDJ" },
-  { id:"nick-galanti", sbId:"8a6aa731-3861-480d-9dd1-872c4312080b", name:"Nick Galanti", div:"Middleweight", proj:6.0, wins:8, losses:1, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, country:"US", heightIn:73, weightLb:185, reachIn:75, age:28, photo:"https://ufc.com/images/styles/teaser/s3/2026-09/GALANTI_NICK_08-25.png?h=a30e7339&itok=oQjasD7S" },
-  { id:"chad-anheliger", sbId:"7d08d136-d7b3-4e6c-8df3-02ac1136c63f", name:"Chad Anheliger", div:"Bantamweight", proj:3.9, wins:13, losses:8, sigStrAvg:39.0, tdAvg:0.0, kdAvg:0.00, ctrlAvg:0, subAttAvg:0.0, tdDefAvg:0.000, country:"CA", heightIn:66, weightLb:135, reachIn:64.5, age:38, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2024-10/ANHELIGER_CHAD_11-02.png?itok=WCoq26O4" },
-  { id:"steven-koslow", sbId:"13470b97-c385-4363-be14-8727bc58212b", name:"Steven Koslow", div:"Bantamweight", proj:16.8, wins:6, losses:1, sigStrAvg:11.0, tdAvg:5.0, kdAvg:0.00, ctrlAvg:280, subAttAvg:1.0, tdDefAvg:null, country:"US", heightIn:67.5, weightLb:136, reachIn:69, age:26, stance:"Switch", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2022-12/KOSLOW_STEVEN_12-10.png?itok=Popujz1Z" },
-  { id:"melissa-croden", sbId:"b2fcfb67-ddc6-4830-93f1-3b0dc452ccfa", name:"Melissa Croden", div:"Women's Bantamweight", proj:18.0, wins:8, losses:3, sigStrAvg:64.8, tdAvg:2.5, kdAvg:0.25, ctrlAvg:243, subAttAvg:0.5, tdDefAvg:0.661, country:"CA", heightIn:69, weightLb:135, reachIn:68.5, age:35, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-10/CRODEN_MELISSA_10-18.png?itok=j_REw9Gb" },
-  { id:"chelsea-chandler", sbId:"f8894b1d-9275-44a8-b39b-67b7de23fde6", name:"Chelsea Chandler", div:"Women's Bantamweight", proj:6.9, wins:7, losses:4, sigStrAvg:25.1, tdAvg:0.4, kdAvg:0.18, ctrlAvg:115, subAttAvg:0.2, tdDefAvg:0.000, country:"US", heightIn:68.5, weightLb:134, reachIn:68, age:35, stance:"Southpaw", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/CHANDLER_CHELSEA_06-06.png?itok=baxryhp9" },
-  { id:"cody-chovancek", sbId:"96289323-9bf8-44fa-9e7f-38208c028253", name:"Cody Chovancek", div:"Bantamweight", proj:6.0, wins:9, losses:0, sigStrAvg:null, tdAvg:null, kdAvg:null, ctrlAvg:null, subAttAvg:null, tdDefAvg:null, country:"CA", heightIn:68, weightLb:135, reachIn:67, age:28, photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-09/CHOVANCEK_CODY_09-16.png?itok=DgOPCbWP" },
-  { id:"suyoung-you", sbId:"7a48b34c-db7c-4931-a57a-6c0a341682c7", name:"SuYoung You", div:"Bantamweight", proj:9.4, wins:16, losses:3, sigStrAvg:21.3, tdAvg:2.7, kdAvg:0.00, ctrlAvg:110, subAttAvg:0.0, tdDefAvg:null, country:"KR", heightIn:66, weightLb:135.5, reachIn:65, age:30, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/YOU_SUYOUNG_03-14.png?itok=VzYK7pUi" },
+  { id:"alexander-volkanovski", sbId:"1e4f6794-7fd3-46aa-9d28-aece338f4141", name:"Alexander Volkanovski", div:"Featherweight", proj:18.5, wins:11, losses:5, sigStrAvg:105.1, tdAvg:1.5, kdAvg:0.13, ctrlAvg:162, subAttAvg:0.2, tdDefAvg:0.679, country:"AU", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-01/VOLKANOVSKI_ALEXANDER_BELT_01-31.png?itok=GscR5oi8" },
+  { id:"movsar-evloev", sbId:"cd5845ed-c669-463d-9378-8e492fdfd0e3", name:"Movsar Evloev", div:"Featherweight", proj:24.6, wins:13, losses:0, sigStrAvg:56.8, tdAvg:6.4, kdAvg:0.00, ctrlAvg:343, subAttAvg:0.0, tdDefAvg:0.250, country:"RU", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-03/EVLOEV_MOVSAR_03-21.png?itok=tEsl8JGg" },
+  { id:"petr-yan", sbId:"c5ac3712-9e18-46f6-9ea6-4fbfcb51c94a", name:"Petr Yan", div:"Bantamweight", proj:21.5, wins:11, losses:8, sigStrAvg:98.9, tdAvg:2.5, kdAvg:0.21, ctrlAvg:206, subAttAvg:0.2, tdDefAvg:0.877, country:"RU", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Switch", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-12/YAN_PETR_BELT.png?itok=73uRnQp9" },
+  { id:"merab-dvalishvili", sbId:"178841e2-d9d5-48fc-be80-ea915d5287bd", name:"Merab Dvalishvili", div:"Bantamweight", proj:34.7, wins:12, losses:3, sigStrAvg:104.2, tdAvg:8.1, kdAvg:0.07, ctrlAvg:358, subAttAvg:0.4, tdDefAvg:0.741, country:"GE", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2024-09/DVALISHVILI_MERAB_CG_09-14.png?itok=Z5elkCDd" },
+  { id:"loneer-kavanagh", sbId:"422e4c48-c64c-46d5-86f5-058f80df44dd", name:"Lone'er Kavanagh", div:"Flyweight", proj:10.8, wins:5, losses:4, sigStrAvg:59.0, tdAvg:0.4, kdAvg:0.22, ctrlAvg:42, subAttAvg:0.4, tdDefAvg:0.844, country:"GB", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/KAVANAGH_LONEER_07-11.png?itok=-wCggw55" },
+  { id:"ramazan-temirov", sbId:"be80639e-0d81-490b-8f46-1b2495c99ed4", name:"Ramazan Temirov", div:"Flyweight", proj:13.1, wins:6, losses:0, sigStrAvg:45.7, tdAvg:0.7, kdAvg:0.67, ctrlAvg:17, subAttAvg:0.0, tdDefAvg:1.000, country:"UZ", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/TEMIROV_RAMAZAN_07-25.png?itok=2EEjf3AT" },
+  { id:"alexander-volkov", sbId:"a6e05e3c-7afd-4600-8b7f-e8e836ecb0f6", name:"Alexander Volkov", div:"Heavyweight", proj:11.9, wins:10, losses:8, sigStrAvg:79.7, tdAvg:0.3, kdAvg:0.11, ctrlAvg:57, subAttAvg:0.2, tdDefAvg:0.836, country:"RU", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/VOLKOV_ALEXANDER_05-09.png?itok=0ILcbJZ9" },
+  { id:"rizvan-kuniev", sbId:"faf247da-54f8-45aa-8967-3e4334d07892", name:"Rizvan Kuniev", div:"Heavyweight", proj:12.3, wins:2, losses:2, sigStrAvg:55.5, tdAvg:0.0, kdAvg:0.50, ctrlAvg:84, subAttAvg:0.0, tdDefAvg:0.933, country:"RU", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/KUNIEV_RIZVAN_07-25.png?itok=Flel0-g5" },
+  { id:"arnold-allen", sbId:"42f18a18-5dec-411c-b86d-df28de0d9e51", name:"Arnold Allen", div:"Featherweight", proj:18.9, wins:11, losses:3, sigStrAvg:59.4, tdAvg:2.3, kdAvg:0.43, ctrlAvg:218, subAttAvg:0.1, tdDefAvg:0.819, country:"GB", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Southpaw", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/ALLEN_ARNOLD_05-16.png?itok=t4tDgLca" },
+  { id:"aaron-pico", sbId:"8a9ffd52-2b66-459b-8015-999bf4a9a260", name:"Aaron Pico", div:"Featherweight", proj:7.3, wins:0, losses:2, sigStrAvg:13.0, tdAvg:2.0, kdAvg:0.00, ctrlAvg:121, subAttAvg:0.0, tdDefAvg:null, country:"US", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-08/PICO_AARON_08-16.png?itok=ZY2jqJGb" },
+  // Preliminary card.
+  { id:"dominick-reyes", sbId:"9d221fdb-163b-46db-b42c-3558e9e4cc01", name:"Dominick Reyes", div:"Light Heavyweight", proj:7.6, wins:10, losses:8, sigStrAvg:21.8, tdAvg:0.1, kdAvg:0.50, ctrlAvg:4, subAttAvg:0.1, tdDefAvg:0.694, country:"US", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Southpaw", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/REYES_DOMINICK_04-11.png?itok=weZEpBmm" },
+  { id:"azamat-murzakanov", sbId:"0ebbce1d-f797-456f-84d9-2a8e896e7cb6", name:"Azamat Murzakanov", div:"Light Heavyweight", proj:11.8, wins:9, losses:4, sigStrAvg:32.5, tdAvg:0.5, kdAvg:0.69, ctrlAvg:20, subAttAvg:0.3, tdDefAvg:0.963, country:"RU", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Southpaw", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-04/MURZAKANOV_AZAMAT_04-11.png?itok=it72xofL" },
+  { id:"abus-magomedov", sbId:"918851f3-3e49-4f2a-896a-26468854ec2b", name:"Abus Magomedov", div:"Middleweight", proj:11.8, wins:10, losses:4, sigStrAvg:19.1, tdAvg:1.4, kdAvg:0.43, ctrlAvg:93, subAttAvg:0.6, tdDefAvg:1.000, country:"DE", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-06/MAGOMEDOV_ABUS_06-27.png?itok=L-lbZx1p" },
+  { id:"cam-rowston", sbId:"3e04d9c8-665e-43b2-aa31-0b4035c904c4", name:"Cam Rowston", div:"Middleweight", proj:14.6, wins:7, losses:0, sigStrAvg:50.4, tdAvg:0.9, kdAvg:0.29, ctrlAvg:238, subAttAvg:0.0, tdDefAvg:1.000, country:"AU", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-04/ROWSTON_CAM_L_05-02.png?itok=JIk0-RqX" },
+  { id:"nikita-krylov", sbId:"6d904cba-d9aa-4bdd-a0a7-efa718fb5b7f", name:"Nikita Krylov", div:"Light Heavyweight", proj:11.8, wins:8, losses:11, sigStrAvg:32.1, tdAvg:1.8, kdAvg:0.11, ctrlAvg:193, subAttAvg:0.4, tdDefAvg:0.333, country:"RU", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/KRYLOV_NIKITA_07-11.png?itok=1Bl44qwc" },
+  { id:"abdul-rakhman-yakhyaev", sbId:"31ef2c51-657b-465f-8db5-b8d4580e1b09", name:"Abdul Rakhman Yakhyaev", div:"Light Heavyweight", proj:8.0, wins:5, losses:0, sigStrAvg:6.6, tdAvg:1.2, kdAvg:0.40, ctrlAvg:71, subAttAvg:0.6, tdDefAvg:null, country:"TR", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-06/YAKHYAEV_ABDUL_RAKHMAN_L_06-27.png?itok=5uUIUgLu" },
+  { id:"grant-dawson", sbId:"ab300b4d-4171-47e3-8d47-0173bb09c818", name:"Grant Dawson", div:"Lightweight", proj:16.7, wins:15, losses:6, sigStrAvg:35.1, tdAvg:2.7, kdAvg:0.00, ctrlAvg:334, subAttAvg:1.0, tdDefAvg:0.800, country:"US", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Switch", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/DAWSON_GRANT_05-09.png?itok=nTYpB5-k" },
+  { id:"nurullo-aliev", sbId:"a3ce9dd8-b71e-4de2-946f-f4ea337a870e", name:"Nurullo Aliev", div:"Lightweight", proj:30.7, wins:2, losses:0, sigStrAvg:13.0, tdAvg:8.0, kdAvg:0.00, ctrlAvg:745, subAttAvg:1.0, tdDefAvg:null, country:"TJ", heightIn:null, weightLb:null, reachIn:null, age:null, stance:"Orthodox", photo:"https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-07/ALIEV_NURULLO_07-25.png?itok=BTp4pSt2" },
 ];
 const FO_FIGHTERS_BY_ID = Object.fromEntries(FO_FIGHTERS.map((f) => [f.id, f]));
 const FO_DIV_LABEL = {
@@ -706,37 +700,35 @@ const FO_DIV_LABEL = {
   "Bantamweight":"BANTAMWEIGHT BOUT","Women's Strawweight":"WOMEN'S STRAWWEIGHT BOUT",
   "Women's Flyweight":"WOMEN'S FLYWEIGHT BOUT","Women's Bantamweight":"WOMEN'S BANTAMWEIGHT BOUT",
 };
-// Real card order, top to bottom, for UFC Fight Night: Buckley vs Malott
-// (Sat Oct 17, 2026, Edmonton). Swapped in from Allen vs Duncan (Oct 10,
-// now past). 11 of the real 13 bouts — Mahjoub vs Faglier and Cerminara
-// vs Stiller are left out because Joel Faglier / Mackenzie Stiller
-// aren't in the fighters table yet (everyone else here is a real row).
+// Real card order, top to bottom, for UFC 333: Volkanovski vs Evloev
+// (Sat Oct 24, 2026, Etihad Arena, Abu Dhabi). Swapped in from Buckley vs
+// Malott (Oct 17, now the past card). 9 bouts confirmed from fight-week
+// reporting (Bleacher Report, Cageside Press) as of Aug 2026 — the Allen
+// vs Pico slot has been reported as possibly unsettled (a rumored swap to
+// Pico vs Keita), so double check that one before fight week.
 // NOTE: none of these are rows in the `bouts` table yet — combat-sync
-// hasn't created them, so live scoring reads 0 for this card until that
-// sync runs; boutIds below are placeholders reserved for that sync to
-// fill in (see also: UFC 333, Volkanovski vs Evloev, Oct 24 Abu Dhabi,
-// is next up after this one — not wired in yet, one live card at a time).
-const FO_EVENT_NAME = "UFC FIGHT NIGHT: BUCKLEY VS MALOTT";
-const FO_EVENT_SUB = "SAT, OCT 17 · ROGERS PLACE, EDMONTON";
+// hasn't created them (the event hasn't happened), so live scoring reads
+// 0 for this card until that sync runs closer to fight night; boutIds
+// below are placeholders reserved for that sync to fill in, same as the
+// Buckley vs Malott card before it.
+const FO_EVENT_NAME = "UFC 333: VOLKANOVSKI VS EVLOEV";
+const FO_EVENT_SUB = "SAT, OCT 24 · ETIHAD ARENA, ABU DHABI";
 const FO_CARD_ORDER = [
-  { a:"joaquin-buckley", b:"mike-malott", billing:"MAIN EVENT", section:"MAIN CARD", boutId:"120654d3-0cc0-40d1-ab79-414923fc73a7" },
-  { a:"erin-blanchfield", b:"jasmine-jasudavicius", billing:"CO-MAIN EVENT", boutId:"fe7d8441-fa19-419b-a4ce-5194bfce0bb6" },
-  { a:"kyle-nelson", b:"cristian-perez-gonzalez", boutId:"1ba49e0e-6cb9-4ff3-8fa4-ebd99d182d09" },
-  { a:"marc-andre-barriault", b:"kyle-daukaus", boutId:"4884dada-3c87-4a65-9bd9-fdf830ddbadd" },
-  { a:"louis-jourdain", b:"timmy-cuamba", boutId:"6a4a2a45-52ad-499c-8a8a-ca29c9d53ae3" },
-  { a:"mandel-nallo", b:"nate-landwehr", boutId:"c319b8df-c6da-4c36-b62c-0fc98c592c09" },
-  { a:"tanner-boser", b:"jhonata-diniz", section:"PRELIMINARY CARD", boutId:"9fad0b54-146b-472f-ab0b-ae2e878c1e76" },
-  { a:"julien-leblanc", b:"nick-galanti", boutId:"fc8d43b3-da63-4aae-ade8-64b8bccf0bdb" },
-  { a:"chad-anheliger", b:"steven-koslow", boutId:"856eb84a-1598-43f9-acdb-46b23029c1e4" },
-  { a:"melissa-croden", b:"chelsea-chandler", boutId:"3795bae9-62ae-4bcf-b76c-03d2c78a22b2" },
-  { a:"cody-chovancek", b:"suyoung-you", boutId:"117579fc-4e4e-43a1-b22f-e84179d81ab1" },
+  { a:"alexander-volkanovski", b:"movsar-evloev", billing:"MAIN EVENT — FEATHERWEIGHT TITLE", section:"MAIN CARD", boutId:"65d47587-0487-4c96-8ada-cd57ccd6d711" },
+  { a:"petr-yan", b:"merab-dvalishvili", billing:"CO-MAIN EVENT — BANTAMWEIGHT TITLE", boutId:"75a041c6-0fa8-4266-ab4b-0ae397e9e4e1" },
+  { a:"loneer-kavanagh", b:"ramazan-temirov", boutId:"1b0196df-370a-430e-86bb-1bc240d357a4" },
+  { a:"alexander-volkov", b:"rizvan-kuniev", boutId:"76b54bc3-dbc1-45ce-852a-9c8644dce009" },
+  { a:"arnold-allen", b:"aaron-pico", boutId:"e9583ecc-ca97-49ef-9fac-9f71ba33ec0f" },
+  { a:"dominick-reyes", b:"azamat-murzakanov", section:"PRELIMINARY CARD", boutId:"0697d950-b9a1-4596-8f6e-b9e47d3b3221" },
+  { a:"abus-magomedov", b:"cam-rowston", boutId:"655ba84e-2093-4fe9-b3d7-41de8a71da1d" },
+  { a:"nikita-krylov", b:"abdul-rakhman-yakhyaev", boutId:"40b33065-d9c3-4121-9efa-9acbd295563c" },
+  { a:"grant-dawson", b:"nurullo-aliev", boutId:"564ae2d9-97ff-4d83-b88c-b9f7e4816d94" },
 ];
 const FO_BOUT_IDS = FO_CARD_ORDER.map((e) => e.boutId);
 // Event background photo behind the Face-Off head banner, swapped per
-// card. Current: Edmonton skyline at night (Justin Hu, Unsplash License —
-// free for commercial use, https://unsplash.com/photos/city-skyline-during-night-time-kczeUEAhDZI)
-// — matches this card, UFC Fight Night: Buckley vs Malott (Edmonton, Oct 17 2026).
-const FO_EVENT_BG_URL = "https://images.unsplash.com/photo-1617336422396-e1dfc4210ec5?fm=jpg&q=80&w=2400&auto=format&fit=crop";
+// card. Current: Abu Dhabi skyline — matches this card, UFC 333:
+// Volkanovski vs Evloev (Etihad Arena, Abu Dhabi, Oct 24 2026).
+const FO_EVENT_BG_URL = "https://images.unsplash.com/photo-1603565095944-2a6f33bb517c?fm=jpg&q=80&w=2400&auto=format&fit=crop";
 
 const FO_TIMER_CHOICES = [15, 30, 45, 60, 90, 120];
 const FO_MIN_ROSTER_SIZE = 4;
@@ -756,33 +748,21 @@ function foMakeAvatarSwatch(color){
 }
 const FO_AVATAR_SWATCHES = ["#D4AF37", "#E2283C", "#1F6B3A", "#5EC8E8", "#A855F7", "#E8742A"].map(foMakeAvatarSwatch);
 
-// Homepage teaser cards — "This Week's" is the real, wired-in Face-Off
-// card above; "Next Week's" is a preview only (UFC 333 isn't wired into
-// the draft system yet — see the note on FO_CARD_ORDER above), so it
-// shows real fighter names/date but a generic avatar and a disabled CTA
-// instead of real photos and a live draft link.
+// Homepage teaser card — "This Week's" is the real, wired-in Face-Off
+// card above (UFC 333). No second card yet: the one after this isn't
+// announced/synced, so there's nothing honest to tease for "Next Week's"
+// right now — add it back once another card is wired in.
 const WEEK_CARDS = [
   {
     id: "this-week",
     kicker: "THIS WEEK'S CARD",
-    eventName: "BUCKLEY VS MALOTT",
+    eventName: "VOLKANOVSKI VS EVLOEV",
     eventSub: FO_EVENT_SUB,
     bgUrl: FO_EVENT_BG_URL,
     tone: "gold",
-    fighterAPhoto: FO_FIGHTERS_BY_ID["joaquin-buckley"].photo,
-    fighterBPhoto: FO_FIGHTERS_BY_ID["mike-malott"].photo,
+    fighterAPhoto: FO_FIGHTERS_BY_ID["alexander-volkanovski"].photo,
+    fighterBPhoto: FO_FIGHTERS_BY_ID["movsar-evloev"].photo,
     live: true,
-  },
-  {
-    id: "next-week",
-    kicker: "NEXT WEEK'S CARD",
-    eventName: "VOLKANOVSKI VS EVLOEV",
-    eventSub: "SAT, OCT 24 · ETIHAD ARENA, ABU DHABI",
-    bgUrl: "https://images.unsplash.com/photo-1603565095944-2a6f33bb517c?fm=jpg&q=80&w=2400&auto=format&fit=crop",
-    tone: "maroon",
-    fighterAPhoto: FO_DEFAULT_AVATAR,
-    fighterBPhoto: FO_DEFAULT_AVATAR,
-    live: false,
   },
 ];
 // Simple bot: best remaining projection with a little variance, so it's not the same draft twice.
@@ -960,7 +940,7 @@ function foClearLocal(){
 // Solo-vs-bot practice mode (above) is completely separate and untouched —
 // foRoom is null the whole time you're in that mode.
 // ---------------------------------------------------------------------
-const FO_CARD_KEY = "buckley-vs-malott"; // bump this if/when the Face-Off card changes
+const FO_CARD_KEY = "volkanovski-vs-evloev"; // bump this if/when the Face-Off card changes
 let foRoom = null;        // the room row, once you've created or joined one
 let foMySeat = null;      // "host" | "guest" — which seat you're sitting in
 let foRoomChannel = null; // Supabase Realtime channel for this room
@@ -1426,7 +1406,7 @@ function renderModePick(){
         <button type="button" class="mode-card gold" id="pickFaceoffBtn">
           <div class="mc-kicker">PER-EVENT &middot; 2 TEAMS</div>
           <div class="mc-title">Face-Off Draft</div>
-          <div class="mc-desc">Head-to-head against a bot for the next real card — UFC Fight Night: Buckley vs Malott. Draft any fighter, in real fight order, and roll role multipliers for bonus points.</div>
+          <div class="mc-desc">Head-to-head against a bot for the next real card — UFC 333: Volkanovski vs Evloev. Draft any fighter, in real fight order, and roll role multipliers for bonus points.</div>
           <div class="mc-meta">${FO_CARD_ORDER.length} BOUTS &middot; ${FO_FIGHTERS.length} FIGHTERS &middot; ONE CARD</div>
           <div class="mc-meta" id="pickFaceoffLiveBtn" style="margin-top:10px;color:var(--gold);text-decoration:underline;cursor:pointer;">OR PLAY LIVE AGAINST A PERSON &rarr;</div>
         </button>
@@ -1461,7 +1441,7 @@ function renderFoLobby(){
       <a class="back-link" id="foLobbyBackLink">&larr; Back</a>
       <div class="hero" style="margin-top:0;">
         <div class="wordmark" style="font-size:clamp(28px,6vw,44px);">Play Face-Off live</div>
-        <div class="tagline" style="font-size:clamp(11px,2vw,14px);margin-bottom:0;">UFC Fight Night: Buckley vs Malott &middot; sign-in required to host or join</div>
+        <div class="tagline" style="font-size:clamp(11px,2vw,14px);margin-bottom:0;">UFC 333: Volkanovski vs Evloev &middot; sign-in required to host or join</div>
       </div>
       ${foLobbyError ? `<div class="fo-lobby-error">${esc(foLobbyError)}</div>` : ""}
       <div class="fo-lobby-grid">
