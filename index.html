@@ -85,6 +85,59 @@
   }
   .hero .welcome{font-size:13.5px;color:var(--text-faint);margin-top:18px;letter-spacing:0.5px;}
 
+  /* ---------- Weekly card teasers (homepage) ---------- */
+  .week-cards{max-width:960px;margin:52px auto 0;padding:0 10px;display:flex;flex-direction:column;gap:22px;}
+  @media (min-width:860px){
+    .week-cards{flex-direction:row;align-items:stretch;}
+    .week-card{flex:1 1 0;}
+  }
+  .week-card{
+    position:relative;border-radius:var(--r-lg);overflow:hidden;min-height:340px;
+    display:flex;flex-direction:column;justify-content:flex-end;
+    border:var(--edge);box-shadow:var(--shadow-lg);
+  }
+  .week-card-bg{
+    position:absolute;inset:0;background-size:cover;background-position:center;
+  }
+  .week-card-bg::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(11,11,13,0.25) 0%, rgba(11,11,13,0.55) 46%, rgba(11,11,13,0.94) 100%);
+  }
+  .week-card.gold .week-card-bg::before{
+    content:"";position:absolute;inset:0;z-index:1;background:rgba(212,175,55,0.22);mix-blend-mode:multiply;
+  }
+  .week-card.maroon .week-card-bg::before{
+    content:"";position:absolute;inset:0;z-index:1;background:rgba(122,24,32,0.32);mix-blend-mode:multiply;
+  }
+  .week-card-content{position:relative;z-index:2;padding:22px 24px 26px;text-align:center;}
+  .week-card-kicker{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:11px;letter-spacing:3px;color:var(--text-dim);margin-bottom:16px;}
+  .week-card.gold .week-card-kicker{color:#E6C75C;}
+  .week-card.maroon .week-card-kicker{color:#E88A90;}
+  .week-card-matchup{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:16px;}
+  .week-card-fighter-ring{
+    width:84px;height:84px;padding:4px;box-sizing:border-box;flex-shrink:0;
+    clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  }
+  .week-card.gold .week-card-fighter-ring{background:linear-gradient(135deg,#F6DE8C,var(--gold));}
+  .week-card.maroon .week-card-fighter-ring{background:linear-gradient(135deg,#FF8A96,var(--red));}
+  .week-card-fighter-ring img{
+    width:100%;height:100%;object-fit:cover;background:#0F0F12;
+    clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  }
+  .week-card-vs{font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;color:var(--text-faint);letter-spacing:1px;}
+  .week-card-name{font-family:'Oswald',sans-serif;text-transform:uppercase;font-weight:700;font-size:clamp(20px,3.6vw,26px);letter-spacing:0.5px;margin-bottom:6px;}
+  .week-card-sub{font-size:12px;color:var(--text-dim);letter-spacing:0.5px;margin-bottom:20px;}
+  .week-card-cta{
+    font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:14px;font-weight:700;letter-spacing:1px;
+    padding:13px 28px;border-radius:9px;cursor:pointer;width:100%;max-width:280px;
+  }
+  .week-card.gold .week-card-cta{
+    background:linear-gradient(180deg,#E6C75C,var(--gold));color:#17120A;border:2px solid #17120A;
+  }
+  .week-card.maroon .week-card-cta{
+    background:transparent;color:var(--text-dim);border:1.5px solid rgba(255,255,255,0.18);cursor:default;
+  }
+
   /* ---------- Setup ---------- */
   .settings-card{
     max-width:520px;margin:20px auto;background:var(--panel);border:var(--edge);
@@ -702,6 +755,36 @@ function foMakeAvatarSwatch(color){
   );
 }
 const FO_AVATAR_SWATCHES = ["#D4AF37", "#E2283C", "#1F6B3A", "#5EC8E8", "#A855F7", "#E8742A"].map(foMakeAvatarSwatch);
+
+// Homepage teaser cards — "This Week's" is the real, wired-in Face-Off
+// card above; "Next Week's" is a preview only (UFC 333 isn't wired into
+// the draft system yet — see the note on FO_CARD_ORDER above), so it
+// shows real fighter names/date but a generic avatar and a disabled CTA
+// instead of real photos and a live draft link.
+const WEEK_CARDS = [
+  {
+    id: "this-week",
+    kicker: "THIS WEEK'S CARD",
+    eventName: "BUCKLEY VS MALOTT",
+    eventSub: FO_EVENT_SUB,
+    bgUrl: FO_EVENT_BG_URL,
+    tone: "gold",
+    fighterAPhoto: FO_FIGHTERS_BY_ID["joaquin-buckley"].photo,
+    fighterBPhoto: FO_FIGHTERS_BY_ID["mike-malott"].photo,
+    live: true,
+  },
+  {
+    id: "next-week",
+    kicker: "NEXT WEEK'S CARD",
+    eventName: "VOLKANOVSKI VS EVLOEV",
+    eventSub: "SAT, OCT 24 · ETIHAD ARENA, ABU DHABI",
+    bgUrl: "https://images.unsplash.com/photo-1603565095944-2a6f33bb517c?fm=jpg&q=80&w=2400&auto=format&fit=crop",
+    tone: "maroon",
+    fighterAPhoto: FO_DEFAULT_AVATAR,
+    fighterBPhoto: FO_DEFAULT_AVATAR,
+    live: false,
+  },
+];
 // Simple bot: best remaining projection with a little variance, so it's not the same draft twice.
 function foBotChoose(available){
   const sorted = [...available].sort((a, b) => b.proj - a.proj);
@@ -1926,13 +2009,38 @@ function renderLanding(){
       <button class="cta" id="startCtaBtn">TRY COMBAT'S MOCK DRAFT TODAY</button>
       <div class="welcome">Jump into a live draft right now — no sign-up needed.</div>
     </div>
-    <div style="text-align:center;padding:24px 0 8px;font-size:12px;color:var(--text-faint);">
+
+    <div class="week-cards">
+      ${WEEK_CARDS.map((c) => `
+        <div class="week-card ${c.tone}" data-week-card="${c.id}">
+          <div class="week-card-bg" style="background-image:url('${esc(c.bgUrl)}');"></div>
+          <div class="week-card-content">
+            <div class="week-card-kicker">${esc(c.kicker)}</div>
+            <div class="week-card-matchup">
+              <div class="week-card-fighter-ring"><img src="${esc(c.fighterAPhoto)}" alt=""></div>
+              <div class="week-card-vs">VS</div>
+              <div class="week-card-fighter-ring"><img src="${esc(c.fighterBPhoto)}" alt=""></div>
+            </div>
+            <div class="week-card-name">${esc(c.eventName)}</div>
+            <div class="week-card-sub">${esc(c.eventSub)}</div>
+            ${c.live
+              ? `<button type="button" class="week-card-cta" data-week-draft="${c.id}">DRAFT THIS CARD</button>`
+              : `<button type="button" class="week-card-cta" disabled>CARD LOCKS OCT 24</button>`}
+          </div>
+        </div>
+      `).join("")}
+    </div>
+
+    <div style="text-align:center;padding:30px 0 8px;font-size:12px;color:var(--text-faint);">
       <a href="terms.html" style="color:var(--text-faint);text-decoration:none;">Terms</a>
       &nbsp;&middot;&nbsp;
       <a href="privacy.html" style="color:var(--text-faint);text-decoration:none;">Privacy</a>
     </div>
   `;
   document.getElementById("startCtaBtn").addEventListener("click", () => { screen = "modePick"; render(); });
+  document.querySelectorAll("[data-week-draft]").forEach((btn) => {
+    btn.addEventListener("click", () => { screen = "modePick"; render(); });
+  });
 }
 
 /* ---------------- Setup ---------------- */
