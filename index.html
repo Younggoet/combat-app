@@ -396,6 +396,7 @@
   .fo-room-code{font-family:'Oswald',sans-serif;font-size:36px;font-weight:700;letter-spacing:8px;color:var(--gold);margin-top:8px;}
   .fo-turn-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--panel);border:1.5px solid var(--border);border-radius:10px;padding:12px 18px;margin-bottom:16px;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;color:var(--text-dim);}
   .fo-turn-banner.mine{border-color:var(--gold);color:var(--gold);background:rgba(212,175,55,0.08);}
+  .fo-pick-clock-val{font-variant-numeric:tabular-nums;font-size:16px;letter-spacing:0.5px;}
   .fo-turn-room-code{font-size:11px;letter-spacing:2px;color:var(--text-faint);font-weight:400;}
   /* True octagon frame — a bold border split cleanly gold (team A side) /
      red (team B side) down the middle, not a diagonal gradient bleed. */
@@ -869,6 +870,70 @@ function foBotChoose(available){
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+// Face-Off's own pick clock — separate from the Dynasty draft's
+// ensurePickClock/tickPickClock above, since Face-Off has its own turn
+// model (solo-vs-bot picks both sides in one click; a live room alternates
+// by seat). Ticks the ".fo-pick-clock-val" elements directly (no full
+// re-render needed every 250ms) and auto-picks for whoever's clock hit
+// zero, the same way a missed pick would be handled at a real draft table.
+let foPickClockDeadline = null;
+let foPickClockInterval = null;
+let foPickClockKey = null; // whose turn the running countdown belongs to
+
+function foClearPickClock(){
+  if (foPickClockInterval) clearInterval(foPickClockInterval);
+  foPickClockInterval = null;
+  foPickClockDeadline = null;
+  foPickClockKey = null;
+}
+function foPickClockRemainSeconds(){
+  return foPickClockDeadline ? Math.max(0, (foPickClockDeadline - Date.now()) / 1000) : 0;
+}
+// Safe to call on every render — only (re)starts the countdown when the key
+// (whose turn, and how many picks have happened so far) has actually
+// changed, so a render mid-countdown doesn't reset the clock back to full.
+function foEnsurePickClock(isMyTurn, key){
+  if (!isMyTurn) { foClearPickClock(); return; }
+  if (foPickClockKey === key && foPickClockInterval) return;
+  foClearPickClock();
+  foPickClockKey = key;
+  foPickClockDeadline = Date.now() + (fo.pickTimerSeconds || 45) * 1000;
+  foPickClockInterval = setInterval(foTickPickClock, 250);
+}
+function foTickPickClock(){
+  if (screen !== "faceoff") { foClearPickClock(); return; }
+  const remain = foPickClockRemainSeconds();
+  document.querySelectorAll(".fo-pick-clock-val").forEach((el) => {
+    el.textContent = fmtClock(Math.ceil(remain));
+    el.style.color = remain <= 10 ? "var(--red)" : "";
+  });
+  if (remain <= 0) {
+    const key = foPickClockKey;
+    foClearPickClock();
+    foAutoPick(key);
+  }
+}
+// Fires once a clock hits zero. Guards against a stale timer landing after
+// the pick it was armed for already resolved some other way (e.g. the
+// person clicked a fighter in the same instant the clock expired).
+function foAutoPick(key){
+  if (foRoom) {
+    if (!foRoom || foRoom.status !== "drafting" || foRoom.turn !== foMySeat) return;
+    if (key !== `room-${foRoom.id}-${Object.keys(foRoom.drafted_by || {}).length}`) return;
+    const available = FO_FIGHTERS.filter((f) => !foRoom.drafted_by[f.id]);
+    if (!available.length) return;
+    foRoomDraftFighter(foBotChoose(available).id);
+  } else {
+    if (!fo || fo.settingsOpen) return;
+    const rosterACount = Object.values(fo.draftedBy).filter((t) => t === "A").length;
+    if (rosterACount >= fo.rosterSize) return;
+    if (key !== `solo-${Object.keys(fo.draftedBy).length}`) return;
+    const available = FO_FIGHTERS.filter((f) => !fo.draftedBy[f.id]);
+    if (!available.length) return;
+    foDraftFighter(foBotChoose(available).id);
+  }
+}
+
 /* ---- Real live scoring for tomorrow's card — same formula as live.html / calculate-team-score.js ---- */
 const FO_POINTS = {
   SIG_STRIKE_LANDED: 0.1, TAKEDOWN_LANDED: 2, KNOCKDOWN: 8,
@@ -1301,7 +1366,7 @@ async function foRoomSetRole(id, role){
 function initFaceoffShell(){
   if (!fo) {
     fo = {
-      draftedBy: {}, settingsOpen: true, pointsOpen: false, pickTimerSeconds: 45, rosterSize: 6,
+      draftedBy: {}, settingsOpen: true, pointsOpen: false, infoOpen: false, pickTimerSeconds: 45, rosterSize: 6,
       gameMode: "regular", finishBonus: true, teamNames: { A: "Cage Rattlers", B: "Knockout Kings" },
       teamAvatars: { A: null, B: null }, editingTeam: null, editNameDraft: "", roles: {},
     };
@@ -1318,6 +1383,7 @@ function initFaceoff(){
     draftedBy: {},
     settingsOpen: true, // league settings start open so they're set before the first pick locks them in
     pointsOpen: false, // the "how scoring works" reference panel — independent of settingsOpen, never locks
+    infoOpen: false, // the "what is Face-Off?" explainer panel — independent of the others, never locks
     pickTimerSeconds: 45,
     rosterSize: 6,
     gameMode: "regular", // "regular" (flat scoring) by default — "standard" (role multipliers) is opt-in
@@ -1644,7 +1710,7 @@ function renderFoWaitRoom(){
 
 function renderFaceoff(){
   foSaveLocal();
-  const { draftedBy, settingsOpen, pointsOpen, pickTimerSeconds, rosterSize, gameMode, finishBonus, teamNames, teamAvatars, editingTeam, roles } = fo;
+  const { draftedBy, settingsOpen, pointsOpen, infoOpen, pickTimerSeconds, rosterSize, gameMode, finishBonus, teamNames, teamAvatars, editingTeam, roles } = fo;
   const inRoom = !!foRoom;
   const opponentIsBot = !inRoom || !!foRoom.guest_is_bot;
 
@@ -1675,6 +1741,14 @@ function renderFaceoff(){
   const boutCount = FO_CARD_ORDER.length;
   const maxRosterSize = Math.min(FO_MAX_ROSTER_SIZE_CAP, boutCount);
   const settingsLocked = draftedCount > 0; // locks in once the first pick is made
+
+  // Pick clock: who, if anyone, is actually on the clock right now, and the
+  // key that identifies this specific turn so the countdown only resets
+  // when the turn genuinely changes (not on every unrelated re-render).
+  const roomMyTurn = inRoom && foRoom.status === "drafting" && foRoom.turn === foMySeat;
+  const soloMyTurn = !inRoom && !settingsOpen && rosterA.length < rosterSize;
+  const pickClockKey = inRoom ? `room-${foRoom.id}-${draftedCount}` : `solo-${draftedCount}`;
+  foEnsurePickClock(roomMyTurn || soloMyTurn, pickClockKey);
 
   const settingsHtml = !settingsOpen ? "" : `
     <div class="fo-settings">
@@ -1740,6 +1814,25 @@ function renderFaceoff(){
   // fo-settings (which locks after the first pick) since this is just
   // explaining the rules, not configuring them, so it stays available the
   // whole draft and during live scoring.
+  const infoHtml = !infoOpen ? "" : `
+    <div class="fo-settings" style="border-color:var(--border);">
+      <div class="fo-settings-col" style="width:100%;padding-bottom:4px;">
+        <div class="fo-settings-label" style="margin:0;">WHAT IS FACE-OFF?</div>
+      </div>
+      <div style="width:100%;height:1px;background:var(--border-2);"></div>
+      <div class="fo-settings-col" style="width:100%;max-width:720px;">
+        <div style="font-size:12.5px;color:var(--text-dim);line-height:1.6;">
+          Face-Off is a quick head-to-head draft for one real card — just ${esc(FO_EVENT_NAME)}, nothing season-long. You build a roster by picking fighters off the actual bouts below, your opponent (a bot right now, or a real person in a live room) picks the rest, and whoever's team scores more fantasy points once the card happens wins.
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;column-gap:12px;row-gap:10px;font-size:12px;color:var(--text-dim);margin-top:14px;max-width:560px;">
+          <span style="color:var(--gold);font-weight:700;">1. PICK</span><span>Click a fighter on any bout card to draft them. Your opponent picks back right after, so the board updates both sides at once.</span>
+          <span style="color:var(--gold);font-weight:700;">2. FILL YOUR ROSTER</span><span>Keep picking until your roster is full (set under League Settings) — nothing stops you from drafting both fighters in the same bout.</span>
+          <span style="color:var(--gold);font-weight:700;">3. WATCH IT SCORE</span><span>Once the card is live, each drafted fighter's real strikes, takedowns, control time and finishes turn into points — see "Points &amp; Rules" for exactly how.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
   const pointsHtml = !pointsOpen ? "" : `
     <div class="fo-settings" style="border-color:var(--border);">
       <div class="fo-settings-col" style="width:100%;padding-bottom:4px;">
@@ -1845,6 +1938,10 @@ function renderFaceoff(){
           <div class="h-font" style="font-size:11px;letter-spacing:1.5px;color:var(--gold);">${esc(FO_EVENT_NAME)}</div>
           <div style="font-size:12px;color:var(--text-faint);margin-top:2px;">${esc(FO_EVENT_SUB)}</div>
         </div>
+        <button type="button" class="fo-gear ${infoOpen ? "active" : ""}" id="foInfoBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${infoOpen ? "var(--gold)" : "var(--text-dim)"}" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 8h.01"></path><path d="M11 12h1v5h1"></path></svg>
+          <span class="h-font" style="font-size:10px;letter-spacing:1px;color:${infoOpen ? "var(--gold)" : "var(--text-dim)"};">WHAT IS FACE-OFF?</span>
+        </button>
         <button type="button" class="fo-gear ${pointsOpen ? "active" : ""}" id="foPointsBtn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${pointsOpen ? "var(--gold)" : "var(--text-dim)"}" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
           <span class="h-font" style="font-size:10px;letter-spacing:1px;color:${pointsOpen ? "var(--gold)" : "var(--text-dim)"};">POINTS &amp; RULES</span>
@@ -1857,9 +1954,14 @@ function renderFaceoff(){
     </div>
 
     ${inRoom ? `<div class="fo-turn-banner ${foRoom.turn === foMySeat ? "mine" : ""}">
-      ${foRoom.status === "complete" ? `DRAFT COMPLETE` : (foRoom.turn === foMySeat ? `YOUR TURN TO PICK` : `WAITING ON ${esc((foRoom.turn === "host" ? foRoom.host_display_name : foRoom.guest_display_name) || "opponent")}&hellip;`)}
+      <span>${foRoom.status === "complete" ? `DRAFT COMPLETE` : (foRoom.turn === foMySeat ? `YOUR TURN TO PICK` : `WAITING ON ${esc((foRoom.turn === "host" ? foRoom.host_display_name : foRoom.guest_display_name) || "opponent")}&hellip;`)}</span>
+      ${roomMyTurn ? `<span class="fo-pick-clock-val">${fmtClock(pickTimerSeconds)}</span>` : ""}
       <span class="fo-turn-room-code">ROOM ${esc(foRoom.code)}</span>
-    </div>` : ""}
+    </div>` : (soloMyTurn ? `<div class="fo-turn-banner mine">
+      <span>ON THE CLOCK &mdash; YOUR PICK</span>
+      <span class="fo-pick-clock-val">${fmtClock(pickTimerSeconds)}</span>
+    </div>` : "")}
+    ${infoHtml}
     ${pointsHtml}
     ${settingsHtml}
 
@@ -1941,6 +2043,7 @@ function renderFaceoff(){
 
 function wireFaceoff(){
   document.getElementById("foBackLink").addEventListener("click", async () => {
+    foClearPickClock();
     foUnsubscribeRealtime();
     if (foRoom) await foLeaveRoom();
     screen = "modePick"; render();
@@ -1948,10 +2051,11 @@ function wireFaceoff(){
   const settingsBtn = document.getElementById("foSettingsBtn");
   if (settingsBtn) settingsBtn.addEventListener("click", () => { fo.settingsOpen = !fo.settingsOpen; renderFaceoff(); });
   document.getElementById("foPointsBtn").addEventListener("click", () => { fo.pointsOpen = !fo.pointsOpen; renderFaceoff(); });
+  document.getElementById("foInfoBtn").addEventListener("click", () => { fo.infoOpen = !fo.infoOpen; renderFaceoff(); });
   const lockBtn = document.getElementById("foLockSettingsBtn");
   if (lockBtn) lockBtn.addEventListener("click", () => { fo.settingsOpen = false; renderFaceoff(); });
   const newDraftBtn = document.getElementById("foNewDraftBtn");
-  if (newDraftBtn) newDraftBtn.addEventListener("click", () => { foClearLocal(); initFaceoff(); renderFaceoff(); });
+  if (newDraftBtn) newDraftBtn.addEventListener("click", () => { foClearPickClock(); foClearLocal(); initFaceoff(); renderFaceoff(); });
   const editABtn = document.getElementById("foEditABtn");
   if (editABtn) editABtn.addEventListener("click", () => foToggleEdit("A"));
   const editBBtn = document.getElementById("foEditBBtn");
