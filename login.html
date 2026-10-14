@@ -138,22 +138,32 @@ form.addEventListener("submit", async (e) => {
       const { data, error } = await client.auth.signUp({ email, password });
       if (error) throw error;
 
-      if (data.user) {
+      if (data.session && data.user) {
+        // Signed in immediately (email confirmation is off) — safe to save now.
         await CombatAuth.ensureProfile(data.user.id, displayName);
-      }
-
-      if (data.session) {
         successBox.textContent = "Account created — you're signed in.";
         successBox.style.display = "block";
         setTimeout(() => { window.location.href = redirectTarget; }, 800);
       } else {
+        // No session yet (email confirmation required) — the profile write
+        // would be blocked until they're actually logged in, so stash the
+        // name and apply it the moment they sign in below.
+        try { localStorage.setItem("combat-pending-display-name", displayName); } catch (e) {}
         successBox.textContent = "Account created — check your email to confirm, then sign in.";
         successBox.style.display = "block";
         setMode("signin");
       }
     } else {
-      const { error } = await client.auth.signInWithPassword({ email, password });
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
       if (error) throw error;
+
+      let pendingName = null;
+      try { pendingName = localStorage.getItem("combat-pending-display-name"); } catch (e) {}
+      if (pendingName && data.user) {
+        await CombatAuth.ensureProfile(data.user.id, pendingName);
+        try { localStorage.removeItem("combat-pending-display-name"); } catch (e) {}
+      }
+
       window.location.href = redirectTarget;
     }
   } catch (err) {
