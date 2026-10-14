@@ -1108,6 +1108,14 @@ let foRoomChannel = null; // Supabase Realtime channel for this room
 let foPublicRooms = [];   // open public rooms shown in the lobby list
 let foLobbyError = null;
 
+// Room chat — a simple text channel between the two real people in a live
+// Face-Off room. Only meaningful once a real second player is in the room
+// (chatting at a bot is pointless), so it's only ever shown there.
+let foChatMessages = [];  // this room's messages, oldest first
+let foChatOpen = true;    // panel open/closed — resets to open on every new room
+let foChatChannel = null; // separate Realtime channel from the room-row one above
+let foChatDraft = "";     // the input's current (unsent) text, kept outside the DOM so a re-render doesn't erase it mid-type
+
 // "A"/"B" are the two roster colors used everywhere in the draft UI. In
 // solo mode you're always A. In a room, you're A if you're the host, B if
 // you're the guest — this is the one place that mapping lives.
@@ -1272,9 +1280,70 @@ function foSubscribeRoomRealtime(){
       render();
     })
     .subscribe();
+  foChatMessages = [];
+  foChatOpen = true;
+  foChatDraft = "";
+  foLoadChatMessages();
+  foSubscribeChatRealtime();
 }
 function foUnsubscribeRoomRealtime(){
   if (foRoomChannel) { CombatAuth.client.removeChannel(foRoomChannel); foRoomChannel = null; }
+  foUnsubscribeChatRealtime();
+  foChatMessages = [];
+}
+
+async function foLoadChatMessages(){
+  if (!foRoom) return;
+  try {
+    const { data, error } = await CombatAuth.client
+      .from("face_off_room_messages")
+      .select("id, sender_seat, display_name, body, created_at")
+      .eq("room_id", foRoom.id)
+      .order("created_at", { ascending: true })
+      .limit(200);
+    if (error) throw error;
+    foChatMessages = data || [];
+    if (screen === "faceoff") renderFaceoff();
+  } catch (err) { /* best-effort — chat staying empty isn't fatal to the draft */ }
+}
+function foSubscribeChatRealtime(){
+  if (foChatChannel || !foRoom) return;
+  foChatChannel = CombatAuth.client
+    .channel(`faceoff-chat-${foRoom.id}`)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "face_off_room_messages", filter: `room_id=eq.${foRoom.id}` }, (payload) => {
+      if (foChatMessages.some((m) => m.id === payload.new.id)) return; // already have it (optimistic add)
+      foChatMessages = [...foChatMessages, payload.new];
+      if (screen === "faceoff") renderFaceoff();
+    })
+    .subscribe();
+}
+function foUnsubscribeChatRealtime(){
+  if (foChatChannel) { CombatAuth.client.removeChannel(foChatChannel); foChatChannel = null; }
+}
+async function foSendChatMessage(body){
+  const text = (body || "").trim().slice(0, 500);
+  if (!text || !foRoom || !foMySeat) return;
+  const user = await CombatAuth.getUser();
+  if (!user) return;
+  const displayName = foMySeat === "host" ? foRoom.host_display_name : (foRoom.guest_display_name || "Guest");
+  // Optimistic: show it immediately under a temp id, then let the Realtime
+  // INSERT (deduped by real id above) or the insert's own result reconcile it.
+  const tempId = `local-${Date.now()}-${Math.random()}`;
+  foChatMessages = [...foChatMessages, { id: tempId, sender_seat: foMySeat, display_name: displayName, body: text, created_at: new Date().toISOString() }];
+  if (screen === "faceoff") renderFaceoff();
+  try {
+    const { data, error } = await CombatAuth.client
+      .from("face_off_room_messages")
+      .insert({ room_id: foRoom.id, sender_user_id: user.id, sender_seat: foMySeat, display_name: displayName, body: text })
+      .select().single();
+    if (error) throw error;
+    // Drop any copy Realtime may have already added (a race with this same
+    // insert resolving) before swapping the optimistic entry for the real one.
+    foChatMessages = foChatMessages.filter((m) => m.id !== data.id).map((m) => (m.id === tempId ? data : m));
+  } catch (err) {
+    foChatMessages = foChatMessages.filter((m) => m.id !== tempId); // failed — drop the optimistic echo
+  }
+  if (screen === "faceoff") renderFaceoff();
 }
 
 // Copies the room row's shared fields into the local `fo` draft-state
@@ -1348,7 +1417,17 @@ async function foRoomSetRole(id, role){
   const myLetter = foMyLetter();
   if (foRoom.drafted_by[id] !== myLetter) return;
   const current = (foRoom.roles || {})[id];
-  const nextRoles = { ...foRoom.roles, [id]: current === role ? null : role };
+  const turningOn = current !== role;
+  const nextRoles = { ...foRoom.roles };
+  if (turningOn) {
+    // Same one-fighter-per-role-per-team rule as solo mode — see foSetRole.
+    Object.keys(nextRoles).forEach((fid) => {
+      if (fid !== id && foRoom.drafted_by[fid] === myLetter && nextRoles[fid] === role) nextRoles[fid] = null;
+    });
+    nextRoles[id] = role;
+  } else {
+    nextRoles[id] = null;
+  }
   try {
     const { data, error } = await CombatAuth.client
       .from("face_off_rooms").update({ roles: nextRoles, updated_at: new Date().toISOString() }).eq("id", foRoom.id).select().single();
@@ -1434,8 +1513,21 @@ function foDraftFighter(id){
 }
 function foSetRole(id, role){
   if (foRoom) { foRoomSetRole(id, role); return; }
-  if (fo.draftedBy[id] !== foMyLetter()) return;
-  fo.roles[id] = fo.roles[id] === role ? null : role;
+  const myTeam = foMyLetter();
+  if (fo.draftedBy[id] !== myTeam) return;
+  const turningOn = fo.roles[id] !== role;
+  if (turningOn) {
+    // Standard mode: each role (Striker/Grappler/Finisher) can only sit on
+    // one fighter per team at a time — reassigning it off whoever had it,
+    // same as clicking it again to clear it, rather than letting a team
+    // stack the 2x on more than one pick.
+    Object.keys(fo.roles).forEach((fid) => {
+      if (fid !== id && fo.draftedBy[fid] === myTeam && fo.roles[fid] === role) fo.roles[fid] = null;
+    });
+    fo.roles[id] = role;
+  } else {
+    fo.roles[id] = null;
+  }
   renderFaceoff();
 }
 function foToggleEdit(team){
@@ -1713,6 +1805,16 @@ function renderFaceoff(){
   const { draftedBy, settingsOpen, pointsOpen, infoOpen, pickTimerSeconds, rosterSize, gameMode, finishBonus, teamNames, teamAvatars, editingTeam, roles } = fo;
   const inRoom = !!foRoom;
   const opponentIsBot = !inRoom || !!foRoom.guest_is_bot;
+  const showChat = inRoom && !opponentIsBot;
+
+  // Capture the chat input's focus/cursor BEFORE the innerHTML swap below
+  // destroys this node — same technique as the fighter-search box, so
+  // typing a message doesn't get wiped by a re-render (e.g. an incoming
+  // message from the other player arriving mid-keystroke).
+  const existingChatInput = document.getElementById("foChatInput");
+  const chatInputWasFocused = !!existingChatInput && document.activeElement === existingChatInput;
+  const chatSelStart = chatInputWasFocused ? existingChatInput.selectionStart : null;
+  const chatSelEnd = chatInputWasFocused ? existingChatInput.selectionEnd : null;
 
   const rosterA = [], rosterB = [];
   let totalA = 0, totalB = 0;
@@ -1814,6 +1916,29 @@ function renderFaceoff(){
   // fo-settings (which locks after the first pick) since this is just
   // explaining the rules, not configuring them, so it stays available the
   // whole draft and during live scoring.
+  const chatHtml = !showChat || !foChatOpen ? "" : `
+    <div class="fo-settings" style="border-color:var(--border);flex-direction:column;">
+      <div class="fo-settings-col" style="width:100%;padding-bottom:4px;">
+        <div class="fo-settings-label" style="margin:0;">ROOM CHAT</div>
+      </div>
+      <div style="width:100%;height:1px;background:var(--border-2);"></div>
+      <div id="foChatLog" style="width:100%;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 2px;">
+        ${foChatMessages.length ? foChatMessages.map((m) => {
+          const mine = m.sender_seat === foMySeat;
+          return `<div style="align-self:${mine ? "flex-end" : "flex-start"};max-width:78%;">
+            <div style="font-size:9.5px;letter-spacing:0.5px;color:var(--text-faint);margin-bottom:2px;${mine ? "text-align:right;" : ""}">${esc(m.display_name)}</div>
+            <div style="background:${mine ? "rgba(212,175,55,0.14)" : "var(--panel-2)"};border:1px solid ${mine ? "var(--gold)" : "var(--border)"};border-radius:10px;padding:7px 11px;font-size:12.5px;color:var(--text);word-break:break-word;">${esc(m.body)}</div>
+          </div>`;
+        }).join("") : `<div style="font-size:12px;color:var(--text-faint);padding:6px 2px;">No messages yet — say hey.</div>`}
+      </div>
+      <div style="width:100%;height:1px;background:var(--border-2);margin-top:4px;"></div>
+      <div style="display:flex;gap:8px;width:100%;padding-top:6px;">
+        <input type="text" class="field-input" id="foChatInput" placeholder="Message ${esc(foMySeat === "host" ? (foRoom.guest_display_name || "your opponent") : foRoom.host_display_name)}&hellip;" maxlength="500" value="${esc(foChatDraft)}" style="flex:1;min-width:0;">
+        <button type="button" class="fo-pill" id="foChatSendBtn"><div style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;padding:9px 18px;border-radius:7px;background:rgba(212,175,55,0.14);border:1.5px solid var(--gold);color:var(--gold);">SEND</div></button>
+      </div>
+    </div>
+  `;
+
   const infoHtml = !infoOpen ? "" : `
     <div class="fo-settings" style="border-color:var(--border);">
       <div class="fo-settings-col" style="width:100%;padding-bottom:4px;">
@@ -1862,7 +1987,7 @@ function renderFaceoff(){
           <span style="color:var(--text-dim);">Grappler role</span><span style="color:var(--text);font-weight:700;">2x, always</span>
           <span style="color:var(--text-dim);">Finisher role</span><span style="color:var(--text);font-weight:700;">2x only on a finish win</span>
         </div>
-        <div style="font-size:10.5px;color:var(--text-faint);margin-top:10px;max-width:300px;">No separate +10 bonus in Standard — Finisher's 2x already covers rewarding a finish.</div>
+        <div style="font-size:10.5px;color:var(--text-faint);margin-top:10px;max-width:300px;">No separate +10 bonus in Standard — Finisher's 2x already covers rewarding a finish. Each role can only sit on <b style="color:var(--text);">one fighter per team</b> at a time — assigning it to a new pick moves it off whoever had it.</div>
       </div>
       <div style="width:100%;height:1px;background:var(--border-2);"></div>
       <div class="fo-settings-col" style="width:100%;">
@@ -1946,6 +2071,10 @@ function renderFaceoff(){
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${pointsOpen ? "var(--gold)" : "var(--text-dim)"}" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
           <span class="h-font" style="font-size:10px;letter-spacing:1px;color:${pointsOpen ? "var(--gold)" : "var(--text-dim)"};">POINTS &amp; RULES</span>
         </button>
+        ${showChat ? `<button type="button" class="fo-gear ${foChatOpen ? "active" : ""}" id="foChatBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${foChatOpen ? "var(--gold)" : "var(--text-dim)"}" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"></path></svg>
+          <span class="h-font" style="font-size:10px;letter-spacing:1px;color:${foChatOpen ? "var(--gold)" : "var(--text-dim)"};">CHAT${foChatMessages.length ? ` (${foChatMessages.length})` : ""}</span>
+        </button>` : ""}
         ${inRoom ? "" : `<button type="button" class="fo-gear ${settingsOpen ? "active" : ""}" id="foSettingsBtn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${settingsOpen ? "var(--gold)" : "var(--text-dim)"}" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
           <span class="h-font" style="font-size:10px;letter-spacing:1px;color:${settingsOpen ? "var(--gold)" : "var(--text-dim)"};">LEAGUE SETTINGS</span>
@@ -1961,6 +2090,7 @@ function renderFaceoff(){
       <span>ON THE CLOCK &mdash; YOUR PICK</span>
       <span class="fo-pick-clock-val">${fmtClock(pickTimerSeconds)}</span>
     </div>` : "")}
+    ${chatHtml}
     ${infoHtml}
     ${pointsHtml}
     ${settingsHtml}
@@ -2052,6 +2182,31 @@ function wireFaceoff(){
   if (settingsBtn) settingsBtn.addEventListener("click", () => { fo.settingsOpen = !fo.settingsOpen; renderFaceoff(); });
   document.getElementById("foPointsBtn").addEventListener("click", () => { fo.pointsOpen = !fo.pointsOpen; renderFaceoff(); });
   document.getElementById("foInfoBtn").addEventListener("click", () => { fo.infoOpen = !fo.infoOpen; renderFaceoff(); });
+  const chatBtn = document.getElementById("foChatBtn");
+  if (chatBtn) chatBtn.addEventListener("click", () => { foChatOpen = !foChatOpen; renderFaceoff(); });
+  const chatInput = document.getElementById("foChatInput");
+  if (chatInput) {
+    chatInput.addEventListener("input", () => { foChatDraft = chatInput.value; }); // no render() here — see the capture/restore above
+    chatInput.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      const text = foChatDraft;
+      foChatDraft = "";
+      foSendChatMessage(text);
+    });
+    if (chatInputWasFocused) {
+      chatInput.focus();
+      chatInput.setSelectionRange(chatSelStart, chatSelEnd);
+    }
+  }
+  const chatSendBtn = document.getElementById("foChatSendBtn");
+  if (chatSendBtn) chatSendBtn.addEventListener("click", () => {
+    const text = foChatDraft;
+    foChatDraft = "";
+    foSendChatMessage(text);
+  });
+  const chatLog = document.getElementById("foChatLog");
+  if (chatLog) chatLog.scrollTop = chatLog.scrollHeight; // keep newest message in view
   const lockBtn = document.getElementById("foLockSettingsBtn");
   if (lockBtn) lockBtn.addEventListener("click", () => { fo.settingsOpen = false; renderFaceoff(); });
   const newDraftBtn = document.getElementById("foNewDraftBtn");
