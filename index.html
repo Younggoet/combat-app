@@ -326,6 +326,24 @@
   .fo-settings-col .fo-settings-label{font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:12px;}
   .fo-pill{all:unset;cursor:pointer;}
   .fo-mode-opt{padding:12px 16px;border-radius:9px;min-width:150px;}
+  /* Multiplayer lobby / waiting-room screens */
+  .fo-lobby-error{background:rgba(226,40,60,0.1);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:10px 14px;font-size:12.5px;margin-top:18px;}
+  .fo-lobby-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px;}
+  @media (max-width:700px){ .fo-lobby-grid{grid-template-columns:1fr;} }
+  .fo-lobby-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-md);padding:20px 22px;}
+  .fo-lobby-cta{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;padding:14px 18px;border-radius:9px;background:var(--panel-2);border:1.5px solid var(--border);color:var(--text);text-align:left;}
+  .fo-lobby-cta.gold{background:rgba(212,175,55,0.14);border-color:var(--gold);color:var(--gold);}
+  .fo-lobby-cta span{display:block;font-family:'Inter',sans-serif;font-size:11px;font-weight:400;letter-spacing:0;color:var(--text-faint);margin-top:4px;}
+  .fo-lobby-list{margin-top:14px;display:flex;flex-direction:column;gap:10px;}
+  .fo-lobby-row{display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 18px;}
+  .fo-lobby-host{font-weight:700;font-size:13.5px;color:var(--text);}
+  .fo-lobby-meta{font-size:11.5px;color:var(--text-faint);margin-top:3px;}
+  .fo-lobby-join-btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;padding:9px 20px;border-radius:7px;background:rgba(212,175,55,0.14);border:1.5px solid var(--gold);color:var(--gold);}
+  .fo-lobby-empty{font-size:13px;color:var(--text-faint);padding:18px 4px;}
+  .fo-room-code{font-family:'Oswald',sans-serif;font-size:36px;font-weight:700;letter-spacing:8px;color:var(--gold);margin-top:8px;}
+  .fo-turn-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--panel);border:1.5px solid var(--border);border-radius:10px;padding:12px 18px;margin-bottom:16px;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;color:var(--text-dim);}
+  .fo-turn-banner.mine{border-color:var(--gold);color:var(--gold);background:rgba(212,175,55,0.08);}
+  .fo-turn-room-code{font-size:11px;letter-spacing:2px;color:var(--text-faint);font-weight:400;}
   /* True octagon frame — a bold border split cleanly gold (team A side) /
      red (team B side) down the middle, not a diagonal gradient bleed. */
   .fo-head{position:relative;margin-bottom:22px;padding:4px;background:linear-gradient(90deg, #F6DE8C 0%, var(--gold) 24%, #2A2015 48%, #2A1317 52%, var(--red) 76%, #FF8A96 100%);clip-path:polygon(120px 0, calc(100% - 120px) 0, 100% 120px, 100% calc(100% - 120px), calc(100% - 120px) 100%, 120px 100%, 0 calc(100% - 120px), 0 120px);box-shadow:var(--shadow-lg);}
@@ -752,7 +770,7 @@ function foLiveRoleMultiplier(role, bout, fighterSbId){
 // across all of a team's fighters (who are each in a different bout).
 function foLiveValueForFighter(f, entry, oppF, team, role){
   const liveCtx = foLiveContext(entry, f.sbId, oppF.sbId);
-  const liveMult = (fo.gameMode === "standard" && team === "A" && role) ? foLiveRoleMultiplier(role, liveCtx.bout, f.sbId) : 1;
+  const liveMult = (fo.gameMode === "standard" && team && role) ? foLiveRoleMultiplier(role, liveCtx.bout, f.sbId) : 1;
   const { total } = foBasePoints(liveCtx.stats, liveCtx.oppStats);
   return total * liveMult + foFinishBonusPoints(f.sbId, liveCtx.bout);
 }
@@ -837,7 +855,7 @@ let fo = null;
 // people; a real shared multi-person draft room is a separate, bigger build.
 const FO_LOCAL_KEY = "combat_faceoff_draft_v1";
 function foSaveLocal(){
-  if (!fo) return;
+  if (!fo || foRoom) return; // multiplayer rooms are server-backed, not local-only
   try {
     const { draftedBy, pickTimerSeconds, rosterSize, gameMode, finishBonus, teamNames, teamAvatars, roles } = fo;
     localStorage.setItem(FO_LOCAL_KEY, JSON.stringify({ draftedBy, pickTimerSeconds, rosterSize, gameMode, finishBonus, teamNames, teamAvatars, roles }));
@@ -853,6 +871,288 @@ function foClearLocal(){
   try { localStorage.removeItem(FO_LOCAL_KEY); } catch (e) { /* ignore */ }
 }
 
+// ---------------------------------------------------------------------
+// Face-Off multiplayer rooms: two real people drafting the same card
+// against each other, synced live via Supabase (table: face_off_rooms).
+// Solo-vs-bot practice mode (above) is completely separate and untouched —
+// foRoom is null the whole time you're in that mode.
+// ---------------------------------------------------------------------
+const FO_CARD_KEY = "buckley-vs-malott"; // bump this if/when the Face-Off card changes
+let foRoom = null;        // the room row, once you've created or joined one
+let foMySeat = null;      // "host" | "guest" — which seat you're sitting in
+let foRoomChannel = null; // Supabase Realtime channel for this room
+let foPublicRooms = [];   // open public rooms shown in the lobby list
+let foLobbyError = null;
+
+// "A"/"B" are the two roster colors used everywhere in the draft UI. In
+// solo mode you're always A. In a room, you're A if you're the host, B if
+// you're the guest — this is the one place that mapping lives.
+function foMyLetter(){
+  if (!foRoom) return "A";
+  return foMySeat === "guest" ? "B" : "A";
+}
+
+function foGenRoomCode(){
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I — easy to read aloud
+  let s = "";
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+function foRoomInviteUrl(code){
+  return `${location.origin}${location.pathname}#faceoff-room-${code}`;
+}
+
+async function foEnsureProfile(user){
+  const profile = await CombatAuth.getProfile(user.id);
+  return (profile && profile.display_name) || (user.email || "").split("@")[0] || "Manager";
+}
+
+async function foLoadPublicRooms(){
+  foLobbyError = null;
+  try {
+    const { data, error } = await CombatAuth.client
+      .from("face_off_rooms")
+      .select("id, code, host_display_name, host_team_name, pick_timer_seconds, roster_size, game_mode, created_at")
+      .eq("card_key", FO_CARD_KEY)
+      .eq("visibility", "public")
+      .eq("status", "waiting")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (error) throw error;
+    foPublicRooms = data || [];
+  } catch (err) {
+    foPublicRooms = [];
+    foLobbyError = err.message || "Couldn't load open rooms.";
+  }
+  if (screen === "foLobby") renderFoLobby();
+}
+
+async function foCreateRoom(visibility){
+  const user = await CombatAuth.getUser();
+  if (!user) { window.location.href = "login.html?redirect=" + encodeURIComponent(location.href); return; }
+  foLobbyError = null;
+  const displayName = await foEnsureProfile(user);
+  const code = foGenRoomCode();
+  try {
+    const { data, error } = await CombatAuth.client
+      .from("face_off_rooms")
+      .insert({
+        code, card_key: FO_CARD_KEY, visibility,
+        host_user_id: user.id, host_display_name: displayName, host_team_name: `${displayName}'s Team`,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    foRoom = data;
+    foMySeat = "host";
+    foClearLocal();
+    foSubscribeRoomRealtime();
+    screen = "foWait";
+    render();
+  } catch (err) {
+    foLobbyError = err.message || "Couldn't create a room — try again.";
+    renderFoLobby();
+  }
+}
+
+async function foJoinRoomByCode(codeRaw){
+  const code = (codeRaw || "").trim().toUpperCase();
+  if (!code) { foLobbyError = "Enter a room code."; renderFoLobby(); return; }
+  const user = await CombatAuth.getUser();
+  if (!user) { window.location.href = "login.html?redirect=" + encodeURIComponent(location.href); return; }
+  foLobbyError = null;
+  try {
+    const { data: room, error: findErr } = await CombatAuth.client
+      .from("face_off_rooms").select("*").eq("code", code).maybeSingle();
+    if (findErr) throw findErr;
+    if (!room) { foLobbyError = "No room found with that code."; renderFoLobby(); return; }
+    if (room.host_user_id === user.id) {
+      // You created this room — just rejoin it as host (e.g. after a refresh).
+      foRoom = room; foMySeat = "host"; foClearLocal(); foSubscribeRoomRealtime();
+      screen = room.status === "waiting" ? "foWait" : "faceoff";
+      if (screen === "faceoff") { initFaceoffShell(); foSyncRoomIntoState(); }
+      render();
+      return;
+    }
+    if (room.guest_user_id && room.guest_user_id !== user.id) { foLobbyError = "That room already has two players."; renderFoLobby(); return; }
+    if (room.status !== "waiting" && room.guest_user_id !== user.id) { foLobbyError = "That room's draft has already started."; renderFoLobby(); return; }
+
+    const displayName = await foEnsureProfile(user);
+    const { data, error } = await CombatAuth.client
+      .from("face_off_rooms")
+      .update({
+        guest_user_id: user.id, guest_display_name: displayName, guest_team_name: `${displayName}'s Team`,
+        guest_is_bot: false, status: "drafting", updated_at: new Date().toISOString(),
+      })
+      .eq("id", room.id).eq("status", "waiting") // fails harmlessly if someone else just claimed it
+      .select().single();
+    if (error || !data) { foLobbyError = "That room just filled up — try another."; renderFoLobby(); return; }
+    foRoom = data;
+    foMySeat = "guest";
+    foClearLocal();
+    foSubscribeRoomRealtime();
+    initFaceoffShell();
+    foSyncRoomIntoState();
+    screen = "faceoff";
+    render();
+  } catch (err) {
+    foLobbyError = err.message || "Couldn't join that room — try again.";
+    renderFoLobby();
+  }
+}
+
+async function foFillWithBot(){
+  if (!foRoom || foMySeat !== "host") return;
+  try {
+    const { data, error } = await CombatAuth.client
+      .from("face_off_rooms")
+      .update({ guest_is_bot: true, guest_display_name: "Bot", status: "drafting", updated_at: new Date().toISOString() })
+      .eq("id", foRoom.id).select().single();
+    if (error) throw error;
+    foRoom = data;
+    initFaceoffShell();
+    foSyncRoomIntoState();
+    screen = "faceoff";
+    render();
+  } catch (err) {
+    foLobbyError = err.message || "Couldn't fill with a bot — try again.";
+    render();
+  }
+}
+
+async function foLeaveRoom(){
+  foUnsubscribeRoomRealtime();
+  if (foRoom && foMySeat === "host" && foRoom.status === "waiting") {
+    // Clean up an abandoned empty room rather than leaving it in the lobby list forever.
+    try { await CombatAuth.client.from("face_off_rooms").delete().eq("id", foRoom.id); } catch (e) { /* best-effort */ }
+  }
+  foRoom = null;
+  foMySeat = null;
+  history.replaceState(null, "", location.pathname);
+}
+
+function foSubscribeRoomRealtime(){
+  if (foRoomChannel || !foRoom) return;
+  foRoomChannel = CombatAuth.client
+    .channel(`faceoff-room-${foRoom.id}`)
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "face_off_rooms", filter: `id=eq.${foRoom.id}` }, (payload) => {
+      foRoom = payload.new;
+      if (screen === "foWait" && foRoom.status !== "waiting") {
+        initFaceoffShell();
+        foSyncRoomIntoState();
+        screen = "faceoff";
+      } else if (screen === "faceoff") {
+        foSyncRoomIntoState();
+      }
+      render();
+    })
+    .subscribe();
+}
+function foUnsubscribeRoomRealtime(){
+  if (foRoomChannel) { CombatAuth.client.removeChannel(foRoomChannel); foRoomChannel = null; }
+}
+
+// Copies the room row's shared fields into the local `fo` draft-state
+// object so the existing renderFaceoff()/foFighterCardData() template
+// (built for solo mode) displays a room's state without needing its own
+// parallel render path.
+function foSyncRoomIntoState(){
+  if (!foRoom || !fo) return;
+  fo.draftedBy = foRoom.drafted_by || {};
+  fo.roles = foRoom.roles || {};
+  fo.pickTimerSeconds = foRoom.pick_timer_seconds;
+  fo.rosterSize = foRoom.roster_size;
+  fo.gameMode = foRoom.game_mode;
+  fo.finishBonus = foRoom.finish_bonus;
+  fo.teamNames = { A: foRoom.host_team_name, B: foRoom.guest_team_name || "Waiting…" };
+  fo.teamAvatars = { A: foRoom.host_team_avatar, B: foRoom.guest_team_avatar };
+  fo.settingsOpen = false;
+  fo.editingTeam = null;
+}
+
+// Multiplayer equivalent of foDraftFighter: writes the pick to the shared
+// room row instead of local state; both browsers pick it up over Realtime.
+async function foRoomDraftFighter(id){
+  if (!foRoom || foRoom.status !== "drafting") return;
+  if (foRoom.turn !== foMySeat) return; // not your turn
+  if (foRoom.drafted_by[id]) return;
+  const myLetter = foMyLetter();
+  let nextDraftedBy = { ...foRoom.drafted_by, [id]: myLetter };
+  let nextTurn = foMySeat === "host" ? "guest" : "host";
+
+  // A bot opponent has no browser of its own — the host's session is the
+  // only one present to move it, so it picks immediately, right after your
+  // pick, in the same update (mirrors solo-vs-bot practice mode's flow).
+  if (foRoom.guest_is_bot && nextTurn === "guest") {
+    const guestCountSoFar = Object.values(nextDraftedBy).filter((t) => t === "B").length;
+    if (guestCountSoFar < foRoom.roster_size) {
+      const available = FO_FIGHTERS.filter((f) => !nextDraftedBy[f.id]);
+      if (available.length) {
+        const pick = foBotChoose(available);
+        nextDraftedBy = { ...nextDraftedBy, [pick.id]: "B" };
+      }
+    }
+    nextTurn = "host";
+  }
+
+  const hostCount = Object.values(nextDraftedBy).filter((t) => t === "A").length;
+  const guestCount = Object.values(nextDraftedBy).filter((t) => t === "B").length;
+  const bothFull = hostCount >= foRoom.roster_size && guestCount >= foRoom.roster_size;
+  try {
+    const { data, error } = await CombatAuth.client
+      .from("face_off_rooms")
+      .update({
+        drafted_by: nextDraftedBy,
+        turn: bothFull ? foRoom.turn : nextTurn,
+        status: bothFull ? "complete" : "drafting",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", foRoom.id).select().single();
+    if (error) throw error;
+    foRoom = data;
+    foSyncRoomIntoState();
+    renderFaceoff();
+  } catch (err) {
+    // Likely a race with the other player's pick landing first — the next
+    // Realtime update will reconcile, so just leave it be.
+  }
+}
+
+async function foRoomSetRole(id, role){
+  if (!foRoom) return;
+  const myLetter = foMyLetter();
+  if (foRoom.drafted_by[id] !== myLetter) return;
+  const current = (foRoom.roles || {})[id];
+  const nextRoles = { ...foRoom.roles, [id]: current === role ? null : role };
+  try {
+    const { data, error } = await CombatAuth.client
+      .from("face_off_rooms").update({ roles: nextRoles, updated_at: new Date().toISOString() }).eq("id", foRoom.id).select().single();
+    if (error) throw error;
+    foRoom = data;
+    foSyncRoomIntoState();
+    renderFaceoff();
+  } catch (err) { /* best-effort; next Realtime update reconciles */ }
+}
+
+// Shared setup used by both solo-vs-bot mode and a multiplayer room: live
+// bout-stat scoring (foLive) is the same data source either way, so both
+// paths load and subscribe to it the same way. Doesn't touch fo.draftedBy
+// etc. — callers set those up themselves.
+function initFaceoffShell(){
+  if (!fo) {
+    fo = {
+      draftedBy: {}, settingsOpen: true, pointsOpen: false, pickTimerSeconds: 45, rosterSize: 6,
+      gameMode: "regular", finishBonus: true, teamNames: { A: "Cage Rattlers", B: "Knockout Kings" },
+      teamAvatars: { A: null, B: null }, editingTeam: null, editNameDraft: "", roles: {},
+    };
+  }
+  foLoadLiveScoring();
+  foSubscribeRealtime();
+}
+
+// Solo-vs-bot practice mode: local-only state, same as before — unaffected
+// by multiplayer rooms (foRoom stays null the whole time you're in this).
 function initFaceoff(){
   const saved = foLoadLocal();
   fo = {
@@ -890,6 +1190,7 @@ function initFaceoff(){
 }
 
 function foDraftFighter(id){
+  if (foRoom) { foRoomDraftFighter(id); return; }
   const { draftedBy, rosterSize } = fo;
   if (draftedBy[id]) return;
   const rosterACount = Object.values(draftedBy).filter((t) => t === "A").length;
@@ -907,7 +1208,8 @@ function foDraftFighter(id){
   renderFaceoff();
 }
 function foSetRole(id, role){
-  if (fo.draftedBy[id] !== "A") return;
+  if (foRoom) { foRoomSetRole(id, role); return; }
+  if (fo.draftedBy[id] !== foMyLetter()) return;
   fo.roles[id] = fo.roles[id] === role ? null : role;
   renderFaceoff();
 }
@@ -918,7 +1220,7 @@ function foToggleEdit(team){
 }
 function foCloseEdit(){ fo.editingTeam = null; renderFaceoff(); }
 function foFighterRoleMult(f, drafted, role){
-  return (fo.gameMode === "standard" && drafted === "A" && role) ? (FO_ROLE_MULT[role] || 1) : 1;
+  return (fo.gameMode === "standard" && drafted && role) ? (FO_ROLE_MULT[role] || 1) : 1;
 }
 
 /* Builds the per-fighter display data for one bout-card half. */
@@ -935,7 +1237,7 @@ function foFighterCardData(f, entry, oppF){
   // same as before kickoff) — LIVE is the real score, gated on the actual
   // bout result (finisher only pays off on an actual finish win).
   const projMult = foFighterRoleMult(f, drafted, role);
-  const liveMult = (fo.gameMode === "standard" && drafted === "A" && role) ? foLiveRoleMultiplier(role, liveCtx.bout, f.sbId) : 1;
+  const liveMult = (fo.gameMode === "standard" && drafted && role) ? foLiveRoleMultiplier(role, liveCtx.bout, f.sbId) : 1;
   const projValue = (f.proj * projMult).toFixed(2);
 
   const { total: liveTotal, breakdown: liveBreakdown } = foBasePoints(liveCtx.stats, liveCtx.oppStats);
@@ -950,7 +1252,7 @@ function foFighterCardData(f, entry, oppF){
   const isLive = hasLiveStats && !isFinal;
   const liveColor = isFinal ? "var(--text)" : (isLive ? "var(--red)" : "var(--text-faint-2)");
 
-  const showRolePicker = fo.gameMode === "standard" && drafted === "A";
+  const showRolePicker = fo.gameMode === "standard" && drafted === foMyLetter();
   const roleButtonsHtml = showRolePicker ? FO_ROLES.map((r) => {
     const active = role === r.id;
     return `<button type="button" class="fo-role-btn" data-fo-role-btn data-fighter-id="${esc(f.id)}" data-role="${r.id}" style="background:${active ? "rgba(212,175,55,0.16)" : "transparent"};border:1px solid ${active ? "var(--gold)" : "var(--border)"};color:${active ? "var(--gold)" : "var(--text-dim)"};">${r.label}</button>`;
@@ -1043,6 +1345,7 @@ function renderModePick(){
           <div class="mc-title">Face-Off Draft</div>
           <div class="mc-desc">Head-to-head against a bot for the next real card — UFC Fight Night: Buckley vs Malott. Draft any fighter, in real fight order, and roll role multipliers for bonus points.</div>
           <div class="mc-meta">${FO_CARD_ORDER.length} BOUTS &middot; ${FO_FIGHTERS.length} FIGHTERS &middot; ONE CARD</div>
+          <div class="mc-meta" id="pickFaceoffLiveBtn" style="margin-top:10px;color:var(--gold);text-decoration:underline;cursor:pointer;">OR PLAY LIVE AGAINST A PERSON &rarr;</div>
         </button>
         <button type="button" class="mode-card red" id="pickDynastyBtn">
           <div class="mc-kicker">SEASON-LONG &middot; YOUR LEAGUE</div>
@@ -1055,19 +1358,106 @@ function renderModePick(){
   `;
   document.getElementById("modeBackLink").addEventListener("click", () => { screen = "landing"; render(); });
   document.getElementById("pickFaceoffBtn").addEventListener("click", () => { initFaceoff(); screen = "faceoff"; render(); });
+  document.getElementById("pickFaceoffLiveBtn").addEventListener("click", (e) => { e.stopPropagation(); foLobbyError = null; foLoadPublicRooms(); screen = "foLobby"; render(); });
   document.getElementById("pickDynastyBtn").addEventListener("click", () => { screen = "setup"; render(); });
+}
+
+function renderFoLobby(){
+  const roomsHtml = foPublicRooms.length ? foPublicRooms.map((r) => `
+    <div class="fo-lobby-row">
+      <div>
+        <div class="fo-lobby-host">${esc(r.host_display_name)}'s room</div>
+        <div class="fo-lobby-meta">${esc(r.host_team_name)} &middot; ${fmtClock(r.pick_timer_seconds)} picks &middot; ${r.roster_size} fighters each &middot; ${r.game_mode === "standard" ? "Standard" : "Regular"}</div>
+      </div>
+      <button type="button" class="fo-pill" data-fo-join-room="${esc(r.code)}"><div class="fo-lobby-join-btn">JOIN</div></button>
+    </div>
+  `).join("") : `<div class="fo-lobby-empty">No open public rooms right now — start one and wait for a challenger, or invite a friend directly.</div>`;
+
+  content.innerHTML = `
+    <div class="mode-wrap">
+      <a class="back-link" id="foLobbyBackLink">&larr; Back</a>
+      <div class="hero" style="margin-top:0;">
+        <div class="wordmark" style="font-size:clamp(28px,6vw,44px);">Play Face-Off live</div>
+        <div class="tagline" style="font-size:clamp(11px,2vw,14px);margin-bottom:0;">UFC Fight Night: Buckley vs Malott &middot; sign-in required to host or join</div>
+      </div>
+      ${foLobbyError ? `<div class="fo-lobby-error">${esc(foLobbyError)}</div>` : ""}
+      <div class="fo-lobby-grid">
+        <div class="fo-lobby-card">
+          <div class="fo-settings-label">START A ROOM</div>
+          <button type="button" class="fo-pill" id="foCreatePublicBtn" style="display:block;margin-top:12px;"><div class="fo-lobby-cta gold">CREATE PUBLIC ROOM<span>Shows up in the list below for anyone to join</span></div></button>
+          <button type="button" class="fo-pill" id="foCreatePrivateBtn" style="display:block;margin-top:10px;"><div class="fo-lobby-cta">CREATE PRIVATE ROOM<span>Get a link to send a friend</span></div></button>
+        </div>
+        <div class="fo-lobby-card">
+          <div class="fo-settings-label">HAVE A CODE?</div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+            <input type="text" class="field-input" id="foJoinCodeInput" placeholder="ROOM CODE" maxlength="6" style="width:160px;text-transform:uppercase;letter-spacing:2px;">
+            <button type="button" class="fo-pill" id="foJoinCodeBtn"><div class="fo-lobby-cta" style="margin:0;padding:12px 20px;">JOIN</div></button>
+          </div>
+        </div>
+      </div>
+      <div class="fo-settings-label" style="margin-top:28px;">OPEN PUBLIC ROOMS</div>
+      <div class="fo-lobby-list">${roomsHtml}</div>
+    </div>
+  `;
+  document.getElementById("foLobbyBackLink").addEventListener("click", () => { screen = "modePick"; render(); });
+  document.getElementById("foCreatePublicBtn").addEventListener("click", () => foCreateRoom("public"));
+  document.getElementById("foCreatePrivateBtn").addEventListener("click", () => foCreateRoom("private"));
+  document.getElementById("foJoinCodeBtn").addEventListener("click", () => foJoinRoomByCode(document.getElementById("foJoinCodeInput").value));
+  const codeInput = document.getElementById("foJoinCodeInput");
+  codeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") foJoinRoomByCode(codeInput.value); });
+  document.querySelectorAll("[data-fo-join-room]").forEach((btn) => {
+    btn.addEventListener("click", () => foJoinRoomByCode(btn.dataset.foJoinRoom));
+  });
+}
+
+function renderFoWaitRoom(){
+  if (!foRoom) { screen = "foLobby"; renderFoLobby(); return; }
+  const inviteUrl = foRoomInviteUrl(foRoom.code);
+  content.innerHTML = `
+    <div class="mode-wrap">
+      <a class="back-link" id="foWaitBackLink">&larr; Cancel room</a>
+      <div class="hero" style="margin-top:0;">
+        <div class="wordmark" style="font-size:clamp(26px,5vw,38px);">Waiting for an opponent&hellip;</div>
+        <div class="tagline" style="font-size:clamp(11px,2vw,14px);">${foRoom.visibility === "public" ? "Your room is listed in the public lobby" : "Share the link below with a friend"}</div>
+      </div>
+      <div class="fo-lobby-card" style="max-width:520px;">
+        <div class="fo-settings-label">ROOM CODE</div>
+        <div class="fo-room-code">${esc(foRoom.code)}</div>
+        <div class="fo-settings-label" style="margin-top:18px;">INVITE LINK</div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <input type="text" class="field-input" id="foInviteUrlInput" value="${esc(inviteUrl)}" readonly style="flex:1;min-width:0;">
+          <button type="button" class="fo-pill" id="foCopyInviteBtn"><div class="fo-lobby-cta" style="margin:0;padding:12px 18px;">COPY</div></button>
+        </div>
+        <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border-2);">
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Don't want to wait? Fill the open seat with a bot and start now.</div>
+          <button type="button" class="fo-pill" id="foFillBotBtn"><div class="fo-lobby-cta">FILL WITH A BOT</div></button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById("foWaitBackLink").addEventListener("click", async () => { await foLeaveRoom(); screen = "foLobby"; foLoadPublicRooms(); render(); });
+  document.getElementById("foFillBotBtn").addEventListener("click", foFillWithBot);
+  document.getElementById("foCopyInviteBtn").addEventListener("click", () => {
+    const input = document.getElementById("foInviteUrlInput");
+    input.select();
+    navigator.clipboard?.writeText(input.value).catch(() => {});
+    const btn = document.getElementById("foCopyInviteBtn");
+    if (btn) btn.querySelector(".fo-lobby-cta").textContent = "COPIED";
+  });
 }
 
 function renderFaceoff(){
   foSaveLocal();
   const { draftedBy, settingsOpen, pointsOpen, pickTimerSeconds, rosterSize, gameMode, finishBonus, teamNames, teamAvatars, editingTeam, roles } = fo;
+  const inRoom = !!foRoom;
+  const opponentIsBot = !inRoom || !!foRoom.guest_is_bot;
 
   const rosterA = [], rosterB = [];
   let totalA = 0, totalB = 0;
   FO_FIGHTERS.forEach((f) => {
     const team = draftedBy[f.id];
     if (team === "A") { rosterA.push(f); const mult = foFighterRoleMult(f, "A", roles[f.id]); totalA += f.proj * mult; }
-    else if (team === "B") { rosterB.push(f); totalB += f.proj; }
+    else if (team === "B") { rosterB.push(f); const mult = foFighterRoleMult(f, "B", roles[f.id]); totalB += f.proj * mult; }
   });
   // Live roster totals: sum each drafted fighter's real-time score across
   // their own bout (unlike PROJ, which is fixed at draft time, this ticks
@@ -1263,13 +1653,17 @@ function renderFaceoff(){
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${pointsOpen ? "var(--gold)" : "var(--text-dim)"}" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
           <span class="h-font" style="font-size:10px;letter-spacing:1px;color:${pointsOpen ? "var(--gold)" : "var(--text-dim)"};">POINTS &amp; RULES</span>
         </button>
-        <button type="button" class="fo-gear ${settingsOpen ? "active" : ""}" id="foSettingsBtn">
+        ${inRoom ? "" : `<button type="button" class="fo-gear ${settingsOpen ? "active" : ""}" id="foSettingsBtn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${settingsOpen ? "var(--gold)" : "var(--text-dim)"}" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
           <span class="h-font" style="font-size:10px;letter-spacing:1px;color:${settingsOpen ? "var(--gold)" : "var(--text-dim)"};">LEAGUE SETTINGS</span>
-        </button>
+        </button>`}
       </div>
     </div>
 
+    ${inRoom ? `<div class="fo-turn-banner ${foRoom.turn === foMySeat ? "mine" : ""}">
+      ${foRoom.status === "complete" ? `DRAFT COMPLETE` : (foRoom.turn === foMySeat ? `YOUR TURN TO PICK` : `WAITING ON ${esc((foRoom.turn === "host" ? foRoom.host_display_name : foRoom.guest_display_name) || "opponent")}&hellip;`)}
+      <span class="fo-turn-room-code">ROOM ${esc(foRoom.code)}</span>
+    </div>` : ""}
     ${pointsHtml}
     ${settingsHtml}
 
@@ -1278,9 +1672,9 @@ function renderFaceoff(){
         <div class="fo-team a">
           <div class="fo-avatar-wrap">
             <div class="fo-avatar-ring gold"><div class="fo-avatar"><img src="${esc(teamAvatars.A || FO_DEFAULT_AVATAR)}" alt=""></div></div>
-            <button type="button" class="fo-pencil" id="foEditABtn" title="Edit team name &amp; photo">
+            ${inRoom ? "" : `<button type="button" class="fo-pencil" id="foEditABtn" title="Edit team name &amp; photo">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4Z"></path></svg>
-            </button>
+            </button>`}
           </div>
           <div style="min-width:0;">
             <div class="fo-name">${esc(teamNames.A)}</div>
@@ -1301,13 +1695,13 @@ function renderFaceoff(){
         <div class="fo-team b">
           <div class="fo-avatar-wrap">
             <div class="fo-avatar-ring red"><div class="fo-avatar"><img src="${esc(teamAvatars.B || FO_DEFAULT_AVATAR)}" alt=""></div></div>
-            <button type="button" class="fo-pencil" id="foEditBBtn" title="Edit team name &amp; photo">
+            ${inRoom ? "" : `<button type="button" class="fo-pencil" id="foEditBBtn" title="Edit team name &amp; photo">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4Z"></path></svg>
-            </button>
+            </button>`}
           </div>
           <div style="min-width:0;">
             <div class="fo-name">${esc(teamNames.B)}</div>
-            <div class="fo-record">${rosterB.length}/${rosterSize} PICKED &middot; BOT</div>
+            <div class="fo-record">${rosterB.length}/${rosterSize} PICKED${opponentIsBot ? " &middot; BOT" : ""}</div>
             <div style="display:flex;align-items:baseline;justify-content:flex-end;gap:10px;margin-bottom:2px;">
               <div class="fo-total-lbl">PROJECTED PTS</div>
               <div class="fo-total" style="color:var(--red);">${totalB.toFixed(2)}</div>
@@ -1350,15 +1744,22 @@ function renderFaceoff(){
 }
 
 function wireFaceoff(){
-  document.getElementById("foBackLink").addEventListener("click", () => { foUnsubscribeRealtime(); screen = "modePick"; render(); });
-  document.getElementById("foSettingsBtn").addEventListener("click", () => { fo.settingsOpen = !fo.settingsOpen; renderFaceoff(); });
+  document.getElementById("foBackLink").addEventListener("click", async () => {
+    foUnsubscribeRealtime();
+    if (foRoom) await foLeaveRoom();
+    screen = "modePick"; render();
+  });
+  const settingsBtn = document.getElementById("foSettingsBtn");
+  if (settingsBtn) settingsBtn.addEventListener("click", () => { fo.settingsOpen = !fo.settingsOpen; renderFaceoff(); });
   document.getElementById("foPointsBtn").addEventListener("click", () => { fo.pointsOpen = !fo.pointsOpen; renderFaceoff(); });
   const lockBtn = document.getElementById("foLockSettingsBtn");
   if (lockBtn) lockBtn.addEventListener("click", () => { fo.settingsOpen = false; renderFaceoff(); });
   const newDraftBtn = document.getElementById("foNewDraftBtn");
   if (newDraftBtn) newDraftBtn.addEventListener("click", () => { foClearLocal(); initFaceoff(); renderFaceoff(); });
-  document.getElementById("foEditABtn").addEventListener("click", () => foToggleEdit("A"));
-  document.getElementById("foEditBBtn").addEventListener("click", () => foToggleEdit("B"));
+  const editABtn = document.getElementById("foEditABtn");
+  if (editABtn) editABtn.addEventListener("click", () => foToggleEdit("A"));
+  const editBBtn = document.getElementById("foEditBBtn");
+  if (editBBtn) editBBtn.addEventListener("click", () => foToggleEdit("B"));
 
   document.querySelectorAll("[data-fo-timer]").forEach((btn) => {
     btn.addEventListener("click", () => { fo.pickTimerSeconds = Number(btn.dataset.foTimer); renderFaceoff(); });
@@ -1399,7 +1800,7 @@ let fighterPoolError = null;
 let projectedFPById = {};  // fighter id -> projected fantasy points (per fight)
 let overallRankById = {};  // fighter id -> 1-based overall rank among ALL fighters by projected fantasy points (1 = best)
 
-let screen = "landing"; // landing | modePick | setup | draft | board | complete | faceoff
+let screen = "landing"; // landing | modePick | setup | draft | board | complete | faceoff | foLobby | foWait
 let teamCount = 8;
 let userTeamName = "";
 let userTeamPhotoUrl = null;
@@ -2365,9 +2766,13 @@ function renderComplete(){
 // Deep links: the URL hash mirrors `screen` (set via history.replaceState,
 // which doesn't fire hashchange or scroll-jump) so a link like
 // /#faceoff drops someone straight into the Face-Off picker on load.
-const SCREEN_HASH = { landing: "", modePick: "pick", faceoff: "faceoff", setup: "dynasty", draft: "dynasty", board: "board", complete: "complete" };
+const SCREEN_HASH = { landing: "", modePick: "pick", faceoff: "faceoff", setup: "dynasty", draft: "dynasty", board: "board", complete: "complete", foLobby: "faceoff-live" };
 function syncHash(){
-  const h = SCREEN_HASH[screen] || "";
+  let h = SCREEN_HASH[screen] || "";
+  // A live multiplayer room keeps its shareable code in the URL the whole
+  // time you're in it (waiting room or mid-draft), so refreshing or sending
+  // the link both still land you back in the same room.
+  if (foRoom && (screen === "foWait" || screen === "faceoff")) h = `faceoff-room-${foRoom.code}`;
   const current = (location.hash || "").replace(/^#/, "");
   if (current !== h) {
     history.replaceState(null, "", h ? `#${h}` : location.pathname + location.search);
@@ -2379,6 +2784,8 @@ function render(){
   if (screen === "landing") return renderLanding();
   if (screen === "modePick") return renderModePick();
   if (screen === "faceoff") return renderFaceoff();
+  if (screen === "foLobby") return renderFoLobby();
+  if (screen === "foWait") return renderFoWaitRoom();
   if (screen === "setup") return renderSetup();
   if (screen === "draft") return renderDraft();
   if (screen === "board") return renderBoard();
@@ -2388,7 +2795,10 @@ function render(){
 // Boot: a #faceoff or #pick link in the URL jumps straight past the hero.
 (function boot(){
   const h = (location.hash || "").replace(/^#/, "");
-  if (h === "faceoff") { initFaceoff(); screen = "faceoff"; }
+  const roomMatch = h.match(/^faceoff-room-([A-Z0-9]{6})$/i);
+  if (roomMatch) { foJoinRoomByCode(roomMatch[1]); screen = "landing"; }
+  else if (h === "faceoff-live") { foLoadPublicRooms(); screen = "foLobby"; }
+  else if (h === "faceoff") { initFaceoff(); screen = "faceoff"; }
   else if (h === "pick") { screen = "modePick"; }
   render();
 })();

@@ -107,11 +107,17 @@ function setMode(next) {
 tabSignIn.addEventListener("click", () => setMode("signin"));
 tabSignUp.addEventListener("click", () => setMode("signup"));
 
+// A page that requires sign-in (like joining a Face-Off room) links here
+// with ?redirect=<url> so we can send people back where they meant to go
+// instead of always landing on team.html.
+const redirectTarget = new URLSearchParams(location.search).get("redirect") || "team.html";
+
 // Already signed in? Bounce straight back rather than showing the form.
 CombatAuth.getUser().then((user) => {
   if (user) {
     successBox.textContent = "You're already signed in.";
     successBox.style.display = "block";
+    setTimeout(() => { window.location.href = redirectTarget; }, 500);
   }
 });
 
@@ -139,7 +145,7 @@ form.addEventListener("submit", async (e) => {
       if (data.session) {
         successBox.textContent = "Account created — you're signed in.";
         successBox.style.display = "block";
-        setTimeout(() => { window.location.href = "team.html"; }, 800);
+        setTimeout(() => { window.location.href = redirectTarget; }, 800);
       } else {
         successBox.textContent = "Account created — check your email to confirm, then sign in.";
         successBox.style.display = "block";
@@ -148,7 +154,7 @@ form.addEventListener("submit", async (e) => {
     } else {
       const { error } = await client.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      window.location.href = "team.html";
+      window.location.href = redirectTarget;
     }
   } catch (err) {
     errorBox.textContent = err.message || "Something went wrong.";
