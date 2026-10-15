@@ -1667,7 +1667,8 @@ function renderModePick(){
           <div class="mc-meta">${FO_CARD_LIST.length} CARDS AVAILABLE</div>
           <div class="mc-meta" id="pickFaceoffLiveBtn" style="margin-top:10px;color:var(--gold);text-decoration:underline;cursor:pointer;">OR PLAY LIVE AGAINST A PERSON &rarr;</div>
         </button>
-        <button type="button" class="mode-card red" id="pickDynastyBtn">
+        <button type="button" class="mode-card red" id="pickDynastyBtn" disabled style="opacity:0.55;cursor:not-allowed;position:relative;">
+          <div style="position:absolute;top:10px;right:10px;background:var(--gold);color:#1a1a1a;font-family:'Oswald',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;padding:4px 10px;border-radius:3px;">COMING SOON</div>
           <div class="mc-kicker">SEASON-LONG &middot; YOUR LEAGUE</div>
           <div class="mc-title">Divisional Dynasty Draft</div>
           <div class="mc-desc">Build a 50-fighter roster across every division with a full snake draft — 10 active starters plus a 40-fighter cageside bench, scored all season.</div>
