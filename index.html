@@ -1667,8 +1667,7 @@ function renderModePick(){
           <div class="mc-meta">${FO_CARD_LIST.length} CARDS AVAILABLE</div>
           <div class="mc-meta" id="pickFaceoffLiveBtn" style="margin-top:10px;color:var(--gold);text-decoration:underline;cursor:pointer;">OR PLAY LIVE AGAINST A PERSON &rarr;</div>
         </button>
-        <button type="button" class="mode-card red" id="pickDynastyBtn" disabled style="opacity:0.55;cursor:not-allowed;position:relative;">
-          <div style="position:absolute;top:10px;right:10px;background:var(--gold);color:#1a1a1a;font-family:'Oswald',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;padding:4px 10px;border-radius:3px;">COMING SOON</div>
+        <button type="button" class="mode-card red" id="pickDynastyBtn">
           <div class="mc-kicker">SEASON-LONG &middot; YOUR LEAGUE</div>
           <div class="mc-title">Divisional Dynasty Draft</div>
           <div class="mc-desc">Build a 50-fighter roster across every division with a full snake draft — 10 active starters plus a 40-fighter cageside bench, scored all season.</div>
@@ -2362,6 +2361,21 @@ function octagonAvatar(f, strokeColor, size){
   }
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${strokeColor}" stroke-width="1.6"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path></svg>`;
 }
+const OCT_CLIP = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
+// Dynasty's picked-fighter octagon, upgraded to match the two-layer
+// gradient-ring look used for every fighter photo in Face-Off (.fo-avatar-ring
+// / .fo-fighter-ring): a padded outer octagon in a radial gradient of the
+// division color for depth, wrapping an inner clipped photo panel — instead
+// of the old flat single-color border.
+function octagonRingAvatar(f, dc, outerSize){
+  const innerSize = Math.round(outerSize * 0.82);
+  return `
+    <div style="width:${outerSize}px;height:${outerSize}px;padding:${Math.round((outerSize - innerSize) / 2)}px;box-sizing:border-box;clip-path:${OCT_CLIP};background:radial-gradient(circle at 35% 28%, color-mix(in srgb, ${dc} 55%, white) 0%, ${dc} 55%, color-mix(in srgb, ${dc} 65%, black) 100%);box-shadow:var(--shadow-sm);flex-shrink:0;">
+      <div style="width:100%;height:100%;clip-path:${OCT_CLIP};background:#1C1C20;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+        ${octagonAvatar(f, dc, Math.round(innerSize * 0.42))}
+      </div>
+    </div>`;
+}
 
 const NEWS_ENDPOINT = "https://combat-sync.netlify.app/.netlify/functions/get-news";
 async function loadNews(){
@@ -2738,9 +2752,7 @@ function renderDraft(){
       const dc = (ef && DIVISION_COLOR[ef.announced_weight_class]) || "var(--gold)";
       trackerHtml += `
         <div class="tslot">
-          <div class="oct" style="clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);background:#1C1C20;border:2px solid ${dc};overflow:hidden;">
-            ${octagonAvatar(ef, dc, 22)}
-          </div>
+          ${octagonRingAvatar(ef, dc, 52)}
           <div class="pickline"><span class="n">PICK ${n}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${esc(teamInitials(team))}</span></div>
           <div class="info" style="color:${dc};font-weight:700;">${esc(ef ? ef.full_name : "?")}</div>
           <div class="divtag" style="background:${dc}2A;"><span class="h-font" style="font-size:8px;letter-spacing:0.5px;color:${dc};">${esc(ef ? (DIV_SHORT[ef.announced_weight_class] || "") : "")}</span></div>
@@ -2918,10 +2930,19 @@ function renderDraft(){
     return `<div class="feed-item"><div class="h-font" style="font-size:11px;color:#5A5A62;flex:0 0 auto;">#${p.pick_number}</div><div class="h-font" style="font-size:13px;color:#C9C6BD;"><span style="color:var(--gold);">${esc(teamInitials(p.team_id))}</span> took ${esc(f ? f.full_name : "?")} <span style="color:#6A6A72;">(${esc(f ? (DIV_SHORT[f.announced_weight_class] || "") : "")})</span>${timedOut ? ` <span style="color:var(--red);">&middot; AUTO (TIMER EXPIRED)</span>` : ""}</div></div>`;
   }).join("") || `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">No picks yet.</div>`;
 
-  /* ---- League news — real articles, roster-relevant ones first ---- */
+  /* ---- League news — real articles, roster-relevant ones first ----
+     Combat is MMA/UFC-only for now, but the shared news feed pulls in
+     Boxing/Wrestling/BJJ too (for the future multi-sport mode), so this
+     screen filters down to MMA before anything else — otherwise an empty
+     roster-relevant set used to fall through to whatever unrelated sport
+     happened to be freshest. Fighter relevance checks both your drafted
+     roster AND the fighter currently on the clock, so news tied to that
+     fighter surfaces the moment they come up for a pick. */
+  const mmaNews = newsItems.filter((it) => (it.sport || "").toLowerCase() === "mma");
   const myFighterIds = new Set(picks.filter((p) => p.team_id === userTeamId).map((p) => p.fighter_id));
-  const relevant = newsItems.filter((it) => (it.fighters || []).some((mf) => myFighterIds.has(mf.id)));
-  const newsToShow = (relevant.length ? relevant : newsItems).slice(0, 4);
+  if (spotlight) myFighterIds.add(spotlight.id);
+  const relevant = mmaNews.filter((it) => (it.fighters || []).some((mf) => myFighterIds.has(mf.id)));
+  const newsToShow = (relevant.length ? relevant : mmaNews).slice(0, 4);
   const newsHtml = !newsLoaded
     ? `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">Loading news…</div>`
     : (newsToShow.length ? newsToShow.map((it) => `
@@ -3166,9 +3187,7 @@ function renderBoard(){
         const dc = (f && DIVISION_COLOR[f.announced_weight_class]) || "var(--gold)";
         cellsHtml += `
           <div class="board-cell">
-            <div class="oct" style="clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);background:#1C1C20;border:2px solid ${dc};overflow:hidden;">
-              ${octagonAvatar(f, dc, 20)}
-            </div>
+            ${octagonRingAvatar(f, dc, 46)}
             <div class="nm">${esc(f ? f.full_name : "?")}</div>
             <div class="tag" style="background:${dc}2A;color:${dc};">${esc(f ? (DIV_SHORT[f.announced_weight_class] || "") : "")}</div>
           </div>
