@@ -510,16 +510,21 @@ function esc(s){ return CombatAuth.escapeHtml(s); }
    Pure functions, no network calls. Operates on a purely local `picks` array
    (never touches draft_rooms/draft_picks) so this page runs with no sign-in.
    ========================================================================= */
-const ROLES = {
-  PRIMARY: { activeCap: 3, cageCap: 12 },
-  STRIKER: { activeCap: 3, cageCap: 12 },
-  GRAPPLER: { activeCap: 2, cageCap: 8 },
-  FINISHER: { activeCap: 2, cageCap: 8 },
+// Roster size scales with team count: Team / Active / Bench(cageside).
+// 12→8/12 · 10→10/10 · 8→12/12 · 6→16/20 · 4→20/24
+// Per-role caps preserve the original 30/30/20/20 Primary/Striker/Grappler/Finisher split.
+const ROLES_BY_TEAM_COUNT = {
+  4:  { PRIMARY: { activeCap: 6, cageCap: 7 }, STRIKER: { activeCap: 6, cageCap: 7 }, GRAPPLER: { activeCap: 4, cageCap: 5 }, FINISHER: { activeCap: 4, cageCap: 5 } },
+  6:  { PRIMARY: { activeCap: 5, cageCap: 6 }, STRIKER: { activeCap: 5, cageCap: 6 }, GRAPPLER: { activeCap: 3, cageCap: 4 }, FINISHER: { activeCap: 3, cageCap: 4 } },
+  8:  { PRIMARY: { activeCap: 4, cageCap: 4 }, STRIKER: { activeCap: 4, cageCap: 4 }, GRAPPLER: { activeCap: 2, cageCap: 2 }, FINISHER: { activeCap: 2, cageCap: 2 } },
+  10: { PRIMARY: { activeCap: 3, cageCap: 3 }, STRIKER: { activeCap: 3, cageCap: 3 }, GRAPPLER: { activeCap: 2, cageCap: 2 }, FINISHER: { activeCap: 2, cageCap: 2 } },
+  12: { PRIMARY: { activeCap: 2, cageCap: 4 }, STRIKER: { activeCap: 2, cageCap: 4 }, GRAPPLER: { activeCap: 2, cageCap: 2 }, FINISHER: { activeCap: 2, cageCap: 2 } },
 };
-const ROLE_NAMES = Object.keys(ROLES);
-const ACTIVE_SLOTS_PER_TEAM = Object.values(ROLES).reduce((s, r) => s + r.activeCap, 0); // 10
-const CAGESIDE_SLOTS_PER_TEAM = Object.values(ROLES).reduce((s, r) => s + r.cageCap, 0); // 40
-const TOTAL_SLOTS_PER_TEAM = ACTIVE_SLOTS_PER_TEAM + CAGESIDE_SLOTS_PER_TEAM; // 50
+const ROLE_NAMES = Object.keys(ROLES_BY_TEAM_COUNT[10]);
+function rolesFor(teamCount){ return ROLES_BY_TEAM_COUNT[teamCount] || ROLES_BY_TEAM_COUNT[10]; }
+function activeSlotsFor(teamCount){ return Object.values(rolesFor(teamCount)).reduce((s, r) => s + r.activeCap, 0); }
+function cagesideSlotsFor(teamCount){ return Object.values(rolesFor(teamCount)).reduce((s, r) => s + r.cageCap, 0); }
+function totalSlotsFor(teamCount){ return activeSlotsFor(teamCount) + cagesideSlotsFor(teamCount); }
 
 function snakeTeamForPick(teamOrder, pickNumber){
   const teamCount = teamOrder.length;
@@ -533,14 +538,16 @@ function roundNumberForPick(pickNumber, teamCount){
   return Math.floor((pickNumber - 1) / teamCount) + 1;
 }
 function getPhase(pickNumber, teamCount){
-  const activePicks = ACTIVE_SLOTS_PER_TEAM * teamCount;
-  const cagesidePicks = CAGESIDE_SLOTS_PER_TEAM * teamCount;
+  const activeSlots = activeSlotsFor(teamCount);
+  const cagesideSlots = cagesideSlotsFor(teamCount);
+  const activePicks = activeSlots * teamCount;
+  const cagesidePicks = cagesideSlots * teamCount;
   if (pickNumber <= activePicks) {
-    return { phase: "active", roundInPhase: Math.floor((pickNumber - 1) / teamCount) + 1, roundsInPhase: ACTIVE_SLOTS_PER_TEAM };
+    return { phase: "active", roundInPhase: Math.floor((pickNumber - 1) / teamCount) + 1, roundsInPhase: activeSlots };
   }
   if (pickNumber <= activePicks + cagesidePicks) {
     const pwc = pickNumber - activePicks;
-    return { phase: "cageside", roundInPhase: Math.floor((pwc - 1) / teamCount) + 1, roundsInPhase: CAGESIDE_SLOTS_PER_TEAM };
+    return { phase: "cageside", roundInPhase: Math.floor((pwc - 1) / teamCount) + 1, roundsInPhase: cagesideSlots };
   }
   return { phase: "complete", roundInPhase: null, roundsInPhase: null };
 }
@@ -562,16 +569,18 @@ function validatePick(teamOrder, picks, proposed){
   if (teamId !== expectedTeam) return { ...base, reason: "Not this team's pick" };
   if (isFighterTaken(picks, fighterId)) return { ...base, reason: "Fighter already drafted" };
   const slotType = phase === "active" ? "active" : "cageside";
-  const cap = phase === "active" ? ROLES[role].activeCap : ROLES[role].cageCap;
+  const roleCaps = rolesFor(teamCount)[role];
+  const cap = phase === "active" ? roleCaps.activeCap : roleCaps.cageCap;
   const countSoFar = roleCountForTeam(picks, teamId, role, slotType);
   if (countSoFar >= cap) return { ...base, reason: `${role} is full for this phase` };
   return { legal: true, reason: null, pickNumber: nextPickNumber, roundNumber: roundNumberForPick(nextPickNumber, teamCount), phase, slotType, role, roleSlotNumber: countSoFar + 1 };
 }
-function openRoleSlots(picks, teamId){
+function openRoleSlots(picks, teamId, teamCount){
+  const caps = rolesFor(teamCount);
   return ROLE_NAMES.map((role) => {
     const activeCount = roleCountForTeam(picks, teamId, role, "active");
     const cageCount = roleCountForTeam(picks, teamId, role, "cageside");
-    return { role, activeOpen: ROLES[role].activeCap - activeCount, cageOpen: ROLES[role].cageCap - cageCount };
+    return { role, activeOpen: caps[role].activeCap - activeCount, cageOpen: caps[role].cageCap - cageCount };
   });
 }
 
@@ -2614,7 +2623,7 @@ function makeLocalPick(teamId, fighterId, role, isBot){
 }
 
 function bestOpenRoleForPhase(teamId, phase){
-  const open = openRoleSlots(picks, teamId);
+  const open = openRoleSlots(picks, teamId, teamOrder.length);
   const field = phase === "active" ? "activeOpen" : "cageOpen";
   const candidate = open.find((r) => r[field] > 0);
   return candidate ? candidate.role : null;
@@ -2720,7 +2729,7 @@ function teamInitials(id){
 function renderDraft(){
   const pickNum = currentPickNumber();
   const { phase } = getPhase(pickNum, teamOrder.length);
-  const totalPicks = TOTAL_SLOTS_PER_TEAM * teamOrder.length;
+  const totalPicks = totalSlotsFor(teamOrder.length) * teamOrder.length;
   const draftComplete = pickNum > totalPicks;
   const onClockTeam = draftComplete ? null : snakeTeamForPick(teamOrder, pickNum);
   const isMyTurn = !draftComplete && onClockTeam === userTeamId;
@@ -2728,7 +2737,7 @@ function renderDraft(){
   ensurePickClock(pickNum, phase, isMyTurn);
   const clockRemain = isMyTurn ? pickClockRemainSeconds() : 0;
   const clockUrgent = isMyTurn && clockRemain <= 10;
-  const myOpenRoles = isMyTurn ? openRoleSlots(picks, userTeamId) : [];
+  const myOpenRoles = isMyTurn ? openRoleSlots(picks, userTeamId, teamOrder.length) : [];
   const phaseField = phase === "active" ? "activeOpen" : "cageOpen";
   const roundNumber = roundNumberForPick(Math.min(pickNum, totalPicks), teamOrder.length);
 
@@ -2891,7 +2900,7 @@ function renderDraft(){
         </div>
         <div>
           <div class="h-font" style="font-size:18px;font-weight:700;letter-spacing:2px;">READY TO DRAFT</div>
-          <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#9A9AA2;margin-top:8px;">${teamOrder.length} TEAMS &middot; SNAKE ORDER &middot; ${ACTIVE_SLOTS_PER_TEAM} ACTIVE ROSTER SLOTS EACH</div>
+          <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#9A9AA2;margin-top:8px;">${teamOrder.length} TEAMS &middot; SNAKE ORDER &middot; ${activeSlotsFor(teamOrder.length)} ACTIVE &middot; ${cagesideSlotsFor(teamOrder.length)} CAGE SIDE EACH</div>
         </div>
         <button id="startDraftBtn" class="start-draft h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">START DRAFT</button>
       </div>
@@ -2906,7 +2915,7 @@ function renderDraft(){
   let slipHtml = "";
   let projectedTotal = 0;
   ROLE_NAMES.forEach((role, ri) => {
-    const cap = ROLES[role].activeCap;
+    const cap = rolesFor(teamOrder.length)[role].activeCap;
     const have = filled[role];
     slipHtml += `<div class="slip-group" style="${ri === 0 ? "" : "border-top:1px solid var(--border-2);"}"><span class="h-font" style="font-size:10px;letter-spacing:2px;color:${ROLE_COLOR[role]};">${role}</span><span class="h-font" style="font-size:9px;letter-spacing:1px;color:#4A4A52;">${cap} SLOT${cap > 1 ? "S" : ""}</span></div>`;
     for (let i = 0; i < cap; i++) {
@@ -3036,7 +3045,7 @@ function renderDraft(){
           <div class="vrule"></div>
           <div class="status-right">
             <div class="lbl">ROUND</div>
-            <div class="val h-font">${roundNumber} <span style="color:#5A5A62;">OF ${TOTAL_SLOTS_PER_TEAM}</span></div>
+            <div class="val h-font">${roundNumber} <span style="color:#5A5A62;">OF ${totalSlotsFor(teamOrder.length)}</span></div>
             <div class="h-font" style="font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-top:2px;">${draftComplete ? "DRAFT COMPLETE" : isMyTurn ? "YOUR PICK" : "PICK " + pickNum + " OF " + totalPicks}</div>
           </div>
           <div class="vrule"></div>
@@ -3062,7 +3071,7 @@ function renderDraft(){
               <div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">PROJECTED FANTASY PTS</div>
               <div class="h-font" style="font-size:24px;font-weight:700;color:var(--gold);">${fmtNum(projectedTotal, 1)}</div>
             </div>
-            <div class="h-font" style="font-size:10px;letter-spacing:1px;color:#4A4A52;margin-top:6px;">+ ${CAGESIDE_SLOTS_PER_TEAM} CAGE SIDE PICKS TO FOLLOW</div>
+            <div class="h-font" style="font-size:10px;letter-spacing:1px;color:#4A4A52;margin-top:6px;">+ ${cagesideSlotsFor(teamOrder.length)} CAGE SIDE PICKS TO FOLLOW</div>
           </div>
         </div>
 
@@ -3172,7 +3181,7 @@ function renderBoard(){
   const picksByRoundTeam = {};
   picks.forEach((p) => { picksByRoundTeam[`${p.round_number}:${p.team_id}`] = p; });
   const currentPick = currentPickNumber();
-  const totalRounds = TOTAL_SLOTS_PER_TEAM;
+  const totalRounds = totalSlotsFor(cols);
   const maxRoundToShow = Math.min(totalRounds, Math.max(5, roundNumberForPick(currentPick, cols) + 2));
 
   let roundsHtml = "";
@@ -3261,7 +3270,7 @@ function renderComplete(){
       <div class="octagon" style="width:60px;height:60px;background:var(--gold);"></div>
       <div>
         <div class="h-font" style="font-size:20px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT COMPLETE</div>
-        <div style="font-size:13px;color:var(--text-dim);margin-top:8px;">${esc(userTeamName)} drafted a full ${TOTAL_SLOTS_PER_TEAM}-fighter Dynasty roster against ${teamCount - 1} bots.</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-top:8px;">${esc(userTeamName)} drafted a full ${totalSlotsFor(teamCount)}-fighter Dynasty roster against ${teamCount - 1} bots.</div>
       </div>
       <div class="roster-card" style="width:100%;text-align:left;">${grouped}</div>
       <div style="width:100%;">
