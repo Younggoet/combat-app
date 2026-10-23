@@ -544,6 +544,8 @@ const ROLES_BY_TEAM_COUNT = {
   12: { PRIMARY: { activeCap: 2, cageCap: 4 }, STRIKER: { activeCap: 2, cageCap: 4 }, GRAPPLER: { activeCap: 2, cageCap: 2 }, FINISHER: { activeCap: 2, cageCap: 2 } },
 };
 const ROLE_NAMES = Object.keys(ROLES_BY_TEAM_COUNT[10]);
+// Redraft format: active roster only, no bench. Teams -> active slots.
+const REDRAFT_ACTIVE_BY_TEAM_COUNT = { 12: 6, 10: 8, 8: 10, 6: 12, 4: 20 };
 function rolesFor(teamCount){ return ROLES_BY_TEAM_COUNT[teamCount] || ROLES_BY_TEAM_COUNT[10]; }
 function activeSlotsFor(teamCount){ return Object.values(rolesFor(teamCount)).reduce((s, r) => s + r.activeCap, 0); }
 function cagesideSlotsFor(teamCount){ return Object.values(rolesFor(teamCount)).reduce((s, r) => s + r.cageCap, 0); }
@@ -1716,7 +1718,7 @@ function renderModePick(){
           <div class="mc-desc">A full snake draft across every division. Roster size scales with league size, from 8 active + 12 cageside at 12 teams up to 20 active + 24 cageside at 4 teams.</div>
           <div class="mc-meta">4&ndash;12 TEAMS</div>
         </button>
-        ${soon("SEASON-LONG &middot; FRESH START", "Redraft", "Start over every season with a brand-new draft and no carryover.", "FORMAT IN DEVELOPMENT")}
+        ${soon("SEASON-LONG &middot; FRESH START", "Redraft", "Start over every season with a brand-new draft and no carryover. Active roster only, no bench: 6 fighters at 12 teams up to 20 at 4 teams.", "FORMAT IN DEVELOPMENT")}
         ${soon("SEASON-LONG &middot; KEEP YOUR BEST", "Keeper", "Hold onto a few fighters from last season and redraft the rest.", "FORMAT IN DEVELOPMENT")}
         ${soon("LAST TEAM STANDING", "Knockout", "Combat's take on chopped mode: the lowest-scoring team is eliminated after each card.", "FORMAT IN DEVELOPMENT")}
       </div>
