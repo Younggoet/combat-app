@@ -533,22 +533,22 @@ function esc(s){ return CombatAuth.escapeHtml(s); }
    Pure functions, no network calls. Operates on a purely local `picks` array
    (never touches draft_rooms/draft_picks) so this page runs with no sign-in.
    ========================================================================= */
-// Roster size scales with team count: Team / Active / Bench(cageside).
-// 12→8/12 · 10→10/10 · 8→12/12 · 6→16/20 · 4→20/24
-// Per-role caps preserve the original 30/30/20/20 Primary/Striker/Grappler/Finisher split.
-const ROLES_BY_TEAM_COUNT = {
-  4:  { PRIMARY: { activeCap: 6, cageCap: 7 }, STRIKER: { activeCap: 6, cageCap: 7 }, GRAPPLER: { activeCap: 4, cageCap: 5 }, FINISHER: { activeCap: 4, cageCap: 5 } },
-  6:  { PRIMARY: { activeCap: 5, cageCap: 6 }, STRIKER: { activeCap: 5, cageCap: 6 }, GRAPPLER: { activeCap: 3, cageCap: 4 }, FINISHER: { activeCap: 3, cageCap: 4 } },
-  8:  { PRIMARY: { activeCap: 4, cageCap: 4 }, STRIKER: { activeCap: 4, cageCap: 4 }, GRAPPLER: { activeCap: 2, cageCap: 2 }, FINISHER: { activeCap: 2, cageCap: 2 } },
-  10: { PRIMARY: { activeCap: 3, cageCap: 3 }, STRIKER: { activeCap: 3, cageCap: 3 }, GRAPPLER: { activeCap: 2, cageCap: 2 }, FINISHER: { activeCap: 2, cageCap: 2 } },
-  12: { PRIMARY: { activeCap: 2, cageCap: 4 }, STRIKER: { activeCap: 2, cageCap: 4 }, GRAPPLER: { activeCap: 2, cageCap: 2 }, FINISHER: { activeCap: 2, cageCap: 2 } },
+// Roster size scales with team count: Active / Bench (cage side).
+// Every league drafts ~120 fighters total, so no league size gets a deeper or thinner pool.
+// 12→4/6 · 10→5/7 · 8→7/8 · 6→10/10 · 4→15/15
+// No roles for now — every pick is just a fighter that fills an active or bench slot.
+const SLOTS_BY_TEAM_COUNT = {
+  4:  { active: 15, cage: 15 },
+  6:  { active: 10, cage: 10 },
+  8:  { active: 7,  cage: 8 },
+  10: { active: 5,  cage: 7 },
+  12: { active: 4,  cage: 6 },
 };
-const ROLE_NAMES = Object.keys(ROLES_BY_TEAM_COUNT[10]);
 // Redraft format: active roster only, no bench. Teams -> active slots.
 const REDRAFT_ACTIVE_BY_TEAM_COUNT = { 12: 6, 10: 8, 8: 10, 6: 12, 4: 20 };
-function rolesFor(teamCount){ return ROLES_BY_TEAM_COUNT[teamCount] || ROLES_BY_TEAM_COUNT[10]; }
-function activeSlotsFor(teamCount){ return Object.values(rolesFor(teamCount)).reduce((s, r) => s + r.activeCap, 0); }
-function cagesideSlotsFor(teamCount){ return Object.values(rolesFor(teamCount)).reduce((s, r) => s + r.cageCap, 0); }
+function slotsFor(teamCount){ return SLOTS_BY_TEAM_COUNT[teamCount] || SLOTS_BY_TEAM_COUNT[10]; }
+function activeSlotsFor(teamCount){ return slotsFor(teamCount).active; }
+function cagesideSlotsFor(teamCount){ return slotsFor(teamCount).cage; }
 function totalSlotsFor(teamCount){ return activeSlotsFor(teamCount) + cagesideSlotsFor(teamCount); }
 
 function snakeTeamForPick(teamOrder, pickNumber){
@@ -576,37 +576,27 @@ function getPhase(pickNumber, teamCount){
   }
   return { phase: "complete", roundInPhase: null, roundsInPhase: null };
 }
-function roleCountForTeam(picks, teamId, role, slotType){
-  return picks.filter((p) => p.team_id === teamId && p.role === role && p.slot_type === slotType).length;
+function slotCountForTeam(picks, teamId, slotType){
+  return picks.filter((p) => p.team_id === teamId && p.slot_type === slotType).length;
 }
 function isFighterTaken(picks, fighterId){
   return picks.some((p) => p.fighter_id === fighterId);
 }
 function validatePick(teamOrder, picks, proposed){
-  const { teamId, fighterId, role } = proposed;
+  const { teamId, fighterId } = proposed;
   const teamCount = teamOrder.length;
   const nextPickNumber = picks.length + 1;
   const base = { legal: false, reason: null };
-  if (!ROLE_NAMES.includes(role)) return { ...base, reason: `"${role}" isn't a role` };
   const { phase } = getPhase(nextPickNumber, teamCount);
   if (phase === "complete") return { ...base, reason: "Draft complete" };
   const expectedTeam = snakeTeamForPick(teamOrder, nextPickNumber);
   if (teamId !== expectedTeam) return { ...base, reason: "Not this team's pick" };
   if (isFighterTaken(picks, fighterId)) return { ...base, reason: "Fighter already drafted" };
   const slotType = phase === "active" ? "active" : "cageside";
-  const roleCaps = rolesFor(teamCount)[role];
-  const cap = phase === "active" ? roleCaps.activeCap : roleCaps.cageCap;
-  const countSoFar = roleCountForTeam(picks, teamId, role, slotType);
-  if (countSoFar >= cap) return { ...base, reason: `${role} is full for this phase` };
-  return { legal: true, reason: null, pickNumber: nextPickNumber, roundNumber: roundNumberForPick(nextPickNumber, teamCount), phase, slotType, role, roleSlotNumber: countSoFar + 1 };
-}
-function openRoleSlots(picks, teamId, teamCount){
-  const caps = rolesFor(teamCount);
-  return ROLE_NAMES.map((role) => {
-    const activeCount = roleCountForTeam(picks, teamId, role, "active");
-    const cageCount = roleCountForTeam(picks, teamId, role, "cageside");
-    return { role, activeOpen: caps[role].activeCap - activeCount, cageOpen: caps[role].cageCap - cageCount };
-  });
+  const cap = phase === "active" ? activeSlotsFor(teamCount) : cagesideSlotsFor(teamCount);
+  const countSoFar = slotCountForTeam(picks, teamId, slotType);
+  if (countSoFar >= cap) return { ...base, reason: "Roster is full for this phase" };
+  return { legal: true, reason: null, pickNumber: nextPickNumber, roundNumber: roundNumberForPick(nextPickNumber, teamCount), phase, slotType, slotNumber: countSoFar + 1 };
 }
 
 /* ========================================================================= */
@@ -631,8 +621,7 @@ const DIV_SHORT = {
   "Women's Strawweight": "WSW", "Women's Flyweight": "WFLW", "Women's Bantamweight": "WBW",
 };
 const DIVISION_LIST = Object.keys(DIVISION_COLOR);
-const ROLE_COLOR = { ALL: "var(--gold)", PRIMARY: "var(--gold)", STRIKER: "#E8C93A", GRAPPLER: "#1F6B3A", FINISHER: "var(--red)" };
-const FILTER_TABS = ["ALL", "PRIMARY", "STRIKER", "GRAPPLER", "FINISHER"];
+const FILTER_TABS = ["ALL"];
 const ACTIVE_TIMER_CHOICES = [30, 60, 90, 120];   // seconds — 30s / 1:00 / 1:30 / 2:00
 const CAGESIDE_TIMER_CHOICES = [15, 30, 45];      // seconds
 
@@ -1726,7 +1715,7 @@ function renderModePick(){
         <button type="button" class="mode-card red" id="pickDynastyBtn">
           <div class="mc-kicker">SEASON-LONG &middot; YOUR LEAGUE</div>
           <div class="mc-title">Dynasty</div>
-          <div class="mc-desc">A full snake draft across every division. Roster size scales with league size, from 8 active + 12 cageside at 12 teams up to 20 active + 24 cageside at 4 teams.</div>
+          <div class="mc-desc">A full snake draft across every division. Roster size scales with league size, from 4 active + 6 bench at 12 teams up to 15 active + 15 bench at 4 teams.</div>
           <div class="mc-meta">4&ndash;12 TEAMS</div>
         </button>
         ${soon("SEASON-LONG &middot; FRESH START", "Redraft", "Start over every season with a brand-new draft and no carryover. Active roster only, no bench: 6 fighters at 12 teams up to 20 at 4 teams.", "FORMAT IN DEVELOPMENT")}
@@ -2331,8 +2320,7 @@ let userTeamId = null;
 let picks = [];
 let started = false;
 let selectedFighterId = null; // manual override — click any pool row to target that fighter
-let selectedRole = null;      // which roster slot the locked pick fills
-let activeFilter = "ALL";     // ranking lens: ALL/PRIMARY/STRIKER/GRAPPLER/FINISHER, or a division name
+let activeFilter = "ALL";     // ranking lens: ALL or a division name
 let botTimer = null;
 let pickClockInterval = null;   // ticks the on-screen countdown + triggers the autopick
 let pickClockForPickNum = null; // which pick number the running countdown belongs to
@@ -2346,12 +2334,7 @@ let newsLoaded = false;
 // points, #1 = best — never the raw internal Elo number), or that role's
 // own stat-weighted score once that role is the active filter — same logic
 // the real draft.html room and bots use.
-function rankField(filterValue){
-  if (filterValue === "STRIKER") return "striker_score";
-  if (filterValue === "GRAPPLER") return "grappler_score";
-  if (filterValue === "FINISHER") return "finisher_score";
-  return null; // ALL / PRIMARY / a division — ranked by Overall Rank below
-}
+function rankField(filterValue){ return null; } // always ranked by Overall Rank
 function rankValue(f, filterValue){
   const field = rankField(filterValue);
   if (field === null) {
@@ -2691,7 +2674,6 @@ function beginDraft(){
   picks = [];
   started = false;
   selectedFighterId = null;
-  selectedRole = null;
   activeFilter = "ALL";
   clearPickClock();
   screen = "draft";
@@ -2708,39 +2690,28 @@ function startDraft(){
 
 function currentPickNumber(){ return picks.length + 1; }
 
-function makeLocalPick(teamId, fighterId, role, isBot){
-  const result = validatePick(teamOrder, picks, { teamId, fighterId, role });
+function makeLocalPick(teamId, fighterId, isBot){
+  const result = validatePick(teamOrder, picks, { teamId, fighterId });
   if (!result.legal) return result;
   picks.push({
     pick_number: result.pickNumber,
     round_number: result.roundNumber,
     team_id: teamId,
     fighter_id: fighterId,
-    role,
     slot_type: result.slotType,
     is_autopick: !!isBot,
   });
   return result;
 }
 
-function bestOpenRoleForPhase(teamId, phase){
-  const open = openRoleSlots(picks, teamId, teamOrder.length);
-  const field = phase === "active" ? "activeOpen" : "cageOpen";
-  const candidate = open.find((r) => r[field] > 0);
-  return candidate ? candidate.role : null;
-}
-
 function botTakePick(teamId){
   const { phase } = getPhase(currentPickNumber(), teamOrder.length);
   if (phase === "complete") return false;
-  const role = bestOpenRoleForPhase(teamId, phase);
-  if (!role) return false;
   const taken = {};
   picks.forEach((p) => { taken[p.fighter_id] = true; });
-  const best = rankedAvailable(role, taken)[0];
+  const best = rankedAvailable("ALL", taken)[0];
   if (!best) return false;
-  const result = makeLocalPick(teamId, best.id, role, true);
-  return result.legal;
+  return makeLocalPick(teamId, best.id, true).legal;
 }
 
 function maybeRunBots(){
@@ -2770,16 +2741,13 @@ function clearPickClock(){
 function autoPickForUser(){
   const { phase } = getPhase(currentPickNumber(), teamOrder.length);
   if (phase === "complete") return;
-  const role = bestOpenRoleForPhase(userTeamId, phase);
-  if (!role) return;
   const taken = {};
   picks.forEach((p) => { taken[p.fighter_id] = true; });
-  const best = rankedAvailable(role, taken)[0];
+  const best = rankedAvailable("ALL", taken)[0];
   if (!best) return;
-  const result = makeLocalPick(userTeamId, best.id, role, true);
+  const result = makeLocalPick(userTeamId, best.id, true);
   if (!result.legal) return;
   selectedFighterId = null;
-  selectedRole = null;
   maybeRunBots();
 }
 
@@ -2838,8 +2806,6 @@ function renderDraft(){
   ensurePickClock(pickNum, phase, isMyTurn);
   const clockRemain = isMyTurn ? pickClockRemainSeconds() : 0;
   const clockUrgent = isMyTurn && clockRemain <= 10;
-  const myOpenRoles = isMyTurn ? openRoleSlots(picks, userTeamId, teamOrder.length) : [];
-  const phaseField = phase === "active" ? "activeOpen" : "cageOpen";
   const roundNumber = roundNumberForPick(Math.min(pickNum, totalPicks), teamOrder.length);
 
   const draftedIds = {};
@@ -2962,22 +2928,8 @@ function renderDraft(){
         </div>
       </div>
 
-      <div class="role-pills">
-        <div class="h-font" style="font-size:11px;letter-spacing:2px;color:#7A7A82;margin-right:2px;">DRAFT INTO</div>
-        ${myOpenRoles.map((r) => {
-          const open = r[phaseField];
-          const isFull = open <= 0;
-          const isActive = r.role === selectedRole;
-          const rc = ROLE_COLOR[r.role] || "var(--gold)";
-          let style = "color:#9A9AA2;";
-          if (isFull) style = "color:#4A4A52;background:#161618;border-color:#242428;opacity:0.6;cursor:not-allowed;";
-          else if (isActive) style = `color:${rc};background:${rc}22;border-color:${rc};font-weight:700;`;
-          return `<button class="role-pill" data-role="${r.role}" ${isFull ? "disabled" : ""} style="${style}"><span class="h-font" style="font-size:11px;letter-spacing:1px;">${esc(r.role)} &middot; ${isFull ? "FULL" : open + " OPEN"}</span></button>`;
-        }).join("")}
-      </div>
-
-      <button id="lockBtn" class="lock-pick-btn" ${!selectedRole ? "disabled" : ""} style="background:${selectedRole ? "var(--red)" : "#242428"};color:${selectedRole ? "#F5F2EA" : "#5A5A62"};cursor:${selectedRole ? "pointer" : "not-allowed"};">
-        ${selectedRole ? "LOCK PICK — " + esc(selectedRole) : "SELECT A ROLE TO LOCK PICK"}
+      <button id="lockBtn" class="lock-pick-btn" style="background:var(--red);color:#F5F2EA;cursor:pointer;">
+        LOCK PICK — ${esc(spotlight.full_name.toUpperCase())}
       </button>
       <div class="error" id="pickError" style="display:none;"></div>
     `;
@@ -3008,31 +2960,33 @@ function renderDraft(){
   }
 
   /* ---- Your slip ---- */
-  const filled = { PRIMARY: [], STRIKER: [], GRAPPLER: [], FINISHER: [] };
-  picks.filter((p) => p.team_id === userTeamId && p.slot_type === "active").forEach((p) => filled[p.role].push(p));
+  const myActive = picks.filter((p) => p.team_id === userTeamId && p.slot_type === "active");
+  const myBench = picks.filter((p) => p.team_id === userTeamId && p.slot_type === "cageside");
+  const activeCap = activeSlotsFor(teamOrder.length);
+  const benchCap = cagesideSlotsFor(teamOrder.length);
   let slipHtml = "";
   let projectedTotal = 0;
-  ROLE_NAMES.forEach((role, ri) => {
-    const cap = rolesFor(teamOrder.length)[role].activeCap;
-    const have = filled[role];
-    slipHtml += `<div class="slip-group" style="${ri === 0 ? "" : "border-top:1px solid var(--border-2);"}"><span class="h-font" style="font-size:10px;letter-spacing:2px;color:${ROLE_COLOR[role]};">${role}</span><span class="h-font" style="font-size:9px;letter-spacing:1px;color:#4A4A52;">${cap} SLOT${cap > 1 ? "S" : ""}</span></div>`;
-    for (let i = 0; i < cap; i++) {
-      const p = have[i];
-      const f = p ? fightersById[p.fighter_id] : null;
-      const isPending = !p && showPickUI && role === selectedRole && i === have.length && spotlight;
-      if (f) {
-        const dc = DIVISION_COLOR[f.announced_weight_class] || "var(--gold)";
-        const pts = fmtNum(projectedFPById[f.id], 1);
-        projectedTotal += Number(projectedFPById[f.id]) || 0;
-        slipHtml += `<div class="slip-row"><div style="display:flex;align-items:center;gap:8px;min-width:0;"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div></div><div class="h-font" style="font-size:14px;font-weight:700;color:var(--text);">${pts}</div></div>`;
-      } else if (isPending) {
-        const dc = DIVISION_COLOR[spotlight.announced_weight_class] || "var(--gold)";
-        slipHtml += `<div class="slip-row"><div style="display:flex;align-items:center;gap:8px;min-width:0;"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[spotlight.announced_weight_class] || "")}</div><div class="h-font" style="font-size:14px;font-weight:600;color:var(--red);">${esc(spotlight.full_name)} (PENDING)</div></div><div class="h-font" style="font-size:14px;font-weight:700;">${fmtNum(projectedFPById[spotlight.id], 1)}</div></div>`;
-      } else {
-        slipHtml += `<div class="slip-row"><div class="h-font" style="font-size:14px;color:#5A5A62;">Empty slot</div><div class="h-font" style="font-size:14px;color:#5A5A62;">--</div></div>`;
-      }
+  const slipRow = (f, pending) => {
+    const dc = DIVISION_COLOR[f.announced_weight_class] || "var(--gold)";
+    return `<div class="slip-row"><div style="display:flex;align-items:center;gap:8px;min-width:0;"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div><div class="h-font" style="font-size:14px;font-weight:600;${pending ? "color:var(--red);" : ""}">${esc(f.full_name)}${pending ? " (PENDING)" : ""}</div></div><div class="h-font" style="font-size:14px;font-weight:700;color:var(--text);">${fmtNum(projectedFPById[f.id], 1)}</div></div>`;
+  };
+  slipHtml += `<div class="slip-group"><span class="h-font" style="font-size:10px;letter-spacing:2px;color:var(--gold);">ACTIVE</span><span class="h-font" style="font-size:9px;letter-spacing:1px;color:#4A4A52;">${myActive.length} / ${activeCap}</span></div>`;
+  for (let i = 0; i < activeCap; i++) {
+    const p = myActive[i];
+    const f = p ? fightersById[p.fighter_id] : null;
+    if (f) {
+      projectedTotal += Number(projectedFPById[f.id]) || 0;
+      slipHtml += slipRow(f, false);
+    } else if (showPickUI && phase === "active" && i === myActive.length && spotlight) {
+      slipHtml += slipRow(spotlight, true);
+    } else {
+      slipHtml += `<div class="slip-row"><div class="h-font" style="font-size:14px;color:#5A5A62;">Empty slot</div><div class="h-font" style="font-size:14px;color:#5A5A62;">--</div></div>`;
     }
-  });
+  }
+  slipHtml += `<div class="slip-group" style="border-top:1px solid var(--border-2);"><span class="h-font" style="font-size:10px;letter-spacing:2px;color:#9A9AA2;">BENCH</span><span class="h-font" style="font-size:9px;letter-spacing:1px;color:#4A4A52;">${myBench.length} / ${benchCap}</span></div>`;
+  myBench.forEach((p) => { const f = fightersById[p.fighter_id]; if (f) slipHtml += slipRow(f, false); });
+  if (showPickUI && phase === "cageside" && spotlight) slipHtml += slipRow(spotlight, true);
+  if (!myBench.length && !(showPickUI && phase === "cageside")) slipHtml += `<div class="slip-row"><div class="h-font" style="font-size:14px;color:#5A5A62;">${benchCap} bench spots open after the active round</div></div>`;
 
   /* ---- Live draft feed ---- */
   const feedHtml = picks.slice().reverse().slice(0, 12).map((p) => {
@@ -3085,7 +3039,7 @@ function renderDraft(){
   /* ---- Filter tabs + division strip ---- */
   const filterTabsHtml = FILTER_TABS.map((r) => {
     const active = r === activeFilter;
-    const rc = ROLE_COLOR[r] || "var(--gold)";
+    const rc = "var(--gold)";
     return `<button class="filter-tab" data-filter="${r}" style="${active ? `background:${rc}22;border-color:${rc};color:${rc};font-weight:700;` : "color:#9A9AA2;"}">${esc(r)}</button>`;
   }).join("");
   const divisionStripHtml = DIVISION_LIST.map((d) => {
@@ -3096,11 +3050,8 @@ function renderDraft(){
 
   const poolHeading = isDivisionFilter(activeFilter)
     ? `${activeFilter.toUpperCase()} · RANKED BY OVERALL RANK`
-    : activeFilter === "ALL" ? "ALL ROLES · RANKED BY OVERALL RANK"
-    : activeFilter === "PRIMARY" ? "PRIMARY · RANKED BY OVERALL RANK"
-    : `${activeFilter} · RANKED BY ${activeFilter} SCORE`;
-  const rankColLabel = isDivisionFilter(activeFilter) || activeFilter === "ALL" || activeFilter === "PRIMARY"
-    ? "OVERALL RANK" : `${activeFilter} SCORE`;
+    : "ALL FIGHTERS · RANKED BY OVERALL RANK";
+  const rankColLabel = "OVERALL RANK";
 
   const existingSearchInput = document.getElementById("fighterSearch");
   const filterVal = existingSearchInput ? existingSearchInput.value : "";
@@ -3248,29 +3199,19 @@ function renderDraft(){
     btn.addEventListener("click", () => { activeFilter = btn.dataset.filter; render(); });
   });
 
-  document.querySelectorAll(".role-pill").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (btn.disabled) return;
-      selectedRole = btn.dataset.role;
-      render();
-    });
-  });
-
   const lockBtn = document.getElementById("lockBtn");
   if (lockBtn) {
     lockBtn.addEventListener("click", () => {
-      if (!selectedRole) return;
       const errBox = document.getElementById("pickError");
       const target = manualTarget || available[0];
       if (!target) return;
-      const result = makeLocalPick(userTeamId, target.id, selectedRole, false);
+      const result = makeLocalPick(userTeamId, target.id, false);
       if (!result.legal) {
         errBox.textContent = result.reason || "That pick isn't legal.";
         errBox.style.display = "block";
         return;
       }
       selectedFighterId = null;
-      selectedRole = null;
       clearPickClock();
       maybeRunBots();
     });
@@ -3356,18 +3297,13 @@ function renderBoard(){
 /* ---------------- Complete ---------------- */
 function renderComplete(){
   const myPicks = picks.filter((p) => p.team_id === userTeamId);
-  const grouped = ROLE_NAMES.map((role) => {
-    const roleP = myPicks.filter((p) => p.role === role);
-    return `
-      <div class="roster-role">
-        <span class="rname">${esc(role)}</span>
-        <span class="rfill">${roleP.length} drafted</span>
-      </div>
+  const grouped = `
+      <div class="roster-role"><span class="rname">ACTIVE</span><span class="rfill">${myPicks.filter((p) => p.slot_type === "active").length} drafted</span></div>
+      <div class="roster-role"><span class="rname">BENCH</span><span class="rfill">${myPicks.filter((p) => p.slot_type === "cageside").length} drafted</span></div>
     `;
-  }).join("");
   const topPicks = myPicks.slice(0, 10).map((p) => `
     <div class="feed-row">
-      <div><span class="fname">${esc(fighterName(p.fighter_id))}</span> <span class="meta">${esc(p.role)}</span></div>
+      <div><span class="fname">${esc(fighterName(p.fighter_id))}</span> <span class="meta">${p.slot_type === "active" ? "ACTIVE" : "BENCH"}</span></div>
       <div class="meta">#${p.pick_number}</div>
     </div>
   `).join("");
