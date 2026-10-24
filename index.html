@@ -304,7 +304,7 @@
 
   .pool-table{border:var(--edge);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-lg);}
   .pool-table-scroll{overflow-x:auto;}
-  .pool-grid{display:grid;grid-template-columns:1.8fr 0.9fr 0.8fr 0.8fr 0.6fr 0.6fr 0.8fr 0.8fr 0.6fr 0.8fr 0.8fr 0.9fr 1fr 0.5fr;min-width:1060px;}
+  .pool-grid{display:grid;grid-template-columns:1.8fr 0.9fr 0.8fr 0.8fr 0.6fr 0.6fr 0.8fr 0.8fr 0.6fr 0.8fr 0.8fr 0.8fr 0.9fr 1fr 0.5fr;min-width:1140px;}
   .pool-head{padding:12px 16px;background:var(--panel-3);border-bottom:1px solid var(--border-2);font-size:10px;letter-spacing:1px;color:#6A6A72;}
   button.pool-row-btn{all:unset;display:contents;cursor:pointer;}
   .pool-cell{padding:13px 16px;border-bottom:1px solid var(--border-2);font-size:13.5px;color:#C4C1B8;display:flex;align-items:center;}
@@ -331,7 +331,7 @@
     .fname-cell{order:1;flex:1 1 100%;}
     .cell-rank{order:2;margin-left:auto;}
     .cell-star{order:3;}
-    .cell-div, .cell-record, .cell-finishes, .cell-projfp{order:4;}
+    .cell-div, .cell-record, .cell-finishes, .cell-fpy, .cell-projfp{order:4;}
     .cell-sigstr, .cell-td, .cell-kd, .cell-ctrl, .cell-subatt, .cell-rev, .cell-tddef{display:none;}
     .pool-cell[data-label]::before{content:attr(data-label) " ";color:var(--text-faint-2);font-size:10px;letter-spacing:0.5px;margin-right:4px;}
   }
@@ -668,6 +668,17 @@ function fmtClock(totalSeconds){
 }
 // Labels used on the setup screen's timer pickers, e.g. 30 -> "0:30", 90 -> "1:30"
 function fmtTimerLabel(seconds){ return seconds < 60 ? `${seconds}s` : fmtClock(seconds); }
+// Average UFC fights per year, from the fighter_fight_rate view: fights in the
+// last 3 years divided by the years of history (3-year window, 1-year floor).
+let fightRateById = {};
+function fightsPerYear(f){
+  const v = f ? fightRateById[f.id] : null;
+  return v === undefined || v === null ? null : Number(v);
+}
+function fmtFightsPerYear(f){
+  const v = fightsPerYear(f);
+  return v === null ? "—" : v.toFixed(1);
+}
 function fmtRank(rank){
   return (rank === null || rank === undefined) ? "—" : `#${rank}`;
 }
@@ -2384,6 +2395,14 @@ async function loadFighterPool(){
     fightersById = {};
     fighters.forEach((f) => { fightersById[f.id] = f; });
 
+    // Fights/year is a nice-to-have: if the view is unreachable the column
+    // just shows dashes instead of breaking the draft room.
+    try {
+      const { data: rates } = await CombatAuth.client.from("fighter_fight_rate").select("fighter_id, fights_per_year").limit(2000);
+      fightRateById = {};
+      (rates || []).forEach((r) => { fightRateById[r.fighter_id] = r.fights_per_year; });
+    } catch (e) { fightRateById = {}; }
+
     // Overall Rank is a literal ranking, not a score: sort everyone by
     // projected fantasy points and number each fighter's position in that
     // order (#1 overall = the best projected fantasy scorer) — never the
@@ -2416,12 +2435,29 @@ const OCT_CLIP = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%
 // division color for depth, wrapping an inner clipped photo panel — instead
 // of the old flat single-color border.
 function octagonRingAvatar(f, dc, outerSize){
-  const innerSize = Math.round(outerSize * 0.82);
+  const pad = Math.max(2, Math.round(outerSize * 0.036));
   return `
-    <div style="width:${outerSize}px;height:${outerSize}px;padding:${Math.round((outerSize - innerSize) / 2)}px;box-sizing:border-box;clip-path:${OCT_CLIP};background:radial-gradient(circle at 35% 28%, color-mix(in srgb, ${dc} 55%, white) 0%, ${dc} 55%, color-mix(in srgb, ${dc} 65%, black) 100%);box-shadow:var(--shadow-sm);flex-shrink:0;">
-      <div style="width:100%;height:100%;clip-path:${OCT_CLIP};background:#1C1C20;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-        ${octagonAvatar(f, dc, Math.round(innerSize * 0.42))}
+    <div style="width:${outerSize}px;height:${outerSize}px;padding:${pad}px;box-sizing:border-box;clip-path:${OCT_CLIP};background:radial-gradient(circle at 35% 28%, #fff 0%, ${dc} 55%, #000 130%);flex-shrink:0;">
+      <div style="width:100%;height:100%;clip-path:${OCT_CLIP};background:#0F0F12;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+        ${octagonAvatar(f, dc, Math.round(outerSize * 0.4))}
       </div>
+    </div>`;
+}
+// Same two-layer octagon for slots with no fighter yet. kind: "upcoming"
+// (dim grey), "clock" (red, on the clock) — never a bare clipped border,
+// which only ever drew four straight edges.
+function octagonEmptyAvatar(outerSize, kind, glyphHtml){
+  const pad = Math.max(2, Math.round(outerSize * 0.036));
+  const clock = kind === "clock";
+  const ring = clock
+    ? "radial-gradient(circle at 35% 28%, #fff 0%, var(--red) 55%, #000 130%)"
+    : "radial-gradient(circle at 35% 28%, #55555D 0%, #2A2A30 55%, #000 130%)";
+  const inner = clock ? "#2A0F13" : "#0F0F12";
+  const stroke = clock ? "var(--red)" : "#3A3A40";
+  const glyph = glyphHtml || `<svg width="${Math.round(outerSize * 0.42)}" height="${Math.round(outerSize * 0.42)}" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="1.6"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path></svg>`;
+  return `
+    <div style="width:${outerSize}px;height:${outerSize}px;padding:${pad}px;box-sizing:border-box;clip-path:${OCT_CLIP};background:${ring};flex-shrink:0;">
+      <div style="width:100%;height:100%;clip-path:${OCT_CLIP};background:${inner};display:flex;align-items:center;justify-content:center;">${glyph}</div>
     </div>`;
 }
 
@@ -2839,9 +2875,7 @@ function renderDraft(){
     } else if (n === pickNum && !draftComplete) {
       trackerHtml += `
         <div class="tslot">
-          <div class="oct" style="clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);background:rgba(226,40,60,0.12);border:2px solid var(--red);box-shadow:0 0 0 4px rgba(226,40,60,0.12);">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.6"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path></svg>
-          </div>
+          ${octagonEmptyAvatar(52, "clock")}
           <div class="pickline"><span class="n">PICK ${n}</span><span class="n" style="color:var(--red);font-weight:700;">&middot; ${esc(teamInitials(team))}</span></div>
           <div class="info" style="color:var(--red);font-weight:700;">${team === userTeamId ? "ON THE CLOCK" : "ON CLOCK"}</div>
         </div>
@@ -2849,9 +2883,7 @@ function renderDraft(){
     } else {
       trackerHtml += `
         <div class="tslot">
-          <div class="oct" style="clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);border:1px solid #26262C;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3A3A40" stroke-width="1.6"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path></svg>
-          </div>
+          ${octagonEmptyAvatar(52, "upcoming")}
           <div class="pickline"><span class="n">PICK ${n}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${esc(teamInitials(team))}</span></div>
           <div class="info" style="color:#5A5A62;">UPCOMING</div>
         </div>
@@ -2870,6 +2902,7 @@ function renderDraft(){
       { l: "SUB ATT", v: fmtNum(spotlight.avg_sub_attempts) },
       { l: "REV", v: fmtNum(spotlight.avg_reversals, 2) },
       { l: "TD DEF", v: fmtPct(spotlight.td_def_pct) },
+      { l: "FIGHTS/YR", v: fmtFightsPerYear(spotlight) },
       { l: "PROJ FP", v: fmtNum(projectedFPById[spotlight.id], 1) },
     ];
     const lastOwnPickEntry = picks.slice().reverse().find((p) => p.team_id === userTeamId);
@@ -3017,10 +3050,20 @@ function renderDraft(){
      roster AND the fighter currently on the clock, so news tied to that
      fighter surfaces the moment they come up for a pick. */
   const mmaNews = newsItems.filter((it) => (it.sport || "").toLowerCase() === "mma");
-  const myFighterIds = new Set(picks.filter((p) => p.team_id === userTeamId).map((p) => p.fighter_id));
-  if (spotlight) myFighterIds.add(spotlight.id);
-  const relevant = mmaNews.filter((it) => (it.fighters || []).some((mf) => myFighterIds.has(mf.id)));
-  const newsToShow = (relevant.length ? relevant : mmaNews).slice(0, 4);
+  // News is tied to the fighter on screen: while you're on the clock it is
+  // that fighter's stories only; otherwise it falls back to stories about
+  // fighters already on your roster. Never generic headlines.
+  const newsFighterIds = new Set();
+  let newsHeading = "FIGHTER NEWS";
+  if (spotlight) {
+    newsFighterIds.add(spotlight.id);
+    newsHeading = "NEWS \u00B7 " + spotlight.full_name.toUpperCase();
+  } else {
+    picks.filter((p) => p.team_id === userTeamId).forEach((p) => newsFighterIds.add(p.fighter_id));
+    newsHeading = "NEWS \u00B7 YOUR ROSTER";
+  }
+  const newsToShow = mmaNews.filter((it) => (it.fighters || []).some((mf) => newsFighterIds.has(mf.id))).slice(0, 4);
+  const newsEmptyText = spotlight ? `No recent news on ${esc(spotlight.full_name)}.` : "No recent news on your fighters.";
   const newsHtml = !newsLoaded
     ? `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">Loading news…</div>`
     : (newsToShow.length ? newsToShow.map((it) => `
@@ -3028,7 +3071,7 @@ function renderDraft(){
           <div class="news-tag" style="background:#242428;color:#B8B5AD;">${esc((it.sport || "NEWS").toUpperCase())}</div>
           <a href="${esc(it.link)}" target="_blank" rel="noopener noreferrer">${esc(it.title)}</a>
         </div>
-      `).join("") : `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">No news yet.</div>`);
+      `).join("") : `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">${newsEmptyText}</div>`);
 
   /* ---- Ranked next queue ---- */
   const queueSource = available.slice(spotlight ? 1 : 0, spotlight ? 4 : 3);
@@ -3077,7 +3120,7 @@ function renderDraft(){
     const hl = isSpotlight ? "background:rgba(212,175,55,0.06);" : "";
     return `
       <button class="pool-row-btn" data-fighter-id="${f.id}" ${showPickUI ? "" : "disabled"}>
-        <div style="${hl}" class="pool-cell fname-cell"><div class="av" style="overflow:hidden;">${f.photo_url ? `<img src="${esc(f.photo_url)}" style="width:100%;height:100%;object-fit:cover;" alt="">` : ""}</div><span class="h-font" style="font-size:14px;font-weight:600;color:${isSpotlight ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span></div>
+        <div style="${hl}" class="pool-cell fname-cell">${octagonRingAvatar(f, dc, 42)}<span class="h-font" style="font-size:14px;font-weight:600;color:${isSpotlight ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span></div>
         <div style="${hl}" class="pool-cell cell-div"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div></div>
         <div style="${hl}" class="pool-cell cell-record" data-label="REC">${esc(fmtRecord(f))}</div>
         <div style="${hl}" class="pool-cell cell-sigstr">${esc(fmtNum(f.avg_sig_strikes))}</div>
@@ -3088,6 +3131,7 @@ function renderDraft(){
         <div style="${hl}" class="pool-cell cell-rev">${esc(fmtNum(f.avg_reversals, 2))}</div>
         <div style="${hl}" class="pool-cell cell-tddef">${esc(fmtPct(f.td_def_pct))}</div>
         <div style="${hl}" class="pool-cell cell-finishes" data-label="FIN">${f.finishes ?? "—"}</div>
+        <div style="${hl}" class="pool-cell cell-fpy" data-label="FIGHTS/YR">${fmtFightsPerYear(f)}</div>
         <div style="${hl}" class="pool-cell cell-projfp" data-label="PROJ FP">${fmtNum(projectedFPById[f.id], 1)}</div>
         <div style="${hl}" class="pool-cell cell-rank"><span class="h-font" style="font-size:17px;font-weight:700;color:var(--gold);">${esc(rankText)}</span></div>
         <div style="${hl}" class="pool-cell cell-star">
@@ -3148,7 +3192,7 @@ function renderDraft(){
         <div class="side-card">
           <div class="side-card-head">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M4 4h16v16H4z"></path><path d="M8 8h8M8 12h8M8 16h4"></path></svg>
-            <div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">LEAGUE NEWS</div>
+            <div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">${esc(newsHeading)}</div>
           </div>
           <div class="side-card-body">${newsHtml}</div>
         </div>
@@ -3167,7 +3211,7 @@ function renderDraft(){
             <div class="pool-head">FIGHTER</div><div class="pool-head">DIV</div><div class="pool-head">RECORD</div>
             <div class="pool-head">SIG STR</div><div class="pool-head">TD</div><div class="pool-head">KD</div>
             <div class="pool-head">CTRL</div><div class="pool-head">SUB ATT</div><div class="pool-head">REV</div>
-            <div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div>
+            <div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div><div class="pool-head">FIGHTS/YR</div>
             <div class="pool-head">PROJ FP</div>
             <div class="pool-head" style="color:var(--gold);">${esc(rankColLabel)}</div><div class="pool-head">★</div>
             ${poolRows}
@@ -3273,14 +3317,12 @@ function renderBoard(){
       } else if (isCurrentCell && started) {
         cellsHtml += `
           <div class="board-cell" style="background:rgba(226,40,60,0.08);border-color:var(--red);">
-            <div class="oct" style="clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);background:rgba(226,40,60,0.15);border:2px solid var(--red);box-shadow:0 0 0 4px rgba(226,40,60,0.12);">
-              <span class="h-font" style="font-size:16px;font-weight:700;color:var(--red);">?</span>
-            </div>
+            ${octagonEmptyAvatar(46, "clock", `<span class="h-font" style="font-size:16px;font-weight:700;color:var(--red);">?</span>`)}
             <div class="nm" style="color:var(--red);">On the clock</div>
           </div>
         `;
       } else {
-        cellsHtml += `<div class="board-cell" style="background:transparent;border:1px dashed #202024;"><div class="oct" style="clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);border:1px dashed #2A2A30;"></div><div class="nm" style="color:#3A3A40;">Empty</div></div>`;
+        cellsHtml += `<div class="board-cell" style="background:transparent;border:1px dashed #202024;">${octagonEmptyAvatar(46, "upcoming", "")}<div class="nm" style="color:#3A3A40;">Empty</div></div>`;
       }
     });
     roundsHtml += `
