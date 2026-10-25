@@ -2417,6 +2417,10 @@ let teamCount = 8;
 let leagueMode = "dynasty";      // "dynasty" | "cardRedraft"
 let draftOrderType = "snake";    // "snake" | "linear" | "thirdRound" (third-round reversal) | "auction" (coming soon)
 let crCards = null;              // upcoming cards loaded from bouts: [{key,eventName,date,bouts:[...],fighterIds:Set}]
+let auctionBudget = 200;         // starting budget per team in an Auction draft
+let auction = null;              // live auction state
+let auctionBudgets = {};         // team id -> money left
+let auctionTick = null;
 let crSkip = 0;                  // how many upcoming cards the person skipped past
 let crError = null;
 let crPoolIds = null;            // Set of fighter ids in the Card Redraft pool
@@ -2654,6 +2658,7 @@ const DRAFT_ORDER_HINT = {
   snake: "Pick order reverses every round, so whoever picks last in a round picks first in the next.",
   linear: "Same pick order every round, so the first seed always picks first.",
   thirdRound: "Rounds 1 and 2 snake, round 3 repeats round 2's order, then it keeps snaking. It softens the advantage of picking first.",
+  auction: "Teams take turns nominating a fighter and everyone bids. Highest bid wins the fighter, and that money comes out of the winner's budget.",
 };
 function renderSetup(){
   content.innerHTML = `
@@ -2691,20 +2696,26 @@ function renderSetup(){
         <label>Draft order</label>
         <div class="timer-options" id="draftOrderOptions">
           ${[["snake","Snake"],["linear","Linear"],["thirdRound","Snake · 3rd-round reversal"]].map(([k, l]) => `<button type="button" class="timer-opt${k === draftOrderType ? " active" : ""}" data-order="${k}">${l}</button>`).join("")}
-          <button type="button" class="timer-opt" disabled style="opacity:0.45;cursor:not-allowed;">Auction · coming soon</button>
+          <button type="button" class="timer-opt${draftOrderType === "auction" ? " active" : ""}" data-order="auction">Auction</button>
         </div>
         <div class="timer-hint" id="draftOrderHint">${esc(DRAFT_ORDER_HINT[draftOrderType])}</div>
       </div>
 
-      <div class="field">
+      ${draftOrderType === "auction" ? `<div class="field">
+        <label>Starting budget per team</label>
+        <div class="timer-options" id="auctionBudgetOptions">
+          ${[100, 200, 300].map((b) => `<button type="button" class="timer-opt${b === auctionBudget ? " active" : ""}" data-budget="${b}">$${b}</button>`).join("")}
+        </div>
+        <div class="timer-hint">Every bid is in whole dollars, the minimum bid is $1, and you must keep $1 for each empty roster spot.</div>
+      </div>` : `<div class="field">
         <label>Pick timer — active roster</label>
         <div class="timer-options" id="activeTimerOptions">
           ${ACTIVE_TIMER_CHOICES.map((s) => `<button type="button" class="timer-opt${s === activeTimerSeconds ? " active" : ""}" data-secs="${s}">${esc(fmtTimerLabel(s))}</button>`).join("")}
         </div>
         <div class="timer-hint">How long you get on the clock for each of your active-roster picks.</div>
-      </div>
+      </div>`}
 
-      ${leagueMode === "cardRedraft" ? "" : `<div class="field">
+      ${(leagueMode === "cardRedraft" || draftOrderType === "auction") ? "" : `<div class="field">
         <label>Pick timer — cageside</label>
         <div class="timer-options" id="cagesideTimerOptions">
           ${CAGESIDE_TIMER_CHOICES.map((s) => `<button type="button" class="timer-opt${s === cagesideTimerSeconds ? " active" : ""}" data-secs="${s}">${esc(fmtTimerLabel(s))}</button>`).join("")}
@@ -2720,9 +2731,10 @@ function renderSetup(){
   document.getElementById("backLink").addEventListener("click", () => { screen = leagueMode === "cardRedraft" ? "crCards" : "modePick"; render(); });
   document.querySelectorAll("#draftOrderOptions [data-order]").forEach((btn) => {
     btn.addEventListener("click", () => {
+      const nameEl = document.getElementById("teamNameInput");
+      if (nameEl) userTeamName = nameEl.value;
       draftOrderType = btn.dataset.order;
-      document.querySelectorAll("#draftOrderOptions [data-order]").forEach((b) => b.classList.toggle("active", b === btn));
-      document.getElementById("draftOrderHint").textContent = DRAFT_ORDER_HINT[draftOrderType];
+      renderSetup();
     });
   });
 
@@ -2733,6 +2745,12 @@ function renderSetup(){
     if (teamCount < 12) { teamCount += 2; document.getElementById("teamCountVal").textContent = teamCount; }
   });
 
+  document.querySelectorAll("#auctionBudgetOptions .timer-opt").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      auctionBudget = Number(btn.dataset.budget);
+      document.querySelectorAll("#auctionBudgetOptions .timer-opt").forEach((b) => b.classList.toggle("active", b === btn));
+    });
+  });
   document.querySelectorAll("#activeTimerOptions .timer-opt").forEach((btn) => {
     btn.addEventListener("click", () => {
       activeTimerSeconds = Number(btn.dataset.secs);
@@ -2809,6 +2827,8 @@ function beginDraft(){
   selectedFighterId = null;
   activeFilter = "ALL";
   clearPickClock();
+  clearInterval(auctionTick); auctionTick = null; auction = null;
+  if (draftOrderType === "auction") auctionInit();
   screen = "draft";
   render();
   loadNews();
@@ -2927,8 +2947,223 @@ function teamInitials(id){
   return name.split(/\s+/).map((w) => w[0]).join("").slice(0, 3).toUpperCase();
 }
 
+/* ---------------- Auction draft ----------------
+   Every team starts with the same budget. Teams take turns nominating a
+   fighter, everyone bids in whole dollars, and the highest bid when the
+   clock runs out wins him. A team must always keep $1 for every roster spot
+   it still has to fill, so max bid = money left - (spots left - 1). */
+function auctionSlotsLeft(teamId){ return totalSlotsFor(teamOrder.length) - picks.filter((p) => p.team_id === teamId).length; }
+function auctionMaxBid(teamId){ return auctionBudgets[teamId] - Math.max(0, auctionSlotsLeft(teamId) - 1); }
+function auctionEligible(teamId){ return auctionSlotsLeft(teamId) > 0 && auctionMaxBid(teamId) >= 1; }
+function auctionInit(){
+  auctionBudgets = {};
+  teamOrder.forEach((t) => { auctionBudgets[t] = auctionBudget; });
+  auction = { nomIdx: 0, nominator: teamOrder[0], nominee: null, bid: 0, bidder: null, endsAt: 0, started: false, note: "" };
+}
+function auctionAvailable(){
+  const taken = {};
+  picks.forEach((p) => { taken[p.fighter_id] = true; });
+  return rankedAvailable("ALL", taken);
+}
+function auctionBotValue(f, teamId){
+  const pool = auctionAvailable().concat(picks.map((p) => fightersById[p.fighter_id]).filter(Boolean));
+  let top = 1;
+  pool.forEach((x) => { const v = Number(projectedFPById[x.id]) || 0; if (v > top) top = v; });
+  const rel = Math.max(0, (Number(projectedFPById[f.id]) || 0) / top);
+  const scale = (auctionBudget / totalSlotsFor(teamOrder.length)) / 20;
+  const base = Math.max(1, Math.round(45 * Math.pow(rel, 2.5) * scale) + 1);
+  return Math.min(auctionMaxBid(teamId), Math.max(1, Math.round(base * (0.8 + Math.random() * 0.4))));
+}
+function auctionNextNominator(){
+  for (let i = 0; i < teamOrder.length; i++) {
+    const t = teamOrder[(auction.nomIdx + i) % teamOrder.length];
+    if (auctionEligible(t)) { auction.nomIdx = (auction.nomIdx + i) % teamOrder.length; return t; }
+  }
+  return null;
+}
+function auctionNominate(teamId, fighterId, startBid){
+  if (!auction || auction.nominee || !started) return false;
+  const f = fightersById[fighterId];
+  if (!f || picks.some((p) => p.fighter_id === fighterId)) return false;
+  const bid = Math.max(1, Math.min(startBid || 1, auctionMaxBid(teamId)));
+  auction.nominee = fighterId; auction.bid = bid; auction.bidder = teamId; auction.nominator = teamId;
+  auction.endsAt = Date.now() + 7000; auction.note = "";
+  render();
+  return true;
+}
+function auctionPlaceBid(teamId, amount){
+  if (!auction || !auction.nominee || teamId === auction.bidder) return false;
+  if (amount <= auction.bid || amount > auctionMaxBid(teamId)) return false;
+  auction.bid = amount; auction.bidder = teamId;
+  auction.endsAt = Math.max(auction.endsAt, Date.now() + 4500);
+  render();
+  return true;
+}
+function auctionBotNominate(){
+  if (!auction || auction.nominee || !started) return;
+  if (auction.nominator === userTeamId) return;
+  const best = auctionAvailable()[0];
+  if (!best) return;
+  auctionNominate(auction.nominator, best.id, 1);
+}
+function auctionAward(){
+  const f = fightersById[auction.nominee];
+  const winner = auction.bidder, cost = auction.bid;
+  auctionBudgets[winner] -= cost;
+  const have = picks.filter((p) => p.team_id === winner).length;
+  const activeHave = picks.filter((p) => p.team_id === winner && p.slot_type === "active").length;
+  picks.push({
+    pick_number: picks.length + 1,
+    round_number: Math.floor(picks.length / teamOrder.length) + 1,
+    team_id: winner, fighter_id: f.id,
+    slot_type: activeHave < activeSlotsFor(teamOrder.length) ? "active" : "cageside",
+    is_autopick: false, price: cost,
+  });
+  auction.note = `${teamName(winner)} won ${f.full_name} for $${cost}`;
+  auction.nominee = null; auction.bid = 0; auction.bidder = null;
+  auction.nomIdx = (teamOrder.indexOf(auction.nominator) + 1) % teamOrder.length;
+  const next = auctionNextNominator();
+  if (!next || picks.length >= totalSlotsFor(teamOrder.length) * teamOrder.length) {
+    clearInterval(auctionTick); auctionTick = null;
+    screen = "complete"; render(); return;
+  }
+  auction.nominator = next;
+  render();
+  if (next !== userTeamId) setTimeout(auctionBotNominate, 1100);
+}
+function auctionStep(){
+  if (!auction || !started || screen !== "draft") return;
+  if (!auction.nominee) return;
+  const remain = auction.endsAt - Date.now();
+  const clockEl = document.getElementById("aucClock");
+  if (clockEl) clockEl.textContent = Math.max(0, remain / 1000).toFixed(1) + "s";
+  if (remain <= 0) { auctionAward(); return; }
+  const f = fightersById[auction.nominee];
+  const bots = teamOrder.filter((t) => t !== userTeamId && t !== auction.bidder && auctionEligible(t) && auctionMaxBid(t) > auction.bid);
+  bots.sort(() => Math.random() - 0.5);
+  for (const t of bots) {
+    const value = auctionBotValue(f, t);
+    if (value > auction.bid && Math.random() < 0.45) {
+      const raise = Math.min(value, auction.bid + 1 + Math.floor(Math.random() * 3));
+      if (auctionPlaceBid(t, raise)) return;
+    }
+  }
+}
+function auctionStart(){
+  if (started) return;
+  started = true;
+  clearInterval(auctionTick);
+  auctionTick = setInterval(auctionStep, 500);
+  render();
+  if (auction.nominator !== userTeamId) setTimeout(auctionBotNominate, 900);
+}
+
+function renderAuctionDraft(){
+  const me = userTeamId;
+  const nominee = auction && auction.nominee ? fightersById[auction.nominee] : null;
+  const myTurnToNominate = started && auction && !auction.nominee && auction.nominator === me;
+  const avail = auctionAvailable();
+  const manual = (myTurnToNominate && selectedFighterId && fightersById[selectedFighterId] && !picks.some((p) => p.fighter_id === selectedFighterId)) ? fightersById[selectedFighterId] : null;
+  const pickTarget = manual || avail[0];
+  const totalSlots = totalSlotsFor(teamOrder.length);
+  const myPicks = picks.filter((p) => p.team_id === me);
+  const myMax = auctionMaxBid(me);
+  const iAmHigh = nominee && auction.bidder === me;
+
+  const budgetRows = teamOrder.map((t) => `
+    <div class="slip-row"><div style="display:flex;align-items:center;gap:8px;"><div class="h-font" style="font-size:13px;font-weight:${t === me ? 700 : 500};color:${t === auction.nominator ? "var(--gold)" : t === me ? "var(--text)" : "#9A9AA2"};">${esc(teamInitials(t))}${t === auction.nominator ? " ★" : ""}</div><div class="h-font" style="font-size:11px;color:#5A5A62;">${auctionSlotsLeft(t)} spots left</div></div><div class="h-font" style="font-size:14px;font-weight:700;color:${t === me ? "var(--gold)" : "var(--text)"};">$${auctionBudgets[t]}</div></div>`).join("");
+  const myRows = myPicks.map((p) => { const f = fightersById[p.fighter_id]; const dc = DIVISION_COLOR[f.announced_weight_class] || "var(--gold)";
+    return `<div class="slip-row"><div style="display:flex;align-items:center;gap:8px;min-width:0;"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div></div><div class="h-font" style="font-size:14px;font-weight:700;">$${p.price}</div></div>`; }).join("") || `<div class="slip-row"><div class="h-font" style="font-size:14px;color:#5A5A62;">No fighters yet</div></div>`;
+  const feedHtml = picks.slice().reverse().slice(0, 10).map((p) => { const f = fightersById[p.fighter_id];
+    return `<div class="feed-item"><div class="h-font" style="font-size:11px;color:#5A5A62;">#${p.pick_number}</div><div class="h-font" style="font-size:13px;color:#C9C6BD;"><span style="color:var(--gold);">${esc(teamInitials(p.team_id))}</span> won ${esc(f ? f.full_name : "?")} <span style="color:var(--gold);">$${p.price}</span></div></div>`; }).join("") || `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">No fighters sold yet.</div>`;
+
+  let stage = "";
+  if (!started) {
+    stage = `<div class="spotlight-card" style="flex-direction:column;align-items:center;text-align:center;gap:18px;">
+      <div class="h-font" style="font-size:18px;font-weight:700;letter-spacing:2px;">AUCTION DRAFT</div>
+      <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#9A9AA2;">${teamOrder.length} TEAMS &middot; $${auctionBudget} EACH &middot; ${totalSlots} FIGHTERS PER TEAM</div>
+      <button id="aucStartBtn" class="start-draft h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">START AUCTION</button></div>`;
+  } else if (nominee) {
+    const dc = DIVISION_COLOR[nominee.announced_weight_class] || "var(--gold)";
+    const canBid = !iAmHigh && myMax > auction.bid;
+    const btn = (inc) => { const amt = auction.bid + inc; const ok = canBid && amt <= myMax; return `<button class="primary aucBidBtn" data-amt="${amt}" ${ok ? "" : "disabled"} style="min-width:92px;">$${amt}</button>`; };
+    stage = `
+      <div class="h-font" style="font-size:13px;letter-spacing:3px;color:var(--red);">${esc(teamName(auction.nominator).toUpperCase())} NOMINATED</div>
+      <div class="spotlight-card" style="border-color:${dc};">
+        <div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap;width:100%;">
+          ${octagonRingAvatar(nominee, dc, 120)}
+          <div style="flex:1 1 220px;min-width:0;">
+            <div class="h-font" style="font-size:28px;font-weight:700;">${esc(nominee.full_name.toUpperCase())}</div>
+            <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#9A9AA2;margin-top:4px;">${esc(nominee.announced_weight_class || "")} &middot; ${fmtRecord(nominee)} &middot; PROJ ${fmtNum(projectedFPById[nominee.id], 1)} &middot; ${fmtRank(overallRankById[nominee.id])}</div>
+          </div>
+          <div style="text-align:center;">
+            <div class="h-font" style="font-size:11px;letter-spacing:2px;color:#9A9AA2;">${esc(teamInitials(auction.bidder))} HIGH BID</div>
+            <div class="h-font" style="font-size:52px;font-weight:700;color:var(--gold);line-height:1;">$${auction.bid}</div>
+            <div class="h-font" id="aucClock" style="font-size:18px;color:var(--red);">${Math.max(0, (auction.endsAt - Date.now()) / 1000).toFixed(1)}s</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center;">
+          ${btn(1)}${btn(5)}${btn(10)}
+          <div class="h-font" style="font-size:12px;color:#9A9AA2;">${iAmHigh ? "YOU HOLD THE HIGH BID" : `YOUR MAX BID $${myMax}`}</div>
+        </div>
+      </div>`;
+  } else if (myTurnToNominate) {
+    stage = `
+      <div class="h-font" style="font-size:13px;letter-spacing:3px;color:var(--red);">YOUR TURN TO NOMINATE</div>
+      <div class="spotlight-card">
+        <div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap;width:100%;">
+          ${pickTarget ? octagonRingAvatar(pickTarget, DIVISION_COLOR[pickTarget.announced_weight_class] || "var(--gold)", 96) : ""}
+          <div style="flex:1 1 220px;">
+            <div class="h-font" style="font-size:24px;font-weight:700;">${pickTarget ? esc(pickTarget.full_name.toUpperCase()) : "—"}</div>
+            <div class="h-font" style="font-size:12px;color:#9A9AA2;margin-top:4px;">Click any fighter below to pick who to put up for bid.</div>
+          </div>
+          <button id="aucNominateBtn" class="primary">NOMINATE FOR $1</button>
+        </div>
+      </div>`;
+  } else {
+    stage = `<div class="spotlight-card" style="justify-content:center;"><div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;">${esc(auction.note || "")}${auction.note ? " · " : ""}Waiting on ${esc(teamName(auction.nominator))} to nominate…</div></div>`;
+  }
+
+  const poolRows = avail.slice(0, 40).map((f) => { const dc = DIVISION_COLOR[f.announced_weight_class] || "var(--gold)";
+    const sel = pickTarget && pickTarget.id === f.id && myTurnToNominate;
+    return `<button class="aucPoolBtn" data-fid="${f.id}" ${myTurnToNominate ? "" : "disabled"} style="display:grid;grid-template-columns:2fr 0.7fr 0.9fr 0.8fr 0.8fr;gap:8px;align-items:center;width:100%;text-align:left;padding:8px 14px;background:${sel ? "rgba(212,175,55,0.08)" : "transparent"};border:0;border-bottom:1px solid var(--border-2);color:var(--text);cursor:${myTurnToNominate ? "pointer" : "default"};">
+      <span style="display:flex;align-items:center;gap:10px;">${octagonRingAvatar(f, dc, 34)}<span class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</span></span>
+      <span class="divtag2" style="background:${dc}2A;color:${dc};width:fit-content;">${esc(DIV_SHORT[f.announced_weight_class] || "")}</span>
+      <span class="h-font" style="font-size:13px;">${esc(fmtRecord(f))}</span>
+      <span class="h-font" style="font-size:13px;">${fmtNum(projectedFPById[f.id], 1)} FP</span>
+      <span class="h-font" style="font-size:15px;font-weight:700;color:var(--gold);">${fmtRank(overallRankById[f.id])}</span></button>`; }).join("");
+
+  content.innerHTML = `
+    <div class="dr-header">
+      <div class="dr-header-left">
+        <div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:1px;color:var(--gold);">COMBAT</div>
+        <div class="vrule"></div>
+        <div class="h-font dr-header-subtitle" style="font-size:15px;letter-spacing:2px;color:#9A9AA2;">${leagueMode === "cardRedraft" ? "CARD REDRAFT" : "DYNASTY"} AUCTION</div>
+      </div>
+      ${started ? `<div class="status-right"><div class="lbl">YOUR BUDGET</div><div class="val h-font" style="color:var(--gold);">$${auctionBudgets[me]}</div><div class="h-font" style="font-size:10px;letter-spacing:1.5px;color:#9A9AA2;">${myPicks.length} OF ${totalSlots} FIGHTERS</div></div>` : ""}
+    </div>
+    <div class="stage">
+      <div class="stage-main">${stage}</div>
+      <div class="stage-side">
+        <div class="slip-panel"><div class="slip-head"><div class="h-font" style="font-size:13px;letter-spacing:2px;color:var(--gold);">BUDGETS</div></div><div class="slip-list">${budgetRows}</div></div>
+        <div class="slip-panel"><div class="slip-head"><div class="h-font" style="font-size:13px;letter-spacing:2px;color:var(--gold);">YOUR FIGHTERS</div></div><div class="slip-list">${myRows}</div></div>
+        <div class="side-card"><div class="side-card-head"><div style="width:7px;height:7px;border-radius:50%;background:var(--red);"></div><div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">SOLD</div></div><div class="side-card-body">${feedHtml}</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="h-font" style="font-size:12px;letter-spacing:2px;color:#7A7A82;margin:18px 0 12px;">AVAILABLE &mdash; RANKED BY OVERALL RANK</div>
+      <div class="pool-table"><div style="display:grid;grid-template-columns:2fr 0.7fr 0.9fr 0.8fr 0.8fr;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border-2);" class="h-font"><span class="pool-head" style="padding:0;">FIGHTER</span><span class="pool-head" style="padding:0;">DIV</span><span class="pool-head" style="padding:0;">RECORD</span><span class="pool-head" style="padding:0;">PROJ</span><span class="pool-head" style="padding:0;color:var(--gold);">RANK</span></div>${poolRows}</div>
+    </div>`;
+
+  const st = document.getElementById("aucStartBtn"); if (st) st.addEventListener("click", auctionStart);
+  const nb = document.getElementById("aucNominateBtn"); if (nb) nb.addEventListener("click", () => { if (pickTarget) { selectedFighterId = null; auctionNominate(me, pickTarget.id, 1); } });
+  document.querySelectorAll(".aucPoolBtn").forEach((b) => b.addEventListener("click", () => { if (b.disabled) return; selectedFighterId = b.dataset.fid; render(); }));
+  document.querySelectorAll(".aucBidBtn").forEach((b) => b.addEventListener("click", () => { if (!b.disabled) auctionPlaceBid(me, Number(b.dataset.amt)); }));
+}
+
 /* ---------------- Draft room ---------------- */
 function renderDraft(){
+  if (draftOrderType === "auction") return renderAuctionDraft();
   const pickNum = currentPickNumber();
   const { phase } = getPhase(pickNum, teamOrder.length);
   const totalPicks = totalSlotsFor(teamOrder.length) * teamOrder.length;
@@ -3429,6 +3664,7 @@ function renderBoard(){
 
 /* ---------------- Complete ---------------- */
 function renderComplete(){
+  clearInterval(auctionTick); auctionTick = null;
   const myPicks = picks.filter((p) => p.team_id === userTeamId);
   const grouped = `
       <div class="roster-role"><span class="rname">ACTIVE</span><span class="rfill">${myPicks.filter((p) => p.slot_type === "active").length} drafted</span></div>
