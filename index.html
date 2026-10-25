@@ -209,6 +209,21 @@
   .feed-row .meta{color:var(--text-faint);font-size:11px;}
 
   /* ---------- Draft room header ---------- */
+  .dr-bg{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(700px 520px at 36% 30%,var(--spot-a,rgba(212,175,55,0.16)),transparent 70%),radial-gradient(900px 600px at 100% 0%,rgba(226,40,60,0.12),transparent 60%);}
+  .dr-bg::after{content:"";position:absolute;inset:0;opacity:0.5;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,0.028) 0 1px,transparent 1px 22px),repeating-linear-gradient(-45deg,rgba(255,255,255,0.028) 0 1px,transparent 1px 22px);}
+  @keyframes octglow{0%,100%{filter:drop-shadow(0 0 0 rgba(226,40,60,0));}50%{filter:drop-shadow(0 0 14px rgba(226,40,60,0.85));}}
+  @keyframes livedot{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  @keyframes pickin{from{transform:scale(0.6);opacity:0;}to{transform:none;opacity:1;}}
+  .oct-wrap.pulse{animation:octglow 1.6s ease-in-out infinite;}
+  .live-dot{animation:livedot 1.2s ease-in-out infinite;}
+  .tslot.just{animation:pickin 0.45s ease-out;}
+  .oct-btn{border-radius:0 !important;clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 16px,100% calc(100% - 16px),calc(100% - 16px) 100%,16px 100%,0 calc(100% - 16px),0 16px);}
+  .hero-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}
+  .hero-stat{background:#16161A;border-radius:16px;padding:18px;}
+  .hero-stat .v{font-family:'Oswald',sans-serif;font-weight:700;font-size:40px;line-height:1;}
+  .hero-stat .l{font-size:13px;color:#B8B5AE;margin-top:6px;}
+  @media (max-width:700px){.hero-stats{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media (prefers-reduced-motion:reduce){.oct-wrap.pulse,.live-dot,.tslot.just{animation:none;}}
   .dr-header{display:flex;align-items:center;justify-content:space-between;padding:18px 0;border-bottom:1px solid #1C1C20;margin-bottom:0;flex-wrap:wrap;gap:14px;}
   .dr-header-left{display:flex;align-items:center;gap:14px;}
   .vrule{width:1px;height:22px;background:#2A2A30;}
@@ -668,6 +683,7 @@ function fmtClock(totalSeconds){
 function fmtTimerLabel(seconds){ return seconds < 60 ? `${seconds}s` : fmtClock(seconds); }
 // Average UFC fights per year, from the fighter_fight_rate view: fights in the
 // last 3 years divided by the years of history (3-year window, 1-year floor).
+let championById = {};
 let fightRateById = {};
 function fightsPerYear(f){
   const v = f ? fightRateById[f.id] : null;
@@ -2502,6 +2518,14 @@ async function loadFighterPool(){
       (rates || []).forEach((r) => { fightRateById[r.fighter_id] = r.fights_per_year; });
     } catch (e) { fightRateById = {}; }
 
+    // Champions get a gold octagon whatever their weight class. Also optional:
+    // if the column is missing nobody is marked, nothing breaks.
+    try {
+      const { data: champs } = await CombatAuth.client.from("fighters").select("id").eq("is_champion", true).limit(100);
+      championById = {};
+      (champs || []).forEach((r) => { championById[r.id] = true; });
+    } catch (e) { championById = {}; }
+
     // Overall Rank is a literal ranking, not a score: sort everyone by
     // projected fantasy points and number each fighter's position in that
     // order (#1 overall = the best projected fantasy scorer) — never the
@@ -2521,6 +2545,8 @@ function fighterName(id){
 }
 // Fills an octagon pick-tracker/board slot: the fighter's photo if we have
 // one, clipped to the parent's octagon shape, else the generic silhouette.
+function isChamp(f){ return !!(f && championById[f.id]); }
+function fighterDc(f){ return isChamp(f) ? "#D4AF37" : ((f && DIVISION_COLOR[f.announced_weight_class]) || "#D4AF37"); }
 function octagonAvatar(f, strokeColor, size){
   if (f && f.photo_url) {
     return `<img src="${esc(f.photo_url)}" style="width:100%;height:100%;object-fit:cover;" alt="">`;
@@ -3072,7 +3098,7 @@ function renderAuctionDraft(){
 
   const budgetRows = teamOrder.map((t) => `
     <div class="slip-row"><div style="display:flex;align-items:center;gap:8px;"><div class="h-font" style="font-size:13px;font-weight:${t === me ? 700 : 500};color:${t === auction.nominator ? "var(--gold)" : t === me ? "var(--text)" : "#9A9AA2"};">${esc(teamInitials(t))}${t === auction.nominator ? " ★" : ""}</div><div class="h-font" style="font-size:11px;color:#5A5A62;">${auctionSlotsLeft(t)} spots left</div></div><div class="h-font" style="font-size:14px;font-weight:700;color:${t === me ? "var(--gold)" : "var(--text)"};">$${auctionBudgets[t]}</div></div>`).join("");
-  const myRows = myPicks.map((p) => { const f = fightersById[p.fighter_id]; const dc = DIVISION_COLOR[f.announced_weight_class] || "var(--gold)";
+  const myRows = myPicks.map((p) => { const f = fightersById[p.fighter_id]; const dc = fighterDc(f);
     return `<div class="slip-row"><div style="display:flex;align-items:center;gap:8px;min-width:0;"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div></div><div class="h-font" style="font-size:14px;font-weight:700;">$${p.price}</div></div>`; }).join("") || `<div class="slip-row"><div class="h-font" style="font-size:14px;color:#5A5A62;">No fighters yet</div></div>`;
   const feedHtml = picks.slice().reverse().slice(0, 10).map((p) => { const f = fightersById[p.fighter_id];
     return `<div class="feed-item"><div class="h-font" style="font-size:11px;color:#5A5A62;">#${p.pick_number}</div><div class="h-font" style="font-size:13px;color:#C9C6BD;"><span style="color:var(--gold);">${esc(teamInitials(p.team_id))}</span> won ${esc(f ? f.full_name : "?")} <span style="color:var(--gold);">$${p.price}</span></div></div>`; }).join("") || `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">No fighters sold yet.</div>`;
@@ -3082,9 +3108,9 @@ function renderAuctionDraft(){
     stage = `<div class="spotlight-card" style="flex-direction:column;align-items:center;text-align:center;gap:18px;">
       <div class="h-font" style="font-size:18px;font-weight:700;letter-spacing:2px;">AUCTION DRAFT</div>
       <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#9A9AA2;">${teamOrder.length} TEAMS &middot; $${auctionBudget} EACH &middot; ${totalSlots} FIGHTERS PER TEAM</div>
-      <button id="aucStartBtn" class="start-draft h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">START AUCTION</button></div>`;
+      <button id="aucStartBtn" class="start-draft oct-btn h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">START AUCTION</button></div>`;
   } else if (nominee) {
-    const dc = DIVISION_COLOR[nominee.announced_weight_class] || "var(--gold)";
+    const dc = fighterDc(nominee);
     const canBid = !iAmHigh && myMax > auction.bid;
     const btn = (inc) => { const amt = auction.bid + inc; const ok = canBid && amt <= myMax; return `<button class="primary aucBidBtn" data-amt="${amt}" ${ok ? "" : "disabled"} style="min-width:92px;">$${amt}</button>`; };
     stage = `
@@ -3112,7 +3138,7 @@ function renderAuctionDraft(){
       <div class="h-font" style="font-size:13px;letter-spacing:3px;color:var(--red);">YOUR TURN TO NOMINATE</div>
       <div class="spotlight-card">
         <div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap;width:100%;">
-          ${pickTarget ? octagonRingAvatar(pickTarget, DIVISION_COLOR[pickTarget.announced_weight_class] || "var(--gold)", 96) : ""}
+          ${pickTarget ? octagonRingAvatar(pickTarget, fighterDc(pickTarget), 96) : ""}
           <div style="flex:1 1 220px;">
             <div class="h-font" style="font-size:24px;font-weight:700;">${pickTarget ? esc(pickTarget.full_name.toUpperCase()) : "—"}</div>
             <div class="h-font" style="font-size:12px;color:#9A9AA2;margin-top:4px;">Click any fighter below to pick who to put up for bid.</div>
@@ -3124,7 +3150,7 @@ function renderAuctionDraft(){
     stage = `<div class="spotlight-card" style="justify-content:center;"><div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;">${esc(auction.note || "")}${auction.note ? " · " : ""}Waiting on ${esc(teamName(auction.nominator))} to nominate…</div></div>`;
   }
 
-  const poolRows = avail.slice(0, 40).map((f) => { const dc = DIVISION_COLOR[f.announced_weight_class] || "var(--gold)";
+  const poolRows = avail.slice(0, 40).map((f) => { const dc = fighterDc(f);
     const sel = pickTarget && pickTarget.id === f.id && myTurnToNominate;
     return `<button class="aucPoolBtn" data-fid="${f.id}" ${myTurnToNominate ? "" : "disabled"} style="display:grid;grid-template-columns:2fr 0.7fr 0.9fr 0.8fr 0.8fr;gap:8px;align-items:center;width:100%;text-align:left;padding:8px 14px;background:${sel ? "rgba(212,175,55,0.08)" : "transparent"};border:0;border-bottom:1px solid var(--border-2);color:var(--text);cursor:${myTurnToNominate ? "pointer" : "default"};">
       <span style="display:flex;align-items:center;gap:10px;">${octagonRingAvatar(f, dc, 34)}<span class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</span></span>
@@ -3134,6 +3160,7 @@ function renderAuctionDraft(){
       <span class="h-font" style="font-size:15px;font-weight:700;color:var(--gold);">${fmtRank(overallRankById[f.id])}</span></button>`; }).join("");
 
   content.innerHTML = `
+    <div class="dr-bg" style="--spot-a:${nominee ? fighterDc(nominee) + "42" : "#D4AF3729"};"></div>
     <div class="dr-header">
       <div class="dr-header-left">
         <div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:1px;color:var(--gold);">COMBAT</div>
@@ -3197,9 +3224,9 @@ function renderDraft(){
     const teamWeight = team === userTeamId ? "700" : "500";
     if (entry) {
       const ef = fightersById[entry.fighter_id];
-      const dc = (ef && DIVISION_COLOR[ef.announced_weight_class]) || "var(--gold)";
+      const dc = fighterDc(ef);
       trackerHtml += `
-        <div class="tslot">
+        <div class="tslot${n === pickNum - 1 ? " just" : ""}">
           ${octagonRingAvatar(ef, dc, 52)}
           <div class="pickline"><span class="n">PICK ${n}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${esc(teamInitials(team))}</span></div>
           <div class="info" style="color:${dc};font-weight:700;">${esc(ef ? ef.full_name : "?")}</div>
@@ -3248,55 +3275,38 @@ function renderDraft(){
       { a: fmtNum(projectedFPById[spotlight.id], 1), label: "PROJ FANTASY PTS", b: lastOwnPick ? fmtNum(projectedFPById[lastOwnPick.id], 1) : "—" },
     ];
 
+    const sdc = fighterDc(spotlight);
+    const sChamp = isChamp(spotlight);
+    const bigStats = [
+      { l: "Sig. strikes", v: fmtNum(spotlight.avg_sig_strikes) },
+      { l: "Takedowns", v: fmtNum(spotlight.avg_takedowns) },
+      { l: "Control time", v: fmtCtrl(spotlight.avg_control_seconds) },
+      { l: "Fights / year", v: fmtFightsPerYear(spotlight) },
+    ];
     stageMainHtml += `
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div>
+        <div class="live-dot" style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div>
         <div class="h-font" style="font-size:13px;letter-spacing:3px;color:var(--red);">ON THE CLOCK &mdash; YOUR PICK</div>
-        <div class="h-font pick-clock-val" data-normal-color="var(--text)" style="margin-left:auto;font-size:22px;font-weight:700;color:${clockUrgent ? "var(--red)" : "var(--text)"};">${fmtClock(clockRemain)}</div>
+        ${isManualPick ? `<button id="clearSelectedBtn" class="h-font" style="margin-left:auto;font-size:9px;letter-spacing:1.5px;color:var(--red);background:rgba(226,40,60,0.12);border:1px solid var(--red);border-radius:3px;padding:3px 8px;cursor:pointer;">YOUR PICK &times;</button>` : ""}
       </div>
 
-      <div class="spotlight-card">
-        <div class="spotlight-photo">
-          ${spotlight.photo_url ? `<img src="${esc(spotlight.photo_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:3px;" alt="">` : `
-            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#6A6A72" stroke-width="1.5"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path></svg>
-            <div class="h-font" style="font-size:9px;letter-spacing:1.5px;color:#4A4A52;">NO PHOTO</div>
-          `}
-        </div>
-        <div class="spotlight-body">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-            <div>
-              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                <div class="h-font" style="font-size:28px;font-weight:700;">${esc(spotlight.full_name.toUpperCase())}</div>
-                ${isManualPick ? `<button id="clearSelectedBtn" class="h-font" style="font-size:9px;letter-spacing:1.5px;color:var(--red);background:rgba(226,40,60,0.12);border:1px solid var(--red);border-radius:3px;padding:3px 8px;cursor:pointer;">YOUR PICK &times;</button>` : ""}
-              </div>
-              <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#9A9AA2;margin-top:4px;">${esc(spotlight.announced_weight_class || "")} &middot; ${fmtRecord(spotlight)} &middot; ${spotlight.finishes ?? 0} FINISHES</div>
-            </div>
-            <div style="flex:0 0 auto;text-align:center;background:linear-gradient(180deg,#E6C75C,var(--gold));border-radius:var(--r-sm);padding:10px 22px;box-shadow:0 8px 20px rgba(212,175,55,0.3);">
-              <div class="h-font" style="font-size:9px;letter-spacing:2px;color:rgba(23,18,10,0.7);">OVERALL RANK</div>
-              <div class="h-font" style="font-size:32px;font-weight:700;color:#17120A;line-height:1.05;">${fmtRank(overallRankById[spotlight.id])}</div>
-            </div>
-          </div>
-
-          <div style="border-top:1px solid var(--border-2);padding-top:16px;margin-top:18px;">
-            <div class="h-font" style="font-size:11px;letter-spacing:1.5px;color:var(--text-faint);margin-bottom:12px;">CAREER AVERAGES</div>
-            <div class="stat-grid">
-              ${statCells.map((c) => `<div class="stat-cell"><div class="v">${esc(c.v)}</div><div class="l">${esc(c.l)}</div></div>`).join("")}
-            </div>
-          </div>
-
-          <div style="border-top:1px solid var(--border-2);padding-top:16px;">
-            <div class="h-font" style="font-size:11px;letter-spacing:1.5px;color:var(--text-faint);margin-bottom:12px;">TALE OF THE TAPE &mdash; VS YOUR LAST PICK</div>
-            ${tapeRows.map((r) => `<div class="tape-row"><div class="a">${esc(r.a)}</div><div class="lbl">${esc(r.label)}</div><div class="b">${esc(r.b)}</div></div>`).join("")}
-            <div style="display:grid;grid-template-columns:1fr auto 1fr;padding-top:8px;">
-              <div class="h-font" style="font-size:11px;letter-spacing:1px;color:var(--gold);">${esc(spotlight.full_name.toUpperCase())} (AVAILABLE)</div>
-              <div></div>
-              <div class="h-font" style="font-size:11px;letter-spacing:1px;color:#6A6A72;text-align:right;">${lastOwnPick ? esc(lastOwnPick.full_name.toUpperCase()) + " (YOUR LAST PICK)" : "NO PRIOR PICK"}</div>
-            </div>
+      <div class="spotlight-card" style="align-items:center;gap:30px;border-radius:22px;padding:30px 34px;background:linear-gradient(120deg,${sdc}57 0%,${sdc}1F 55%,${sdc}08 100%),#121214;border:1px solid ${sdc}59;box-shadow:0 24px 60px ${sdc}1F;">
+        ${octagonRingAvatar(spotlight, sdc, 210)}
+        <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:14px;font-weight:600;color:${sdc};">${esc(spotlight.announced_weight_class || "")} &middot; ${fmtRecord(spotlight)} &middot; ${spotlight.finishes ?? 0} finishes${sChamp ? ` &middot; <span style="font-weight:700;letter-spacing:1px;">CHAMPION</span>` : ""}</div>
+          <div class="h-font" style="font-size:clamp(30px,5vw,50px);font-weight:700;line-height:1.02;">${esc(spotlight.full_name.toUpperCase())}</div>
+          <div style="display:flex;gap:34px;margin-top:10px;flex-wrap:wrap;">
+            <div><div class="h-font" style="font-size:64px;font-weight:700;line-height:1;">${fmtNum(projectedFPById[spotlight.id], 1)}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Projected points</div></div>
+            <div><div class="h-font" style="font-size:64px;font-weight:700;line-height:1;">${fmtRank(overallRankById[spotlight.id])}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Overall rank</div></div>
           </div>
         </div>
       </div>
 
-      <button id="lockBtn" class="lock-pick-btn" style="background:var(--red);color:#F5F2EA;cursor:pointer;">
+      <div class="hero-stats">
+        ${bigStats.map((c) => `<div class="hero-stat"><div class="v">${esc(c.v)}</div><div class="l">${esc(c.l)}</div></div>`).join("")}
+      </div>
+
+      <button id="lockBtn" class="lock-pick-btn oct-btn" style="background:var(--red);color:#F5F2EA;cursor:pointer;">
         LOCK PICK — ${esc(spotlight.full_name.toUpperCase())}
       </button>
       <div class="error" id="pickError" style="display:none;"></div>
@@ -3320,7 +3330,7 @@ function renderDraft(){
           <div class="h-font" style="font-size:18px;font-weight:700;letter-spacing:2px;">READY TO DRAFT</div>
           <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#9A9AA2;margin-top:8px;">${teamOrder.length} TEAMS &middot; SNAKE ORDER &middot; ${activeSlotsFor(teamOrder.length)} ACTIVE${cagesideSlotsFor(teamOrder.length) ? ` &middot; ${cagesideSlotsFor(teamOrder.length)} CAGE SIDE EACH` : " &middot; NO BENCH"}</div>
         </div>
-        <button id="startDraftBtn" class="start-draft h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">START DRAFT</button>
+        <button id="startDraftBtn" class="start-draft oct-btn h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">START DRAFT</button>
       </div>
     `;
   } else {
@@ -3335,8 +3345,8 @@ function renderDraft(){
   let slipHtml = "";
   let projectedTotal = 0;
   const slipRow = (f, pending) => {
-    const dc = DIVISION_COLOR[f.announced_weight_class] || "var(--gold)";
-    return `<div class="slip-row"><div style="display:flex;align-items:center;gap:8px;min-width:0;"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div><div class="h-font" style="font-size:14px;font-weight:600;${pending ? "color:var(--red);" : ""}">${esc(f.full_name)}${pending ? " (PENDING)" : ""}</div></div><div class="h-font" style="font-size:14px;font-weight:700;color:var(--text);">${fmtNum(projectedFPById[f.id], 1)}</div></div>`;
+    const dc = fighterDc(f);
+    return `<div class="slip-row"><div style="display:flex;align-items:center;gap:8px;min-width:0;">${octagonRingAvatar(f, dc, 30)}<div class="h-font" style="font-size:14px;font-weight:600;${pending ? "color:var(--red);" : ""}">${esc(f.full_name)}${pending ? " (PENDING)" : ""}</div></div><div class="h-font" style="font-size:14px;font-weight:700;color:var(--text);">${fmtNum(projectedFPById[f.id], 1)}</div></div>`;
   };
   slipHtml += `<div class="slip-group"><span class="h-font" style="font-size:10px;letter-spacing:2px;color:var(--gold);">ACTIVE</span><span class="h-font" style="font-size:9px;letter-spacing:1px;color:#4A4A52;">${myActive.length} / ${activeCap}</span></div>`;
   for (let i = 0; i < activeCap; i++) {
@@ -3348,7 +3358,7 @@ function renderDraft(){
     } else if (showPickUI && phase === "active" && i === myActive.length && spotlight) {
       slipHtml += slipRow(spotlight, true);
     } else {
-      slipHtml += `<div class="slip-row"><div class="h-font" style="font-size:14px;color:#5A5A62;">Empty slot</div><div class="h-font" style="font-size:14px;color:#5A5A62;">--</div></div>`;
+      slipHtml += `<div class="slip-row"><div style="display:flex;align-items:center;gap:8px;">${octagonEmptyAvatar(30, "upcoming", "")}<div class="h-font" style="font-size:14px;color:#5A5A62;">Empty slot</div></div><div class="h-font" style="font-size:14px;color:#5A5A62;">--</div></div>`;
     }
   }
   if (benchCap) slipHtml += `<div class="slip-group" style="border-top:1px solid var(--border-2);"><span class="h-font" style="font-size:10px;letter-spacing:2px;color:#9A9AA2;">BENCH</span><span class="h-font" style="font-size:9px;letter-spacing:1px;color:#4A4A52;">${myBench.length} / ${benchCap}</span></div>`;
@@ -3433,13 +3443,13 @@ function renderDraft(){
     ? available.filter((f) => f.full_name.toLowerCase().includes(filterVal.toLowerCase()))
     : available;
   const poolRows = searched.slice(0, 60).map((f) => {
-    const dc = DIVISION_COLOR[f.announced_weight_class] || "var(--gold)";
+    const dc = fighterDc(f);
     const isSpotlight = !!spotlight && f.id === spotlight.id;
     const rankText = rankDisplay(f, activeFilter);
     const hl = isSpotlight ? "background:rgba(212,175,55,0.06);" : "";
     return `
       <button class="pool-row-btn" data-fighter-id="${f.id}" ${showPickUI ? "" : "disabled"}>
-        <div style="${hl}" class="pool-cell fname-cell">${octagonRingAvatar(f, dc, 42)}<span class="h-font" style="font-size:14px;font-weight:600;color:${isSpotlight ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span></div>
+        <div style="${hl}box-shadow:inset 6px 0 0 ${dc};padding-left:14px;" class="pool-cell fname-cell">${octagonRingAvatar(f, dc, 42)}<span class="h-font" style="font-size:14px;font-weight:600;color:${isSpotlight ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span></div>
         <div style="${hl}" class="pool-cell cell-div"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div></div>
         <div style="${hl}" class="pool-cell cell-record" data-label="REC">${esc(fmtRecord(f))}</div>
         <div style="${hl}" class="pool-cell cell-sigstr">${esc(fmtNum(f.avg_sig_strikes))}</div>
@@ -3461,6 +3471,7 @@ function renderDraft(){
   }).join("");
 
   content.innerHTML = `
+    <div class="dr-bg" style="--spot-a:${spotlight ? fighterDc(spotlight) + "42" : "#D4AF3729"};"></div>
     <div class="dr-header">
       <div class="dr-header-left">
         <div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:1px;color:var(--gold);">COMBAT</div>
@@ -3473,14 +3484,16 @@ function renderDraft(){
           <div class="vrule"></div>
           <div class="status-right">
             <div class="lbl">ROUND</div>
-            <div class="val h-font">${roundNumber} <span style="color:#5A5A62;">OF ${totalSlotsFor(teamOrder.length)}</span></div>
+            <div class="h-font" style="font-size:44px;font-weight:700;line-height:1;">${roundNumber}<span style="color:#8C8982;font-size:26px;"> / ${totalSlotsFor(teamOrder.length)}</span></div>
             <div class="h-font" style="font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-top:2px;">${draftComplete ? "DRAFT COMPLETE" : isMyTurn ? "YOUR PICK" : "PICK " + pickNum + " OF " + totalPicks}</div>
           </div>
-          <div class="vrule"></div>
-          <div class="status-right">
-            <div class="lbl">ON THE CLOCK</div>
-            <div class="h-font val" style="color:${draftComplete ? "#5A5A62" : isMyTurn ? "var(--red)" : "var(--gold)"};">${draftComplete ? "—" : esc(teamInitials(onClockTeam))}</div>
-            ${isMyTurn ? `<div class="h-font pick-clock-val" data-normal-color="var(--gold)" style="font-size:13px;font-weight:700;margin-top:2px;color:${clockUrgent ? "var(--red)" : "var(--gold)"};">${fmtClock(clockRemain)}</div>` : ""}
+          <div class="oct-wrap${isMyTurn && !draftComplete ? " pulse" : ""}" style="width:104px;height:104px;">
+            <div style="width:104px;height:104px;clip-path:${OCT_CLIP};display:flex;align-items:center;justify-content:center;background:${isMyTurn ? "linear-gradient(135deg,#FF8A96,#E2283C 55%,#7A1620)" : "linear-gradient(135deg,#F6DE8C,#D4AF37 55%,#6A5412)"};">
+              <div style="width:92px;height:92px;clip-path:${OCT_CLIP};background:${isMyTurn ? "#1A0A0D" : "#14120A"};display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                ${isMyTurn ? `<div class="h-font pick-clock-val" data-normal-color="#FF6A78" style="font-size:34px;font-weight:700;line-height:1;color:${clockUrgent ? "var(--red)" : "#FF6A78"};">${fmtClock(clockRemain)}</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Your pick</div>`
+                  : `<div class="h-font" style="font-size:28px;font-weight:700;line-height:1;color:var(--gold);">${draftComplete ? "—" : esc(teamInitials(onClockTeam))}</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">${draftComplete ? "Done" : "On the clock"}</div>`}
+              </div>
+            </div>
           </div>
         ` : ""}
       </div>
@@ -3504,7 +3517,7 @@ function renderDraft(){
         </div>
 
         <div class="side-card">
-          <div class="side-card-head"><div style="width:7px;height:7px;border-radius:50%;background:var(--red);"></div><div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">LIVE DRAFT FEED</div></div>
+          <div class="side-card-head"><div class="live-dot" style="width:7px;height:7px;border-radius:50%;background:var(--red);"></div><div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">LIVE DRAFT FEED</div></div>
           <div class="side-card-body">${feedHtml}</div>
         </div>
 
