@@ -546,16 +546,25 @@ const SLOTS_BY_TEAM_COUNT = {
 };
 // Redraft format: active roster only, no bench. Teams -> active slots.
 const REDRAFT_ACTIVE_BY_TEAM_COUNT = { 12: 6, 10: 8, 8: 10, 6: 12, 4: 20 };
-function slotsFor(teamCount){ return SLOTS_BY_TEAM_COUNT[teamCount] || SLOTS_BY_TEAM_COUNT[10]; }
+function slotsFor(teamCount){
+  if (leagueMode === "cardRedraft") return { active: REDRAFT_ACTIVE_BY_TEAM_COUNT[teamCount] || 8, cage: 0 };
+  return SLOTS_BY_TEAM_COUNT[teamCount] || SLOTS_BY_TEAM_COUNT[10];
+}
 function activeSlotsFor(teamCount){ return slotsFor(teamCount).active; }
 function cagesideSlotsFor(teamCount){ return slotsFor(teamCount).cage; }
 function totalSlotsFor(teamCount){ return activeSlotsFor(teamCount) + cagesideSlotsFor(teamCount); }
 
+// Whose turn it is. Despite the name this handles every draft order:
+// snake, linear, and third-round reversal (rounds 1-2 snake, round 3 repeats
+// round 2's direction, then it keeps snaking).
 function snakeTeamForPick(teamOrder, pickNumber){
   const teamCount = teamOrder.length;
   const roundIndex0 = Math.floor((pickNumber - 1) / teamCount);
   const positionInRound0 = (pickNumber - 1) % teamCount;
-  const reversed = roundIndex0 % 2 === 1;
+  let reversed;
+  if (draftOrderType === "linear") reversed = false;
+  else if (draftOrderType === "thirdRound") reversed = roundIndex0 < 3 ? roundIndex0 >= 1 : (roundIndex0 - 3) % 2 === 1;
+  else reversed = roundIndex0 % 2 === 1;
   const position = reversed ? teamCount - 1 - positionInRound0 : positionInRound0;
   return teamOrder[position];
 }
@@ -1705,9 +1714,15 @@ function renderModePick(){
         <div class="tagline" style="font-size:clamp(11px,2vw,14px);margin-bottom:0;">Pick a format. No sign-up needed to try it.</div>
       </div>
       <div class="mode-grid">
+        <button type="button" class="mode-card gold" id="pickCardRedraftBtn" style="border-color:var(--gold);">
+          <div class="mc-kicker">MONTHLY &middot; NEXT 4 CARDS</div>
+          <div class="mc-title">Card Redraft<span class="mc-soon h-font" style="border-color:var(--gold);color:var(--gold);">RECOMMENDED</span></div>
+          <div class="mc-desc">Draft fighters off the next 4 UFC cards, no bench. Roster size scales with league size, from 6 fighters at 12 teams up to 20 at 4 teams.</div>
+          <div class="mc-meta">4&ndash;12 TEAMS</div>
+        </button>
         <button type="button" class="mode-card gold" id="pickFaceoffBtn">
           <div class="mc-kicker">PER-EVENT &middot; 2 TEAMS</div>
-          <div class="mc-title">Card</div>
+          <div class="mc-title">Face-Off Card</div>
           <div class="mc-desc">Head-to-head against a bot on a real card. Draft any fighter, in real fight order, and roll role multipliers for bonus points.</div>
           <div class="mc-meta">${FO_CARD_LIST.length} CARDS AVAILABLE</div>
           <div class="mc-meta" id="pickFaceoffLiveBtn" style="margin-top:10px;color:var(--gold);text-decoration:underline;cursor:pointer;">OR PLAY LIVE AGAINST A PERSON &rarr;</div>
@@ -1718,7 +1733,7 @@ function renderModePick(){
           <div class="mc-desc">A full snake draft across every division. Roster size scales with league size, from 4 active + 6 bench at 12 teams up to 15 active + 15 bench at 4 teams.</div>
           <div class="mc-meta">4&ndash;12 TEAMS</div>
         </button>
-        ${soon("SEASON-LONG &middot; FRESH START", "Redraft", "Start over every season with a brand-new draft and no carryover. Active roster only, no bench: 6 fighters at 12 teams up to 20 at 4 teams.", "FORMAT IN DEVELOPMENT")}
+        ${soon("SEASON-LONG &middot; FRESH START", "Redraft", "Dynasty's league, but every season you keep no fighters and draft again from scratch.", "FORMAT IN DEVELOPMENT")}
         ${soon("SEASON-LONG &middot; KEEP YOUR BEST", "Keeper", "Hold onto a few fighters from last season and redraft the rest.", "FORMAT IN DEVELOPMENT")}
         ${soon("LAST TEAM STANDING", "Knockout", "Combat's take on chopped mode: the lowest-scoring team is eliminated after each card.", "FORMAT IN DEVELOPMENT")}
       </div>
@@ -1727,7 +1742,97 @@ function renderModePick(){
   document.getElementById("modeBackLink").addEventListener("click", () => { screen = "landing"; render(); });
   document.getElementById("pickFaceoffBtn").addEventListener("click", () => { foPickIntent = "solo"; screen = "foCardPick"; render(); });
   document.getElementById("pickFaceoffLiveBtn").addEventListener("click", (e) => { e.stopPropagation(); foPickIntent = "live"; screen = "foCardPick"; render(); });
-  document.getElementById("pickDynastyBtn").addEventListener("click", () => { screen = "setup"; render(); });
+  document.getElementById("pickDynastyBtn").addEventListener("click", () => { leagueMode = "dynasty"; screen = "setup"; render(); });
+  document.getElementById("pickCardRedraftBtn").addEventListener("click", () => { leagueMode = "cardRedraft"; screen = "crCards"; crLoadCards(); render(); });
+}
+
+/* ---------------- Card Redraft: next 4 cards ---------------- */
+async function crLoadCards(){
+  if (crCards || crError) return;
+  try {
+    await loadFighterPool();
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await CombatAuth.client
+      .from("bouts")
+      .select("event_name, bout_date, status, weight_class, is_title_fight, fighter_a, fighter_b")
+      .gte("bout_date", today)
+      .neq("status", "completed")
+      .order("bout_date", { ascending: true });
+    if (error) throw error;
+    const byEvent = new Map();
+    const seen = new Set();
+    (data || []).forEach((b) => {
+      const pair = [b.fighter_a, b.fighter_b].sort().join("|");
+      if (seen.has(b.bout_date + pair)) return;
+      seen.add(b.bout_date + pair);
+      const key = b.bout_date + "|" + b.event_name;
+      if (!byEvent.has(key)) byEvent.set(key, { key, eventName: b.event_name, date: b.bout_date, bouts: [], fighterIds: new Set() });
+      const ev = byEvent.get(key);
+      ev.bouts.push(b);
+      ev.fighterIds.add(b.fighter_a); ev.fighterIds.add(b.fighter_b);
+    });
+    crCards = [...byEvent.values()].sort((x, y) => x.date.localeCompare(y.date));
+  } catch (e) {
+    crError = "Couldn't load the upcoming cards. Try again in a moment.";
+  }
+  if (screen === "crCards") render();
+}
+function crWindow(){
+  return (crCards || []).slice(crSkip, crSkip + 4);
+}
+function crFmtDate(d){
+  const dt = new Date(d + "T12:00:00");
+  return dt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+function renderCrCards(){
+  const win = crWindow();
+  const pool = new Set();
+  win.forEach((c) => c.fighterIds.forEach((id) => pool.add(id)));
+  const canSkip = crCards && crSkip + 1 < crCards.length;
+  const cardsHtml = !crCards && !crError
+    ? `<div class="mc-desc">Loading the upcoming cards…</div>`
+    : crError ? `<div class="error" style="display:block;">${esc(crError)}</div>`
+    : win.map((c, i) => {
+        const main = c.bouts.find((b) => b.is_title_fight) || c.bouts[0];
+        const fa = fightersById[main.fighter_a], fb = fightersById[main.fighter_b];
+        return `
+          <div class="mode-card gold" style="cursor:default;">
+            <div class="mc-kicker">CARD ${i + 1} &middot; ${esc(crFmtDate(c.date).toUpperCase())}</div>
+            <div class="mc-title" style="font-size:20px;">${esc(c.eventName)}</div>
+            <div class="mc-desc">${fa && fb ? esc(fa.full_name) + " vs " + esc(fb.full_name) : "Card announced"}</div>
+            <div class="mc-meta">${c.bouts.length} BOUTS &middot; ${c.fighterIds.size} FIGHTERS</div>
+          </div>`;
+      }).join("");
+  content.innerHTML = `
+    <div class="mode-wrap">
+      <a class="back-link" id="crBackLink">&larr; Back</a>
+      <div class="hero" style="margin-top:0;">
+        <div class="wordmark" style="font-size:clamp(34px,7vw,56px);">Card Redraft</div>
+        <div class="tagline" style="font-size:clamp(11px,2vw,14px);margin-bottom:0;">Your fighters come from these next 4 cards.</div>
+      </div>
+      <div class="mode-grid">${cardsHtml}</div>
+      ${crCards && win.length ? `
+        <div style="text-align:center;margin-top:22px;">
+          <div class="h-font" style="font-size:13px;letter-spacing:2px;color:#9A9AA2;">${pool.size} FIGHTERS IN THE POOL</div>
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px;">
+            <button class="primary" id="crStartBtn">DRAFT THESE 4 CARDS</button>
+            ${canSkip ? `<button class="ghost" id="crSkipBtn">SKIP THIS WEEK</button>` : ""}
+            ${crSkip > 0 ? `<button class="ghost" id="crPrevBtn">&larr; BACK ONE WEEK</button>` : ""}
+          </div>
+        </div>` : (crCards ? `<div class="mc-desc" style="text-align:center;margin-top:20px;">No upcoming cards are loaded yet.</div>` : "")}
+    </div>
+  `;
+  document.getElementById("crBackLink").addEventListener("click", () => { screen = "modePick"; render(); });
+  const st = document.getElementById("crStartBtn");
+  if (st) st.addEventListener("click", async () => {
+    crPoolIds = pool;
+    await loadFighterPool();
+    screen = "setup"; render();
+  });
+  const sk = document.getElementById("crSkipBtn");
+  if (sk) sk.addEventListener("click", () => { crSkip += 1; render(); });
+  const pv = document.getElementById("crPrevBtn");
+  if (pv) pv.addEventListener("click", () => { crSkip = Math.max(0, crSkip - 1); render(); });
 }
 
 function renderFoCardPick(){
@@ -2309,6 +2414,12 @@ let overallRankById = {};  // fighter id -> 1-based overall rank among ALL fight
 let screen = "landing"; // landing | modePick | foCardPick | setup | draft | board | complete | faceoff | foLobby | foWait
 let foPickIntent = "solo"; // "solo" | "live" — which flow sent the person to the card picker
 let teamCount = 8;
+let leagueMode = "dynasty";      // "dynasty" | "cardRedraft"
+let draftOrderType = "snake";    // "snake" | "linear" | "thirdRound" (third-round reversal) | "auction" (coming soon)
+let crCards = null;              // upcoming cards loaded from bouts: [{key,eventName,date,bouts:[...],fighterIds:Set}]
+let crSkip = 0;                  // how many upcoming cards the person skipped past
+let crError = null;
+let crPoolIds = null;            // Set of fighter ids in the Card Redraft pool
 let userTeamName = "";
 let userTeamPhotoUrl = null;
 let activeTimerSeconds = 60;    // pick clock while drafting the 10 active roster slots — 30s/1:00/1:30/2:00
@@ -2360,6 +2471,7 @@ function rankedAvailable(filterValue, draftedIds){
   const divisionFilter = isDivisionFilter(filterValue);
   return fighters
     .filter((f) => !draftedIds[f.id])
+    .filter((f) => !(leagueMode === "cardRedraft" && crPoolIds) || crPoolIds.has(f.id))
     .filter((f) => !divisionFilter || f.announced_weight_class === filterValue)
     .slice()
     .sort((a, b) => rankValue(b, filterValue) - rankValue(a, filterValue));
@@ -2538,11 +2650,16 @@ function renderLanding(){
 }
 
 /* ---------------- Setup ---------------- */
+const DRAFT_ORDER_HINT = {
+  snake: "Pick order reverses every round, so whoever picks last in a round picks first in the next.",
+  linear: "Same pick order every round, so the first seed always picks first.",
+  thirdRound: "Rounds 1 and 2 snake, round 3 repeats round 2's order, then it keeps snaking. It softens the advantage of picking first.",
+};
 function renderSetup(){
   content.innerHTML = `
     <a class="back-link" id="backLink">&larr; Back</a>
     <div class="settings-card">
-      <div class="kicker">MOCK DRAFT SETUP</div>
+      <div class="kicker">${leagueMode === "cardRedraft" ? "CARD REDRAFT · MOCK DRAFT SETUP" : "MOCK DRAFT SETUP"}</div>
       <h2>Set up your draft</h2>
       <div class="desc">This is your own practice run — name your team, add a photo if you want, and pick how many teams are in the room. Everyone else is a bot that drafts off the same real fighter ratings you see.</div>
 
@@ -2571,6 +2688,15 @@ function renderSetup(){
       </div>
 
       <div class="field">
+        <label>Draft order</label>
+        <div class="timer-options" id="draftOrderOptions">
+          ${[["snake","Snake"],["linear","Linear"],["thirdRound","Snake · 3rd-round reversal"]].map(([k, l]) => `<button type="button" class="timer-opt${k === draftOrderType ? " active" : ""}" data-order="${k}">${l}</button>`).join("")}
+          <button type="button" class="timer-opt" disabled style="opacity:0.45;cursor:not-allowed;">Auction · coming soon</button>
+        </div>
+        <div class="timer-hint" id="draftOrderHint">${esc(DRAFT_ORDER_HINT[draftOrderType])}</div>
+      </div>
+
+      <div class="field">
         <label>Pick timer — active roster</label>
         <div class="timer-options" id="activeTimerOptions">
           ${ACTIVE_TIMER_CHOICES.map((s) => `<button type="button" class="timer-opt${s === activeTimerSeconds ? " active" : ""}" data-secs="${s}">${esc(fmtTimerLabel(s))}</button>`).join("")}
@@ -2578,20 +2704,27 @@ function renderSetup(){
         <div class="timer-hint">How long you get on the clock for each of your active-roster picks.</div>
       </div>
 
-      <div class="field">
+      ${leagueMode === "cardRedraft" ? "" : `<div class="field">
         <label>Pick timer — cageside</label>
         <div class="timer-options" id="cagesideTimerOptions">
           ${CAGESIDE_TIMER_CHOICES.map((s) => `<button type="button" class="timer-opt${s === cagesideTimerSeconds ? " active" : ""}" data-secs="${s}">${esc(fmtTimerLabel(s))}</button>`).join("")}
         </div>
         <div class="timer-hint">Cageside is the deep bench round after your roster is set — faster picks keep it moving.</div>
-      </div>
+      </div>`}
 
       <button class="primary" id="setupStartBtn">START MOCK DRAFT</button>
       <div class="error" id="setupError" style="display:none;margin-top:16px;"></div>
     </div>
   `;
 
-  document.getElementById("backLink").addEventListener("click", () => { screen = "landing"; render(); });
+  document.getElementById("backLink").addEventListener("click", () => { screen = leagueMode === "cardRedraft" ? "crCards" : "modePick"; render(); });
+  document.querySelectorAll("#draftOrderOptions [data-order]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      draftOrderType = btn.dataset.order;
+      document.querySelectorAll("#draftOrderOptions [data-order]").forEach((b) => b.classList.toggle("active", b === btn));
+      document.getElementById("draftOrderHint").textContent = DRAFT_ORDER_HINT[draftOrderType];
+    });
+  });
 
   document.getElementById("teamCountMinus").addEventListener("click", () => {
     if (teamCount > 4) { teamCount -= 2; document.getElementById("teamCountVal").textContent = teamCount; }
@@ -2950,7 +3083,7 @@ function renderDraft(){
         </div>
         <div>
           <div class="h-font" style="font-size:18px;font-weight:700;letter-spacing:2px;">READY TO DRAFT</div>
-          <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#9A9AA2;margin-top:8px;">${teamOrder.length} TEAMS &middot; SNAKE ORDER &middot; ${activeSlotsFor(teamOrder.length)} ACTIVE &middot; ${cagesideSlotsFor(teamOrder.length)} CAGE SIDE EACH</div>
+          <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#9A9AA2;margin-top:8px;">${teamOrder.length} TEAMS &middot; SNAKE ORDER &middot; ${activeSlotsFor(teamOrder.length)} ACTIVE${cagesideSlotsFor(teamOrder.length) ? ` &middot; ${cagesideSlotsFor(teamOrder.length)} CAGE SIDE EACH` : " &middot; NO BENCH"}</div>
         </div>
         <button id="startDraftBtn" class="start-draft h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">START DRAFT</button>
       </div>
@@ -2983,10 +3116,10 @@ function renderDraft(){
       slipHtml += `<div class="slip-row"><div class="h-font" style="font-size:14px;color:#5A5A62;">Empty slot</div><div class="h-font" style="font-size:14px;color:#5A5A62;">--</div></div>`;
     }
   }
-  slipHtml += `<div class="slip-group" style="border-top:1px solid var(--border-2);"><span class="h-font" style="font-size:10px;letter-spacing:2px;color:#9A9AA2;">BENCH</span><span class="h-font" style="font-size:9px;letter-spacing:1px;color:#4A4A52;">${myBench.length} / ${benchCap}</span></div>`;
-  myBench.forEach((p) => { const f = fightersById[p.fighter_id]; if (f) slipHtml += slipRow(f, false); });
-  if (showPickUI && phase === "cageside" && spotlight) slipHtml += slipRow(spotlight, true);
-  if (!myBench.length && !(showPickUI && phase === "cageside")) slipHtml += `<div class="slip-row"><div class="h-font" style="font-size:14px;color:#5A5A62;">${benchCap} bench spots open after the active round</div></div>`;
+  if (benchCap) slipHtml += `<div class="slip-group" style="border-top:1px solid var(--border-2);"><span class="h-font" style="font-size:10px;letter-spacing:2px;color:#9A9AA2;">BENCH</span><span class="h-font" style="font-size:9px;letter-spacing:1px;color:#4A4A52;">${myBench.length} / ${benchCap}</span></div>`;
+  if (benchCap) myBench.forEach((p) => { const f = fightersById[p.fighter_id]; if (f) slipHtml += slipRow(f, false); });
+  if (benchCap && showPickUI && phase === "cageside" && spotlight) slipHtml += slipRow(spotlight, true);
+  if (benchCap && !myBench.length && !(showPickUI && phase === "cageside")) slipHtml += `<div class="slip-row"><div class="h-font" style="font-size:14px;color:#5A5A62;">${benchCap} bench spots open after the active round</div></div>`;
 
   /* ---- Live draft feed ---- */
   const feedHtml = picks.slice().reverse().slice(0, 12).map((p) => {
@@ -3097,7 +3230,7 @@ function renderDraft(){
       <div class="dr-header-left">
         <div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:1px;color:var(--gold);">COMBAT</div>
         <div class="vrule"></div>
-        <div class="h-font dr-header-subtitle" style="font-size:15px;letter-spacing:2px;color:#9A9AA2;">DIVISIONAL DYNASTY DRAFT</div>
+        <div class="h-font dr-header-subtitle" style="font-size:15px;letter-spacing:2px;color:#9A9AA2;">${leagueMode === "cardRedraft" ? "CARD REDRAFT" : "DIVISIONAL DYNASTY DRAFT"}</div>
       </div>
       <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
         <button class="board-link h-font" id="boardLinkBtn" style="font-size:11px;letter-spacing:2px;">FULL DRAFT BOARD</button>
@@ -3131,7 +3264,7 @@ function renderDraft(){
               <div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">PROJECTED FANTASY PTS</div>
               <div class="h-font" style="font-size:24px;font-weight:700;color:var(--gold);">${fmtNum(projectedTotal, 1)}</div>
             </div>
-            <div class="h-font" style="font-size:10px;letter-spacing:1px;color:#4A4A52;margin-top:6px;">+ ${cagesideSlotsFor(teamOrder.length)} CAGE SIDE PICKS TO FOLLOW</div>
+            ${cagesideSlotsFor(teamOrder.length) ? `<div class="h-font" style="font-size:10px;letter-spacing:1px;color:#4A4A52;margin-top:6px;">+ ${cagesideSlotsFor(teamOrder.length)} CAGE SIDE PICKS TO FOLLOW</div>` : ""}
           </div>
         </div>
 
@@ -3313,7 +3446,7 @@ function renderComplete(){
       <div class="octagon" style="width:60px;height:60px;background:var(--gold);"></div>
       <div>
         <div class="h-font" style="font-size:20px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT COMPLETE</div>
-        <div style="font-size:13px;color:var(--text-dim);margin-top:8px;">${esc(userTeamName)} drafted a full ${totalSlotsFor(teamCount)}-fighter Dynasty roster against ${teamCount - 1} bots.</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-top:8px;">${esc(userTeamName)} drafted a full ${totalSlotsFor(teamCount)}-fighter ${leagueMode === "cardRedraft" ? "Card Redraft" : "Dynasty"} roster against ${teamCount - 1} bots.</div>
       </div>
       <div class="roster-card" style="width:100%;text-align:left;">${grouped}</div>
       <div style="width:100%;">
@@ -3355,6 +3488,7 @@ function render(){
   if (screen === "landing") return renderLanding();
   if (screen === "modePick") return renderModePick();
   if (screen === "foCardPick") return renderFoCardPick();
+  if (screen === "crCards") return renderCrCards();
   if (screen === "faceoff") return renderFaceoff();
   if (screen === "foLobby") return renderFoLobby();
   if (screen === "foWait") return renderFoWaitRoom();
