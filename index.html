@@ -684,6 +684,10 @@ function fmtTimerLabel(seconds){ return seconds < 60 ? `${seconds}s` : fmtClock(
 // Average UFC fights per year, from the fighter_fight_rate view: fights in the
 // last 3 years divided by the years of history (3-year window, 1-year floor).
 let championById = {};
+let nextBoutById = {};      // fighter id -> next scheduled bout {date, event, oppId, title, ml}
+let formById = {};          // fighter id -> last-5 results (lazy), null while loading
+// Odds stay OFF until the odds source's terms allow showing them in the app.
+const SHOW_ODDS = false;
 let fightRateById = {};
 function fightsPerYear(f){
   const v = f ? fightRateById[f.id] : null;
@@ -2526,6 +2530,19 @@ async function loadFighterPool(){
       (champs || []).forEach((r) => { championById[r.id] = true; });
     } catch (e) { championById = {}; }
 
+    // Next scheduled bout per fighter (powers "Next fight").
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: ub } = await CombatAuth.client.from("bouts")
+        .select("event_name, bout_date, is_title_fight, fighter_a, fighter_b, fighter_a_moneyline, fighter_b_moneyline")
+        .gte("bout_date", today).neq("status", "completed").order("bout_date", { ascending: true }).limit(300);
+      nextBoutById = {};
+      (ub || []).forEach((b) => {
+        if (!nextBoutById[b.fighter_a]) nextBoutById[b.fighter_a] = { date: b.bout_date, event: b.event_name, oppId: b.fighter_b, title: b.is_title_fight, ml: b.fighter_a_moneyline };
+        if (!nextBoutById[b.fighter_b]) nextBoutById[b.fighter_b] = { date: b.bout_date, event: b.event_name, oppId: b.fighter_a, title: b.is_title_fight, ml: b.fighter_b_moneyline };
+      });
+    } catch (e) { nextBoutById = {}; }
+
     // Overall Rank is a literal ranking, not a score: sort everyone by
     // projected fantasy points and number each fighter's position in that
     // order (#1 overall = the best projected fantasy scorer) — never the
@@ -2545,6 +2562,27 @@ function fighterName(id){
 }
 // Fills an octagon pick-tracker/board slot: the fighter's photo if we have
 // one, clipped to the parent's octagon shape, else the generic silhouette.
+function fmtMethod(m){
+  const t = (m || "").toUpperCase();
+  if (!t) return "";
+  if (t.includes("KO")) return "KO";
+  if (t.includes("SUB")) return "SUB";
+  if (t.includes("DEC")) return "DEC";
+  return t.slice(0, 4);
+}
+function fmtShortDate(d){
+  return new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+function ensureForm(id){
+  if (formById[id] !== undefined) return;
+  formById[id] = null;
+  CombatAuth.client.from("fighter_recent_form").select("bout_date, opponent_id, result, method").eq("fighter_id", id).lte("rn", 5).order("bout_date", { ascending: false })
+    .then(({ data, error }) => {
+      formById[id] = error ? [] : (data || []);
+      if (screen === "draft") render();
+    }, () => { formById[id] = []; });
+}
+function fmtMoneyline(n){ return n === null || n === undefined ? "" : (n > 0 ? "+" + n : String(n)); }
 function isChamp(f){ return !!(f && championById[f.id]); }
 function fighterDc(f){ return isChamp(f) ? "#D4AF37" : ((f && DIVISION_COLOR[f.announced_weight_class]) || "#D4AF37"); }
 function octagonAvatar(f, strokeColor, size){
@@ -3277,6 +3315,30 @@ function renderDraft(){
 
     const sdc = fighterDc(spotlight);
     const sChamp = isChamp(spotlight);
+    ensureForm(spotlight.id);
+    const nb = nextBoutById[spotlight.id];
+    const nbOpp = nb ? fightersById[nb.oppId] : null;
+    const nextFightHtml = nb
+      ? `Next fight: <b>${esc(fmtShortDate(nb.date))}</b> vs ${esc(nbOpp ? nbOpp.full_name : "TBA")}${nb.title ? " · title fight" : ""}${SHOW_ODDS && nb.ml !== null && nb.ml !== undefined ? ` · ${esc(fmtMoneyline(nb.ml))}` : ""}`
+      : "No fight booked yet";
+    const form = formById[spotlight.id];
+    const formHtml = form === null || form === undefined
+      ? `<div style="font-size:13px;color:#8C8982;">Loading recent fights…</div>`
+      : form.length
+        ? form.map((r) => {
+            const c = r.result === "W" ? "#3DBE6B" : r.result === "L" ? "#E2283C" : "#8C8982";
+            const opp = fightersById[r.opponent_id];
+            return `<div style="text-align:center;min-width:58px;"><div class="h-font" style="font-size:20px;font-weight:700;color:${c};border:2px solid ${c};border-radius:8px;padding:4px 0;">${r.result}</div><div style="font-size:11px;color:#B8B5AE;margin-top:4px;">${esc(fmtMethod(r.method))}</div><div style="font-size:10px;color:#8C8982;">${esc(opp ? opp.full_name.split(" ").slice(-1)[0] : "")}</div></div>`;
+          }).join("")
+        : `<div style="font-size:13px;color:#8C8982;">No fight history on file.</div>`;
+    const myDivCount = picks.filter((p) => p.team_id === userTeamId && (fightersById[p.fighter_id] || {}).announced_weight_class === spotlight.announced_weight_class).length;
+    const finishRate = spotlight.wins ? Math.round(((spotlight.finishes || 0) / spotlight.wins) * 100) + "%" : "—";
+    const divShort = DIV_SHORT[spotlight.announced_weight_class] || (spotlight.announced_weight_class || "");
+    const divFitText = myDivCount === 0 ? `You have no ${esc(spotlight.announced_weight_class || "")} fighters yet`
+      : myDivCount >= 3 ? `Heads up: you already own ${myDivCount} ${esc(spotlight.announced_weight_class || "")} fighters`
+      : `You own ${myDivCount} ${esc(spotlight.announced_weight_class || "")} fighter${myDivCount > 1 ? "s" : ""}`;
+    const upNext = available.filter((f) => f.id !== spotlight.id).slice(0, 3);
+
     const bigStats = [
       { l: "Sig. strikes", v: fmtNum(spotlight.avg_sig_strikes) },
       { l: "Takedowns", v: fmtNum(spotlight.avg_takedowns) },
@@ -3295,6 +3357,7 @@ function renderDraft(){
         <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:6px;">
           <div style="font-size:14px;font-weight:600;color:${sdc};">${esc(spotlight.announced_weight_class || "")} &middot; ${fmtRecord(spotlight)} &middot; ${spotlight.finishes ?? 0} finishes${sChamp ? ` &middot; <span style="font-weight:700;letter-spacing:1px;">CHAMPION</span>` : ""}</div>
           <div class="h-font" style="font-size:clamp(30px,5vw,50px);font-weight:700;line-height:1.02;">${esc(spotlight.full_name.toUpperCase())}</div>
+          <div style="font-size:14px;color:#D8D5CC;">${nextFightHtml}</div>
           <div style="display:flex;gap:34px;margin-top:10px;flex-wrap:wrap;">
             <div><div class="h-font" style="font-size:64px;font-weight:700;line-height:1;">${fmtNum(projectedFPById[spotlight.id], 1)}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Projected points</div></div>
             <div><div class="h-font" style="font-size:64px;font-weight:700;line-height:1;">${fmtRank(overallRankById[spotlight.id])}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Overall rank</div></div>
@@ -3306,6 +3369,19 @@ function renderDraft(){
         ${bigStats.map((c) => `<div class="hero-stat"><div class="v">${esc(c.v)}</div><div class="l">${esc(c.l)}</div></div>`).join("")}
       </div>
 
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
+        <div style="background:#16161A;border-radius:16px;padding:20px 22px;">
+          <div class="h-font" style="font-size:20px;letter-spacing:1px;margin-bottom:12px;">LAST 5 FIGHTS</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">${formHtml}</div>
+        </div>
+        <div style="background:#16161A;border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;gap:10px;">
+          <div class="h-font" style="font-size:20px;letter-spacing:1px;">FINISH RATE</div>
+          <div class="h-font" style="font-size:40px;font-weight:700;line-height:1;">${finishRate}</div>
+          <div style="font-size:13px;color:#B8B5AE;">${spotlight.finishes ?? 0} finishes in ${spotlight.wins ?? 0} wins</div>
+          <div style="font-size:13px;color:${myDivCount >= 3 ? "#E8C93A" : "#B8B5AE"};border-top:1px solid var(--border-2);padding-top:10px;">${divFitText}</div>
+        </div>
+      </div>
+
       <div style="background:#16161A;border-radius:16px;padding:20px 22px;">
         <div class="h-font" style="font-size:20px;letter-spacing:1px;margin-bottom:12px;">TALE OF THE TAPE</div>
         <div style="display:grid;grid-template-columns:1fr auto 1fr;padding-bottom:8px;border-bottom:1px solid var(--border-2);margin-bottom:6px;">
@@ -3315,6 +3391,11 @@ function renderDraft(){
         </div>
         ${tapeRows.map((r) => `<div class="tape-row"><div class="a">${esc(r.a)}</div><div class="lbl">${esc(r.label)}</div><div class="b">${esc(r.b)}</div></div>`).join("")}
       </div>
+
+      ${upNext.length ? `<div style="background:#16161A;border-radius:16px;padding:16px 22px;">
+        <div class="h-font" style="font-size:14px;letter-spacing:2px;color:#9A9AA2;margin-bottom:10px;">BEST AVAILABLE AFTER THIS PICK</div>
+        <div style="display:flex;gap:18px;flex-wrap:wrap;">${upNext.map((f) => `<div style="display:flex;align-items:center;gap:10px;">${octagonRingAvatar(f, fighterDc(f), 38)}<div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div><div style="font-size:11px;color:#B8B5AE;">${esc(DIV_SHORT[f.announced_weight_class] || "")} · ${fmtRank(overallRankById[f.id])}</div></div></div>`).join("")}</div>
+      </div>` : ""}
 
       <button id="lockBtn" class="lock-pick-btn oct-btn" style="background:var(--red);color:#F5F2EA;cursor:pointer;">
         LOCK PICK — ${esc(spotlight.full_name.toUpperCase())}
