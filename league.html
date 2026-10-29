@@ -64,6 +64,18 @@ input,textarea{font:inherit;color:inherit}
 @media (prefers-reduced-motion:reduce){.live::before,.wv{animation:none}}
 button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
 
+
+.dgrid,.dcol{display:contents}
+@media (min-width:900px){
+ #app{max-width:1240px}
+ .hdr,.pad{padding-left:32px;padding-right:32px}
+ .sec{padding-top:10px}
+ .dgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:start}
+ .dcol{display:flex;flex-direction:column;gap:12px;min-width:0}
+ .seg{flex-wrap:wrap;overflow:visible}
+ .home-wrap{max-width:720px}
+}
+@media (min-width:900px) and (max-width:1199px){.dgrid{grid-template-columns:repeat(2,1fr)}.dcol:nth-child(3){grid-column:1/-1}}
 </style>
 </head><body>
 <div id="app"></div>
@@ -186,7 +198,7 @@ function dtab(){const L=Z.L,tm=L.team_count,fg=L.fighters_per_team,comm=isComm()
  const wvc=secH('WAIVERS')+ob(`<div class="row" style="gap:8px"><button class="chip ${L.waiver_type==='faab'?'':'on'}" style="flex:1" ${comm?'data-a="set_wv" data-v="standard"':''}>STANDARD</button><button class="chip ${L.waiver_type==='faab'?'on':''}" style="flex:1" ${comm?'data-a="set_wv" data-v="faab"':''}>FAAB $${L.faab_budget}</button></div><div class="tiny mut" style="margin-top:8px">${L.waiver_type==='faab'?`Every team gets $${L.faab_budget} for the season. Bid on free agents. Highest bid wins. Claims process every Friday at 12 AM. Budget does not refill.`:'Claims process every Friday at 12 AM. Worst record picks first.'}</div>`,{cls:'md',pad:'12px 14px'});
  const ls=secH('LEAGUE SETTINGS')+kv([['Waivers',(L.waiver_type==='faab'?`FAAB, $${L.faab_budget} budget`:'Standard')+', Fridays 12 AM'],['Format','Card Redraft'],['Number of teams',tm],['Fighters per team',fg+', no bench'],['Draft type',esc(dtn(L.draft_type))],['Pick timer',L.pick_seconds+' seconds'],['Draft order','Random each block'],['Block length','4 cards'],['Season length','10 blocks · 40 cards'],['Regular season',PL(tm).reg],['Matchups','Head to head, one per block'],['Seeding',PL(tm).seed],['Playoffs',PL(tm).po],...(plan(tm).l?[['Last place bracket','Loser moves on, loser of the final is last']]:[]),['Champion','Winner of the Last Stand'],['Fighter is out','Marked OUT, swap any time before the fight'],['Lineup lock','Locked once your fighter fights']]);
  const ss=secH('SCORING SETTINGS')+kv(SCORING.map(([l,v])=>[l,`<span class="gold">${v}</span>`]))+ob(`<div class="row"><div class="grow"><div class="nm" style="font-size:16px">Finish bonus</div><div class="tiny mut">Win by KO/TKO or submission</div></div><div class="h gold" style="font-size:22px">+10</div></div>`,{cls:'md',pad:'12px 14px'});
- return inv+cards+db+pos+wvc+ls+ss}
+ return `<div class="dgrid"><div class="dcol">${inv+cards+db}</div><div class="dcol">${pos+wvc}</div><div class="dcol">${ls+ss}</div></div>`}
 function chatTab(){
   return secH('LEAGUE CHAT',`<span>${esc(Z.L.name)} · ${Z.teams.length} teams</span>`)+ob(`<div class="col" style="gap:14px;min-height:260px" id="msgs">${Z.msgs.length?Z.msgs.map(m=>{const t=Z.teams.find(x=>x.name===m.display_name||x.name==='Team '+m.display_name);return `<div class="msg">${t?tavT(t,32):tavL(m.display_name,32,'#8C8982')}<div style="min-width:0"><div class="small"><b style="color:${t?colorOf(t):'var(--mut)'}">${esc(m.display_name)}</b> <span class="dim">${esc(new Date(m.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}))}</span></div><div style="line-height:1.4;word-break:break-word">${esc(m.body)}</div></div></div>`}).join(''):'<div class="mut">Be the first to say hi.</div>'}</div>`,{cls:'md',pad:'14px'})+`<form id="cf" class="row" style="gap:8px"><input class="fi grow" id="ci" placeholder="Message the league" autocomplete="off" maxlength="500"><button class="btn g" type="submit">SEND</button></form>`}
 function roomTab(){const L=Z.L,ok=blockCards().length===4;
