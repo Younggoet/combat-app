@@ -165,3 +165,7 @@ grant execute on function public.cr_start_draft(uuid), public.cr_make_pick(uuid,
 -- ===== Migration "card_redraft_test_draft" =====
 -- leagues.is_test + cr_start_test_draft(league): commissioner can start a draft now using the next 4 upcoming cards
 -- (including the imminent one), with CPU teams filling empty seats. The league is marked is_test.
+
+-- ===== Migration "paused_draft_pick_trades" (see supabase/2026-10-29_paused_draft_pick_trades.sql) =====
+-- Drafts start with at least 2 announced cards, pause when the pool runs out, resume when bouts are added (cr_refresh_pool). NEW fighters tracked in draft_rooms.pool_new.
+-- Draft pick trades: cr_pick_owner, cr_pick_trades, cr_propose_pick_trade, cr_respond_pick_trade (pick-for-pick or pick-for-fighter). Waivers now process Tuesday 12 AM ET.
