@@ -151,3 +151,9 @@ grant execute on function public.cr_start_draft(uuid), public.cr_make_pick(uuid,
 -- cr_make_schedule (circle-method round robin, blocks 1-7 for 12/10/6 teams, 1-8 for 8/4 teams),
 -- trigger cr_draft_complete (builds the schedule when the block 1 draft completes),
 -- cr_refresh_scores(league) (sums performances.fantasy_points for rostered fighters on the block's cards, finalizes when all cards are done).
+
+-- ===== Migrations "card_redraft_waivers_trades" (+ order fix, trade fix) =====
+-- cr_claims (waiver claims: add/drop, FAAB bid, priority, status), cr_trades (1-for-1 offers, 2 day expiry),
+-- cr_locked(league, block, fighter), cr_my_team(league),
+-- cr_submit_claim / cr_cancel_claim, cr_process_waivers (runs claims placed before the latest Friday 12 AM Eastern;
+-- standard = worst record first, FAAB = highest bid first, ties by waiver order), cr_propose_trade, cr_respond_trade (accept/decline/cancel).

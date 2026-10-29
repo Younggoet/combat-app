@@ -79,6 +79,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold2);out
 </style>
 </head><body>
 <div id="app"></div>
+<div class="sheet" id="sheet"><div class="bk" data-a="close"></div><div class="pn" id="pn"></div></div>
 <div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="auth.js"></script>
@@ -107,7 +108,7 @@ const SCORING=[['Significant strike landed','0.1'],['Takedown landed','2'],['Kno
 const COLORS=['#D4AF37','#FF5468','#1FB5A3','#4C8BFF','#B57BFF','#FF7A2F','#3FD8C5','#E58CB0','#9ACD32','#E8742A','#A8325A','#F4F4F2'];
 
 const sb=CombatAuth.client;
-const Z={v:'boot',uid:null,dn:'',leagues:[],L:null,teams:[],sub:'draft',step:'name',c:{name:'',start:'new',sz:2,dt:'snake'},cards:null,pub:[],f:'all',msgs:[],conf:null,tab:'home',fs:'cards',card:0,ls:'standings',mu:0,mus:[],ros:[],bouts:[],perf:{},room:null,picks:[],fmap:{},rq:'',code:'',found:null,err:'',busy:false,hosts:{}};
+const Z={v:'boot',uid:null,dn:'',leagues:[],L:null,teams:[],sub:'draft',step:'name',c:{name:'',start:'new',sz:2,dt:'snake'},cards:null,pub:[],f:'all',msgs:[],conf:null,tab:'home',fs:'cards',ps:'pool',dv:'ALL',claims:[],trades:[],sh:null,drop:null,bid:'',card:0,ls:'standings',mu:0,mus:[],ros:[],bouts:[],perf:{},room:null,picks:[],fmap:{},rq:'',code:'',found:null,err:'',busy:false,hosts:{}};
 const teamName=dn=>'Team '+dn;
 const initials=n=>{const w=String(n).replace(/^Team\s+/i,'').trim().split(/\s+/).filter(Boolean);return ((w[0]||'?')[0]+((w[1]||w[0]||'')[1]||'')).toUpperCase().slice(0,2)};
 const colorOf=(t,list)=>{const i=(list||Z.teams).findIndex(x=>x.id===t.id);return COLORS[(i<0?0:i)%COLORS.length]};
@@ -247,10 +248,12 @@ function manageTab(){const L=Z.L,comm=isComm(),conf=Z.conf;let h=secH('MANAGE LE
 /* ---------- season (after the draft) ---------- */
 async function loadSeason(){
   if(!Z.room||Z.room.status!=='complete')return;
-  try{await sb.rpc('cr_refresh_scores',{p_league:Z.L.id})}catch(_){}
+  try{await sb.rpc('cr_refresh_scores',{p_league:Z.L.id});await sb.rpc('cr_process_waivers',{p_league:Z.L.id})}catch(_){}
   const ids=Z.teams.map(t=>t.id);
   const [{data:m},{data:ro}]=await Promise.all([sb.from('cr_matchups').select('*').eq('league_id',Z.L.id).order('block_no').order('slot'),sb.from('cr_rosters').select('*').in('team_id',ids)]);
   Z.mus=m||[];Z.ros=ro||[];
+  const [{data:cl},{data:tr}]=await Promise.all([sb.from('cr_claims').select('*').eq('league_id',Z.L.id).order('created_at',{ascending:false}),sb.from('cr_trades').select('*').eq('league_id',Z.L.id).order('created_at',{ascending:false})]);
+  Z.claims=cl||[];Z.trades=tr||[];
   const names=[...new Set((Z.room.block_cards||[]).map(c=>c.event_name))];
   const {data:b}=await sb.from('bouts').select('id,event_name,bout_date,status,fighter_a,fighter_b,winner_id,method').in('event_name',names);
   const dates=new Set((Z.room.block_cards||[]).map(c=>c.date));
@@ -307,6 +310,42 @@ function fightS(){const cs=(Z.room&&Z.room.block_cards)||[];let body='';
   else{const rows=Object.entries(Z.perf).filter(([f])=>{const b=boutOf(f);return b&&b.status==='completed'}).sort((a,b)=>b[1]-a[1]).slice(0,10);
    body=rows.length?`<div class="row" style="align-items:flex-end;gap:8px">${[1,0,2].filter(p=>rows[p]).map(p=>{const [f,v]=rows[p];const hh=[150,120,100][p];return `<div class="grow col" style="align-items:center;gap:6px">${fgv(Z.fmap[f],p===0?64:52)}<div class="nm" style="font-size:14px;text-align:center">${esc(fnm(f))}</div><div style="width:100%;height:${hh}px;background:linear-gradient(180deg,${p===0?'#D4AF37':p===1?'#8C8982':'#8A5A2B'},#1A1A1E);--c:12px;clip-path:var(--P);display:flex;flex-direction:column;align-items:center;justify-content:center"><span class="h" style="font-size:26px;color:#14120A">${p+1}</span><span class="h" style="font-size:18px;color:#14120A">${v.toFixed(1)}</span></div></div>`}).join('')}</div>`+secH('FIGHT WEEK LEADERS')+ob(rows.map(([f,v],i)=>`<div class="row" style="padding:8px 0;${i?'border-top:1px solid #26262C':''}"><span class="h dim" style="width:16px">${i+1}</span>${fgv(Z.fmap[f],36)}<div class="grow"><div class="nm" style="font-size:15px">${esc(fnm(f))}</div>${ownTag(f)}</div><div class="h" style="font-size:20px">${v.toFixed(1)}</div></div>`).join(''),{cls:'md',pad:'6px 14px'}):ob(`<div class="mut">Results show here as fights finish. Nothing has finished in Block 1 yet.</div>`,{cls:'md',pad:'14px'})}
   return `<div class="sec pad"><div class="seg">${[['cards','CARDS'],['results','RESULTS']].map(([k,l])=>`<button class="chip ${Z.fs===k?'on':''}" data-a="fs" data-v="${k}">${l}</button>`).join('')}</div>${body}<div class="tiny dim">The press room opens the day before each card. It is coming with live audio.</div></div>`}
+
+const taken=()=>new Set(Z.ros.filter(r=>r.block_no===1).map(r=>r.fighter_id));
+const lockedF=f=>{const b=boutOf(f);return !b||b.status==='completed'||b.status==='live'||b.bout_date<=new Date().toISOString().slice(0,10)};
+function closeSheet(){$('#sheet').classList.remove('on');document.body.style.overflow=''}
+function openSheet(h){$('#pn').innerHTML=h;$('#sheet').classList.add('on');$('#pn').scrollTop=0;document.body.style.overflow='hidden'}
+const sheetHead=(t,sub)=>`<div class="row" style="justify-content:space-between"><div class="h" style="font-size:26px;letter-spacing:1px">${t}</div><button class="ibtn" data-a="close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="small mut" style="margin:2px 0 12px">${sub}</div>`;
+const faabLeft=tid=>Z.L.faab_budget-Z.claims.filter(c=>c.team_id===tid&&c.status==='won').reduce((a,c)=>a+Number(c.bid),0);
+function addSheet(f){Z.sh={add:f};Z.drop=null;const me=myTeam(),mine=rosterOf(me.id),faab=Z.L.waiver_type==='faab';
+  openSheet(`<div class="pad" style="padding-top:18px">${sheetHead('ADD FIGHTER','Add '+esc(fnm(f))+' to your team')}
+  ${ob(`<div class="row" style="gap:12px">${fgv(Z.fmap[f],48)}<div class="grow"><div class="nm" style="font-size:19px">${esc(fnm(f))}</div><div class="tiny mut">${esc((Z.fmap[f]||{}).announced_weight_class||'')}</div></div></div>`,{cls:'md',pad:'12px'})}
+  <div style="--c:10px;clip-path:var(--P);background:#F4D03F;color:#2A2410;font-weight:600;font-size:13px;padding:12px 14px;margin:12px 0">Your team is full. Pick a fighter to drop.</div>
+  ${ob(mine.map((m,i)=>`<label class="row" style="padding:9px 0;cursor:pointer;${i?'border-top:1px solid #26262C':''}${lockedF(m)?';opacity:.4':''}"><input type="radio" name="dr" value="${m}" ${lockedF(m)?'disabled':''} style="width:18px;height:18px;accent-color:#D4AF37" data-a="drop" data-v="${m}">${fgv(Z.fmap[m],44)}<div class="grow"><div class="nm" style="font-size:16px">${esc(fnm(m))}</div><div class="tiny mut">${esc((Z.fmap[m]||{}).announced_weight_class||'')}${lockedF(m)?' · locked':''}</div></div></label>`).join(''),{cls:'md',pad:'2px 12px'})}
+  ${faab?`<div class="small mut" style="margin:12px 0 4px">Your bid (you have $${faabLeft(me.id)} left)</div><input id="bid" class="fi" type="number" min="0" max="${faabLeft(me.id)}" value="0" inputmode="numeric">`:''}
+  <div class="row" style="gap:10px;margin-top:14px"><button class="btn g grow" data-a="doadd">SUBMIT CLAIM</button><button class="btn grow" data-a="close">CANCEL</button></div><div class="tiny dim" style="margin-top:8px">Claims process every Friday at 12 AM ET. ${faab?'Highest bid wins.':'Worst record picks first.'} Locks when the card starts.</div></div>`)}
+function tradeSheet(){const me=myTeam(),others=Z.teams.filter(t=>t.id!==me.id);Z.sh={trade:true,to:null,send:null,get:null};
+  const body=()=>{const sh=Z.sh,tm=sh.to&&teamOf(sh.to);return `<div class="pad" style="padding-top:18px">${sheetHead('NEW OFFER','Swap one fighter for one fighter')}
+  <div class="small mut" style="margin-bottom:6px">Trade with</div><div class="seg">${others.map(t=>`<button class="chip sm ${sh.to===t.id?'on':''}" data-a="tr_to" data-v="${t.id}">${esc(t.name.replace(/^Team\s+/,''))}</button>`).join('')}</div>
+  <div class="small mut" style="margin:10px 0 6px">You send</div>${ob(rosterOf(me.id).map((m,i)=>`<label class="row" style="padding:8px 0;cursor:pointer;${i?'border-top:1px solid #26262C':''}${lockedF(m)?';opacity:.4':''}"><input type="radio" name="ts" ${sh.send===m?'checked':''} ${lockedF(m)?'disabled':''} style="width:18px;height:18px;accent-color:#D4AF37" data-a="tr_send" data-v="${m}">${fgv(Z.fmap[m],34)}<span class="nm grow" style="font-size:15px">${esc(fnm(m))}</span></label>`).join(''),{cls:'md',pad:'2px 12px'})}
+  ${tm?`<div class="small mut" style="margin:10px 0 6px">You get</div>`+ob(rosterOf(tm.id).map((m,i)=>`<label class="row" style="padding:8px 0;cursor:pointer;${i?'border-top:1px solid #26262C':''}${lockedF(m)?';opacity:.4':''}"><input type="radio" name="tg" ${sh.get===m?'checked':''} ${lockedF(m)?'disabled':''} style="width:18px;height:18px;accent-color:#D4AF37" data-a="tr_get" data-v="${m}">${fgv(Z.fmap[m],34)}<span class="nm grow" style="font-size:15px">${esc(fnm(m))}</span></label>`).join(''),{cls:'md',pad:'2px 12px'}):''}
+  <div class="row" style="gap:10px;margin-top:14px"><button class="btn g grow" data-a="tr_send_offer">SEND OFFER</button><button class="btn grow" data-a="close">CANCEL</button></div><div class="tiny dim" style="margin-top:8px">Offers expire in 2 days. A trade locks when either fighter's card starts.</div></div>`};
+  Z.sh.body=body;openSheet(body())}
+const swapIc='<div class="oc h" style="width:34px;height:34px;background:linear-gradient(135deg,#F6DE8C,#D4AF37 55%,#6A5412);display:flex;align-items:center;justify-content:center;color:#14120A;flex:none">⇄</div>';
+const tfg=(f,l,c)=>ob(`<div class="tiny dim" style="letter-spacing:1px">${l}</div><div class="row" style="gap:8px;margin-top:4px">${fgv(Z.fmap[f],36)}<div class="grow" style="min-width:0"><div class="nm" style="font-size:15px">${esc(fnm(f))}</div><div class="tiny mut">${esc((Z.fmap[f]||{}).announced_weight_class||'')}</div></div></div>`,{cls:'sm',col:c,pad:'8px 10px',st:'flex:1;min-width:0'});
+function tradesTab(){const me=myTeam(),now=Date.now();
+  const inc=Z.trades.filter(t=>t.status==='pending'&&t.to_team===me.id&&new Date(t.expires_at)>now),out=Z.trades.filter(t=>t.status==='pending'&&t.from_team===me.id&&new Date(t.expires_at)>now);
+  const tr=(t,mineOut)=>{const o=teamOf(mineOut?t.to_team:t.from_team);return ob(`<div class="tiny dim">${mineOut?'Offer to':'Offer from'} ${esc(o?o.name:'')} · expires ${esc(new Date(t.expires_at).toLocaleDateString('en-US',{weekday:'short'}))}</div><div class="row" style="gap:6px;margin-top:8px">${tfg(mineOut?t.send_fighter:t.get_fighter,'YOU SEND','#D4AF37')}${swapIc}${tfg(mineOut?t.get_fighter:t.send_fighter,'YOU GET','#3FD8C5')}</div>${mineOut?`<div class="row" style="gap:8px;margin-top:10px"><button class="btn grow" data-a="tr_act" data-v="cancel" data-id="${t.id}">CANCEL OFFER</button></div>`:`<div class="row" style="gap:8px;margin-top:10px"><button class="btn g grow" data-a="tr_act" data-v="accept" data-id="${t.id}">ACCEPT</button><button class="btn grow" data-a="tr_act" data-v="decline" data-id="${t.id}">DECLINE</button></div>`}`,{cls:'md',pad:'12px'})};
+  const pend=Z.claims.filter(c=>c.team_id===me.id&&c.status==='pending').sort((a,b)=>a.priority-b.priority),done=Z.claims.filter(c=>c.team_id===me.id&&c.status!=='pending'&&c.status!=='cancelled').slice(0,5);
+  const wo=standings().slice().reverse();
+  return secH('OFFERS',`<button class="chip sm" data-a="tr_new">+ NEW OFFER</button>`)+(inc.length||out.length?inc.map(t=>tr(t,0)).join('')+out.map(t=>tr(t,1)).join(''):ob(`<div class="mut small">No offers right now.</div>`,{cls:'md',pad:'12px'}))
+  +secH('WAIVER CLAIMS',`<span>Process every Friday at 12 AM ET</span>`)+ob(pend.length?pend.map((c,i)=>`<div class="row" style="padding:8px 0;${i?'border-top:1px solid #26262C':''}"><span class="h dim">${i+1}</span><div class="grow"><div class="nm" style="font-size:15px">ADD ${esc(fnm(c.add_fighter))} <span class="dim">DROP</span> ${esc(fnm(c.drop_fighter))}</div><div class="tiny mut">${Z.L.waiver_type==='faab'?'Bid $'+c.bid:'Pending'}</div></div><button class="btn" style="padding:8px 12px" data-a="cl_cancel" data-v="${c.id}">CANCEL</button></div>`).join(''):'<div class="mut small" style="padding:8px 0">No claims. Add a fighter from the pool.</div>',{cls:'md',pad:'6px 12px'})
+  +(done.length?ob(done.map((c,i)=>`<div class="row" style="padding:7px 0;${i?'border-top:1px solid #26262C':''}"><div class="grow tiny mut">${esc(fnm(c.add_fighter))} for ${esc(fnm(c.drop_fighter))}</div><span class="tag" style="${c.status==='won'?'background:var(--gold);color:#14120A':''}">${c.status.toUpperCase()}</span></div>`).join(''),{cls:'md',pad:'4px 12px'}):'')
+  +secH('WAIVER ORDER',Z.L.waiver_type==='faab'?`<span>Budget left $${faabLeft(me.id)}</span>`:'<span>Worst record first</span>')+ob(wo.map((x,i)=>`<div class="row" style="padding:7px 0;${i?'border-top:1px solid #26262C':''}"><span class="h dim" style="width:16px">${i+1}</span>${tavT(x.t,26)}<span class="nm" style="font-size:15px;color:${colorOf(x.t)}">${esc(x.t.name)}${x.t.id===me.id?' (you)':''}</span>${Z.L.waiver_type==='faab'?`<span class="tiny mut grow" style="text-align:right">$${faabLeft(x.t.id)}</span>`:''}</div>`).join(''),{cls:'md',pad:'4px 12px'})}
+function poolTab(){const tk=taken(),pool=((Z.room&&Z.room.pool)||[]).filter(i=>!tk.has(i)&&Z.fmap[i]),wcs=['ALL',...new Set(pool.map(i=>Z.fmap[i].announced_weight_class).filter(Boolean))];
+  const rows=pool.filter(i=>Z.dv==='ALL'||Z.fmap[i].announced_weight_class===Z.dv).sort((a,b)=>(Z.fmap[b].current_rating||1500)-(Z.fmap[a].current_rating||1500));
+  return `<div class="seg">${wcs.map(d=>`<button class="chip sm ${Z.dv===d?'on':''}" data-a="dv" data-v="${esc(d)}">${esc(d)}</button>`).join('')}</div><div class="tiny dim">Undrafted fighters on Block 1 cards · ${rows.length} shown. Your roster is full, so every add needs a drop.</div>`+ob(rows.length?rows.map((i,k)=>{const b=boutOf(i),lk=lockedF(i);return `<div class="row" style="padding:9px 0;${k?'border-top:1px solid #26262C':''}">${lk?'<div style="width:36px;flex:none"></div>':`<button class="ibtn" style="background:rgba(212,175,55,.18);color:var(--gold2);width:36px;height:36px" data-a="addp" data-v="${i}" aria-label="Add">+</button>`}${fgv(Z.fmap[i],42)}<div class="grow"><div class="nm" style="font-size:16px">${esc(fnm(i))}</div><div class="tiny mut">${esc(Z.fmap[i].announced_weight_class||'')}${b?' · '+esc(fmtD(b.bout_date)):''}${lk?' · locked':''}</div></div><div><div class="pts" style="font-size:20px">${Math.round(Z.fmap[i].current_rating||1500)}</div><div class="tiny dim" style="text-align:right">rating</div></div></div>`}).join(''):'<div class="mut small" style="padding:10px 0">Everyone on these cards has been drafted.</div>',{cls:'md',pad:'4px 12px'})}
+function playersS(){return `<div class="sec pad"><div class="seg">${[['pool','POOL'],['trades','TRADES']].map(([k,l])=>`<button class="chip ${Z.ps===k?'on':''}" data-a="ps" data-v="${k}">${l}</button>`).join('')}</div>${Z.ps==='pool'?poolTab():tradesTab()}</div>`}
 function comingS(t,d){return `<div class="sec pad">${ob(`<div class="h" style="font-size:20px">${t}</div><div class="mut" style="margin-top:6px">${d}</div>`,{cls:'md',pad:'18px'})}</div>`}
 function bracketTab(){const st=standings(),p=plan(Z.L.team_count),top=st.slice(0,p.c);
   return secH('PLAYOFFS',`<span>Starts after Block 7${p.c===4?'':''}</span>`)+ob(`<div class="mut">${PL(Z.L.team_count).seed}.</div><div class="mut" style="margin-top:6px">${PL(Z.L.team_count).po}.</div>`,{cls:'md',pad:'14px'})+secH('IF IT ENDED TODAY')+ob(top.map((x,i)=>`<div class="row" style="gap:8px;padding:6px 0;${i?'border-top:1px solid #26262C':''}"><span class="h gold" style="width:18px">${i+1}</span>${tavT(x.t,26)}<span class="nm grow" style="font-size:14px;color:${colorOf(x.t)}">${esc(x.t.name)}</span><span class="tiny mut">${x.w}-${x.l}</span></div>`).join(''),{cls:'md',pad:'4px 14px'})+(p.l?`<div class="tiny dim">Bottom ${p.l} play the last place bracket.</div>`:'')+`<div class="tiny dim">The full bracket tree fills in when seeds are set.</div>`}
@@ -324,7 +363,7 @@ function leagueS(){const sub=Z.ls,L=Z.L;let body='';
 const ICN={home:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',fight:'<path d="M5 4h14v6l-3 3v7H8v-7l-3-3z"/>',match:'<path d="M5 5l6 6M19 5l-6 6M5 19l6-6M19 19l-6-6"/>',players:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 5-7 8-7s7 2 8 7"/>',league:'<path d="M7 4h10v5a5 5 0 0 1-10 0zM5 5H3v2a3 3 0 0 0 3 3M19 5h2v2a3 3 0 0 1-3 3M9 21h6M12 14v7"/>'};
 function sSeason(){const L=Z.L,me=myTeam(),t=Z.tab;
   const TT={home:[me?me.name:L.name,L.name+' · Block 1 of 10'],fight:['Fight Night','Block 1 cards'],match:['Matchup','Block 1'],players:['Fighters','Pool and trades'],league:['League',L.name+' · Card Redraft']};
-  const body=t==='home'?homeS():t==='match'?matchS():t==='league'?leagueS():t==='fight'?fightS():comingS('FIGHTERS','Free agents, waiver claims and trades are coming next.');
+  const body=t==='home'?homeS():t==='match'?matchS():t==='league'?leagueS():t==='fight'?fightS():playersS();
   const nav=[['home','HOME'],['fight','FIGHTS'],['match','MATCHUP'],['players','FIGHTERS'],['league','LEAGUE']];
   return `<div class="hdr pad">${back('go','home')}${me?tavT(me,42):tavL(L.name,42)}<div class="t"><b class="h" style="${t==='home'?'':'color:var(--fg)'}">${esc(TT[t][0])}</b><span>${esc(TT[t][1])}</span></div><button class="ibtn" data-a="lsub" data-v="chat" aria-label="Chat">${svg(ICON.chat)}</button></div>${body}<div class="nav"><div>${nav.map(([k,l])=>`<button class="nb ${t===k?'on':''}" data-a="tab" data-v="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICN[k]}</svg>${l}</button>`).join('')}</div></div>`}
 function sLeague(){if(Z.L.status==='active'&&Z.room&&Z.room.status==='complete')return sSeason();const L=Z.L,items=[['draft','DRAFT'],['chat','CHAT'],['room','DRAFT ROOM'],['manage','MANAGE']];
@@ -401,6 +440,19 @@ document.addEventListener('click',async e=>{const el=e.target.closest('[data-a]'
   else if(a==='pick'){el.disabled=true;const {error}=await sb.rpc('cr_make_pick',{p_room:Z.room.id,p_fighter:v});if(error){toast(error.message||"Couldn't make that pick");el.disabled=false}await refreshRoom(true)}
   else if(a==='tab'){Z.tab=v;render();scrollTo(0,0)}
   else if(a==='lsub'){Z.tab='league';Z.ls=v;Z.sub=v==='rules'?'draft':v==='room'?'room':v==='manage'?'manage':v;if(v==='chat')await loadMsgs();render();scrollTo(0,0)}
+  else if(a==='ps'){Z.ps=v;render()}
+  else if(a==='dv'){Z.dv=v;render()}
+  else if(a==='close'){closeSheet()}
+  else if(a==='addp'){addSheet(v)}
+  else if(a==='drop'){Z.drop=v}
+  else if(a==='doadd'){if(!Z.drop){toast('Pick a fighter to drop');return}const bid=Z.L.waiver_type==='faab'?+($('#bid')||{value:0}).value||0:0;const {error}=await sb.rpc('cr_submit_claim',{p_league:Z.L.id,p_add:Z.sh.add,p_drop:Z.drop,p_bid:bid});if(error){toast(error.message||"Couldn't submit that claim");return}closeSheet();await loadSeason();Z.ps='trades';render();toast('Claim submitted')}
+  else if(a==='cl_cancel'){await sb.rpc('cr_cancel_claim',{p_claim:v});await loadSeason();render();toast('Claim cancelled')}
+  else if(a==='tr_new'){tradeSheet()}
+  else if(a==='tr_to'){Z.sh.to=v;Z.sh.get=null;$('#pn').innerHTML=Z.sh.body()}
+  else if(a==='tr_send'){Z.sh.send=v}
+  else if(a==='tr_get'){Z.sh.get=v}
+  else if(a==='tr_send_offer'){const h=Z.sh;if(!h.to||!h.send||!h.get){toast('Pick a team and one fighter each way');return}const {error}=await sb.rpc('cr_propose_trade',{p_league:Z.L.id,p_to:h.to,p_send:h.send,p_get:h.get});if(error){toast(error.message||"Couldn't send that offer");return}closeSheet();await loadSeason();render();toast('Offer sent')}
+  else if(a==='tr_act'){const {error}=await sb.rpc('cr_respond_trade',{p_trade:el.dataset.id,p_action:v});if(error){toast(error.message||"Couldn't do that")}else toast(v==='accept'?'Trade accepted':v==='decline'?'Declined':'Offer cancelled');await loadSeason();render()}
   else if(a==='fs'){Z.fs=v;render()}
   else if(a==='card'){Z.card=+v;render()}
   else if(a==='mu'){Z.mu=+v;render()}
