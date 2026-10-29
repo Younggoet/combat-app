@@ -157,3 +157,7 @@ grant execute on function public.cr_start_draft(uuid), public.cr_make_pick(uuid,
 -- cr_locked(league, block, fighter), cr_my_team(league),
 -- cr_submit_claim / cr_cancel_claim, cr_process_waivers (runs claims placed before the latest Friday 12 AM Eastern;
 -- standard = worst record first, FAAB = highest bid first, ties by waiver order), cr_propose_trade, cr_respond_trade (accept/decline/cancel).
+
+-- ===== Migration "card_redraft_next_block_draft" =====
+-- cr_start_next_draft(league): commissioner starts the next block's redraft once the current block's cards are all finished
+-- and the next 4 cards are announced (fresh random order, everyone redrafts; earlier blocks' rosters are kept).
