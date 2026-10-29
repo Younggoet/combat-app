@@ -107,7 +107,7 @@ const SCORING=[['Significant strike landed','0.1'],['Takedown landed','2'],['Kno
 const COLORS=['#D4AF37','#FF5468','#1FB5A3','#4C8BFF','#B57BFF','#FF7A2F','#3FD8C5','#E58CB0','#9ACD32','#E8742A','#A8325A','#F4F4F2'];
 
 const sb=CombatAuth.client;
-const Z={v:'boot',uid:null,dn:'',leagues:[],L:null,teams:[],sub:'draft',step:'name',c:{name:'',start:'new',sz:2,dt:'snake'},cards:null,pub:[],f:'all',msgs:[],conf:null,code:'',found:null,err:'',busy:false,hosts:{}};
+const Z={v:'boot',uid:null,dn:'',leagues:[],L:null,teams:[],sub:'draft',step:'name',c:{name:'',start:'new',sz:2,dt:'snake'},cards:null,pub:[],f:'all',msgs:[],conf:null,room:null,picks:[],fmap:{},rq:'',code:'',found:null,err:'',busy:false,hosts:{}};
 const teamName=dn=>'Team '+dn;
 const initials=n=>{const w=String(n).replace(/^Team\s+/i,'').trim().split(/\s+/).filter(Boolean);return ((w[0]||'?')[0]+((w[1]||w[0]||'')[1]||'')).toUpperCase().slice(0,2)};
 const colorOf=(t,list)=>{const i=(list||Z.teams).findIndex(x=>x.id===t.id);return COLORS[(i<0?0:i)%COLORS.length]};
@@ -159,6 +159,20 @@ async function loadMsgs(){
   Z.msgs=data||[];
 }
 
+
+const WCC={Heavyweight:'#8C8982','Light Heavyweight':'#B57BFF',Middleweight:'#3A7BFF',Welterweight:'#F4F4F2',Lightweight:'#B5452B',Featherweight:'#1FB5A3',Bantamweight:'#FF7A2F',Flyweight:'#E8742A'};
+const wcol=w=>WCC[w]||(String(w||'').includes("Women")?'#E58CB0':'#D4AF37');
+async function loadRoom(){
+  const {data:r}=await sb.from('draft_rooms').select('*').eq('league_id',Z.L.id).eq('format','card_redraft').order('block_no',{ascending:false}).limit(1).maybeSingle();
+  Z.room=r||null;Z.picks=[];
+  if(!r)return;
+  const [{data:pk},need]=await Promise.all([sb.from('cr_picks').select('*').eq('draft_room_id',r.id).order('pick_number'),Promise.resolve((r.pool||[]).filter(i=>!Z.fmap[i]))]);
+  Z.picks=pk||[];
+  if(need.length){const {data:f}=await sb.from('fighters').select('id,full_name,announced_weight_class,current_rating,photo_url').in('id',need);(f||[]).forEach(x=>Z.fmap[x.id]=x)}
+}
+const roomSeat=(r,pick)=>{const n=r.team_order.length,rd=Math.floor((pick-1)/n)+1,pos=(pick-1)%n+1;const rev=r.draft_type==='linear'?0:r.draft_type==='3rr'?(rd===1?0:rd===2?1:((rd-3)%2===0?1:0)):(rd%2===1?0:1);return rev?n-pos+1:pos};
+const onClock=()=>{const r=Z.room;if(!r||r.status!=='live')return null;const id=r.team_order[roomSeat(r,r.current_pick_number)-1];return Z.teams.find(t=>t.id===id)||null};
+
 /* ---------- screens ---------- */
 const back=(a,v)=>`<button class="ibtn" data-a="${a}" data-v="${v||''}" aria-label="Back">${svg(ICON.back)}</button>`;
 const btn=(a,v,l,dis)=>`<button class="btn g" style="width:100%;padding:15px;font-size:16px;${dis?'opacity:.4':''}" data-a="${a}" data-v="${v||''}">${l}</button>`;
@@ -201,8 +215,21 @@ function dtab(){const L=Z.L,tm=L.team_count,fg=L.fighters_per_team,comm=isComm()
  return `<div class="dgrid"><div class="dcol">${inv+cards+db}</div><div class="dcol">${pos+wvc}</div><div class="dcol">${ls+ss}</div></div>`}
 function chatTab(){
   return secH('LEAGUE CHAT',`<span>${esc(Z.L.name)} · ${Z.teams.length} teams</span>`)+ob(`<div class="col" style="gap:14px;min-height:260px" id="msgs">${Z.msgs.length?Z.msgs.map(m=>{const t=Z.teams.find(x=>x.name===m.display_name||x.name==='Team '+m.display_name);return `<div class="msg">${t?tavT(t,32):tavL(m.display_name,32,'#8C8982')}<div style="min-width:0"><div class="small"><b style="color:${t?colorOf(t):'var(--mut)'}">${esc(m.display_name)}</b> <span class="dim">${esc(new Date(m.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}))}</span></div><div style="line-height:1.4;word-break:break-word">${esc(m.body)}</div></div></div>`}).join(''):'<div class="mut">Be the first to say hi.</div>'}</div>`,{cls:'md',pad:'14px'})+`<form id="cf" class="row" style="gap:8px"><input class="fi grow" id="ci" placeholder="Message the league" autocomplete="off" maxlength="500"><button class="btn g" type="submit">SEND</button></form>`}
-function roomTab(){const L=Z.L,ok=blockCards().length===4;
-  return ob(`<div class="h" style="font-size:20px">DRAFT ROOM</div><div class="mut" style="margin:6px 0 12px">${!ok?'The draft room opens once all 4 cards of the block are announced.':L.draft_time?'Opens '+esc(fmtDT(L.draft_time))+'.':'Set a draft time on the Draft tab. The room opens then.'}</div><button class="btn" style="width:100%;opacity:.55" data-a="toast_m" data-v="The live draft room is not open yet">ENTER DRAFT ROOM</button>`,{cls:'md',pad:'18px'})+secH('DRAFT ORDER',`<span>${esc(dtn(L.draft_type))}</span>`)+ob(`<div class="mut">The order is picked at random when the draft starts, and it changes every block. ${L.draft_type==='3rr'?'Round 3 repeats the Round 2 order, then the snake continues.':L.draft_type==='linear'?'The order stays the same every round.':'The order flips every round.'}</div>`,{cls:'md',pad:'14px'})}
+const fgv=(f,sz)=>`<div class="oc fav" style="--s:${sz}px;--dc:${wcol(f&&f.announced_weight_class)};cursor:default"><i class="oc" style="${f&&f.photo_url?`background:#0F0F12 url('${esc(f.photo_url)}') center/cover`:''}"></i></div>`;
+const teamOf=id=>Z.teams.find(t=>t.id===id);
+function poolRows(){const r=Z.room,mine=onClock()&&onClock().owner_user_id===Z.uid,taken=new Set(Z.picks.map(p=>p.fighter_id)),q=Z.rq.trim().toLowerCase();
+  const rows=(r.pool||[]).filter(i=>!taken.has(i)&&Z.fmap[i]).map(i=>Z.fmap[i]).filter(f=>!q||f.full_name.toLowerCase().includes(q)||String(f.announced_weight_class||'').toLowerCase().includes(q)).sort((a,b)=>(b.current_rating||1500)-(a.current_rating||1500)).slice(0,60);
+  return rows.length?rows.map((f,i)=>`<div class="row" style="gap:10px;padding:7px 0;${i?'border-top:1px solid #26262C':''}">${fgv(f,34)}<div class="grow"><div class="nm" style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.full_name)}</div><div class="tiny mut">${esc(f.announced_weight_class||'')} · ${Math.round(f.current_rating||1500)}</div></div>${mine?`<button class="btn g" data-a="pick" data-v="${f.id}">DRAFT</button>`:''}</div>`).join(''):'<div class="mut small" style="padding:8px 0">No fighters match.</div>'}
+function rosterBlock(){const r=Z.room,n=r.team_order.length;
+  return r.team_order.map((tid,i)=>{const t=teamOf(tid);if(!t)return '';const ps=Z.picks.filter(p=>p.team_id===tid);return `<div style="padding:8px 0;${i?'border-top:1px solid #26262C':''}"><div class="row" style="gap:8px">${tavT(t,26)}<span class="nm grow" style="font-size:14px;color:${colorOf(t)}">${esc(t.name)}${t.owner_user_id===Z.uid?' (you)':''}</span><span class="tiny dim">${ps.length}/${r.rounds}</span></div>${ps.length?`<div class="tiny mut" style="margin:4px 0 0 34px;line-height:1.5">${ps.map(p=>esc((Z.fmap[p.fighter_id]||{}).full_name||'')).join(' · ')}</div>`:''}</div>`}).join('')}
+function roomTab(){const L=Z.L,r=Z.room,bc=blockCards(),ok=bc.length===4;
+  if(!r){return ob(`<div class="h" style="font-size:20px">DRAFT ROOM</div><div class="mut" style="margin:6px 0 12px">${!ok?'The draft room opens once all 4 cards of the block are announced.':L.draft_time?'Scheduled '+esc(fmtDT(L.draft_time))+'.':'Set a draft time on the Draft tab, or start when everyone is here.'}</div>${isComm()?`<button class="btn g" style="width:100%;${ok?'':'opacity:.5'}" data-a="start_draft">START DRAFT</button><div class="tiny dim" style="margin-top:8px">Any empty spots are filled by CPU teams. Draft order is picked at random.</div>`:`<div class="tiny dim">The commissioner starts the draft. You will see it here as soon as it begins.</div>`}`,{cls:'md',pad:'18px',col:'#D4AF37'})+secH('DRAFT ORDER',`<span>${esc(dtn(L.draft_type))}</span>`)+ob(`<div class="mut">The order is picked at random when the draft starts, and it changes every block. ${L.draft_type==='3rr'?'Round 3 repeats the Round 2 order, then the snake continues.':L.draft_type==='linear'?'The order stays the same every round.':'The order flips every round.'}</div>`,{cls:'md',pad:'14px'})}
+  const n=r.team_order.length,total=n*r.rounds;
+  if(r.status==='complete')return ob(`<div class="h" style="font-size:20px;color:var(--gold2)">DRAFT COMPLETE</div><div class="mut" style="margin-top:6px">${total} picks made. Rosters are set for Block ${r.block_no}.</div>`,{cls:'md',pad:'16px',col:'#D4AF37'})+secH('ROSTERS')+ob(rosterBlock(),{cls:'md',pad:'4px 14px'});
+  const t=onClock(),mine=t&&t.owner_user_id===Z.uid,pn=Math.min(r.current_pick_number,total),rd=Math.floor((pn-1)/n)+1;
+  const head=ob(`<div class="row" style="gap:12px">${t?tavT(t,46):''}<div class="grow" style="min-width:0"><div class="tiny dim" style="letter-spacing:1px">${mine?'YOUR PICK':'ON THE CLOCK'}</div><div class="nm" style="font-size:19px;color:${t?colorOf(t):'var(--fg)'}">${t?esc(t.name):''}</div><div class="tiny mut">Round ${rd} of ${r.rounds} · Pick ${pn} of ${total}${t&&!t.owner_user_id?' · CPU':''}</div></div><div class="h" id="clk" style="font-size:34px;color:${mine?'var(--gold2)':'var(--fg)'}">--</div></div>`,{cls:'md',pad:'14px',col:mine?'#D4AF37':'#4A4A52'});
+  const rec=Z.picks.slice(-6).reverse().map(p=>{const f=Z.fmap[p.fighter_id]||{},tm=teamOf(p.team_id);return `<div class="row" style="gap:8px;padding:6px 0;border-top:1px solid #26262C"><span class="h gold" style="width:30px;font-size:14px">${p.pick_number}</span><span class="grow nm" style="font-size:14px">${esc(f.full_name||'')}</span><span class="tiny" style="color:${tm?colorOf(tm):'var(--mut)'}">${esc(tm?tm.name.replace(/^Team\s+/,''):'')}${p.is_autopick?' · AUTO':''}</span></div>`}).join('');
+  return head+secH('AVAILABLE FIGHTERS',`<span>${(r.pool||[]).length-Z.picks.length} left</span>`)+`<input id="rs" class="fi" placeholder="Search name or weight class" autocomplete="off" value="${esc(Z.rq)}">`+ob(`<div id="plist">${poolRows()}</div>`,{cls:'md',pad:'4px 14px'})+secH('RECENT PICKS')+ob(rec?rec.replace(' border-top:1px solid #26262C','').replace('border-top:1px solid #26262C',''):'<div class="mut small" style="padding:8px 0">No picks yet.</div>',{cls:'md',pad:'4px 14px'})+secH('ALL ROSTERS')+ob(rosterBlock(),{cls:'md',pad:'4px 14px'})}
 function manageTab(){const L=Z.L,comm=isComm(),conf=Z.conf;let h=secH('MANAGE LEAGUE',`<span>${comm?'You are the commissioner':'Commissioner: '+esc(Z.hosts[L.commissioner_user_id]||'the host')}</span>`);
  const cf=(k,txt,b)=>conf===k?ob(`<div style="font-weight:600;margin-bottom:8px">${txt}</div><div class="row" style="gap:8px"><button class="btn grow" style="background:var(--red);color:#fff" data-a="do_${k}">${b}</button><button class="btn grow" data-a="cancel">CANCEL</button></div>`,{cls:'md',col:'#E2283C',pad:'12px 14px'}):'';
  if(comm){h+=ob(`<div class="small mut" style="margin-bottom:6px">League name</div><div class="row" style="gap:8px"><input class="fi grow" id="rn" value="${esc(L.name)}" maxlength="30"><button class="btn g" data-a="rename">SAVE</button></div>`,{cls:'md',pad:'12px 14px'});
@@ -216,8 +243,8 @@ function manageTab(){const L=Z.L,comm=isComm(),conf=Z.conf;let h=secH('MANAGE LE
  return h}
 function sLeague(){const L=Z.L,items=[['draft','DRAFT'],['chat','CHAT'],['room','DRAFT ROOM'],['manage','MANAGE']];
   const sg=`<div class="seg">${items.map(([k,l])=>`<button class="chip ${Z.sub===k?'on':''}" data-a="sub" data-v="${k}">${l}</button>`).join('')}</div>`;
-  const inner=L.status!=='setup'?ob(`<div class="h" style="font-size:20px">${L.status==='drafting'?'DRAFT IN PROGRESS':'SEASON IN PROGRESS'}</div><div class="mut" style="margin-top:6px">The live draft and season screens are coming next.</div>`,{cls:'md',pad:'18px'}):Z.sub==='draft'?dtab():Z.sub==='chat'?chatTab():Z.sub==='room'?roomTab():manageTab();
-  return `<div class="hdr pad">${back('go','home')}${tavL(L.name,42)}<div class="t"><b class="h" style="color:var(--fg)">${esc(L.name)}</b><span>Card Redraft · ${L.status==='setup'?'Setting up':'In progress'}</span></div><button class="ibtn" data-a="sub" data-v="chat" aria-label="Chat">${svg(ICON.chat)}</button></div><div class="sec pad">${sg}${inner}</div>`}
+  const inner=Z.sub==='draft'?dtab():Z.sub==='chat'?chatTab():Z.sub==='room'?roomTab():manageTab();
+  return `<div class="hdr pad">${back('go','home')}${tavL(L.name,42)}<div class="t"><b class="h" style="color:var(--fg)">${esc(L.name)}</b><span>Card Redraft · ${L.status==='setup'?'Setting up':L.status==='drafting'?'Drafting now':'Drafted'}</span></div><button class="ibtn" data-a="sub" data-v="chat" aria-label="Chat">${svg(ICON.chat)}</button></div><div class="sec pad">${sg}${inner}</div>`}
 function sLobby(){const f=Z.f;
   const rows=Z.pub.filter(l=>{const n=l.teams.length;return f==='all'||(f==='open'&&n<l.team_count)||(f==='soon'&&l.draft_time&&new Date(l.draft_time)-Date.now()<7*864e5)});
   const chips=[['all','ALL'],['open','OPEN SPOTS'],['soon','STARTING SOON']].map(([k,l])=>`<button class="chip ${f===k?'on':''}" data-a="lf" data-v="${k}">${l}</button>`).join('');
@@ -235,7 +262,7 @@ function go(v){Z.v=v;Z.err='';Z.conf=null;render();scrollTo(0,0)}
 const fail=(e,fallback)=>{console.error(e);Z.err=(e&&e.message&&/full/i.test(e.message))?'That league is full.':fallback||'Something went wrong. Try again.';render()};
 
 /* ---------- actions ---------- */
-async function openLeague(id){try{await Promise.all([loadLeague(id),loadCards()]);await loadMsgs();Z.sub='draft';const h=[Z.L.commissioner_user_id];const {data:p}=await sb.from('profiles').select('id,display_name').in('id',h);(p||[]).forEach(x=>Z.hosts[x.id]=x.display_name);go('league')}catch(e){toast("Couldn't open that league");console.error(e)}}
+async function openLeague(id){try{await Promise.all([loadLeague(id),loadCards()]);await loadMsgs();await loadRoom();Z.sub=Z.L.status==='setup'?'draft':'room';const h=[Z.L.commissioner_user_id];const {data:p}=await sb.from('profiles').select('id,display_name').in('id',h);(p||[]).forEach(x=>Z.hosts[x.id]=x.display_name);go('league')}catch(e){toast("Couldn't open that league");console.error(e)}}
 async function createLeague(){
   if(Z.busy)return;Z.busy=true;Z.err='';render();
   const c=Z.c,[tm,fg]=SIZES[c.sz];
@@ -284,6 +311,8 @@ document.addEventListener('click',async e=>{const el=e.target.closest('[data-a]'
   else if(a==='join_id'){const {data}=await sb.from('leagues').select('*,teams(id)').eq('id',v).single();Z.found=data;go('join')}
   else if(a==='do_join')await joinLeague(v);
   else if(a==='save_name'){const n=(Z.dn||'').trim();if(n.length<2){Z.err='Use at least 2 characters';render();return}const {error}=await sb.from('profiles').upsert({id:Z.uid,display_name:n},{onConflict:'id'});if(error){Z.err='Could not save your username';render();return}Z.dn=n;await loadMine();if(Z.pendingJoin){const c2=Z.pendingJoin;Z.pendingJoin=null;await lookupCode(c2)}else go('home')}
+  else if(a==='start_draft'){if(blockCards().length<4){toast('Waiting for the 4th card to be announced');return}const {error}=await sb.rpc('cr_start_draft',{p_league:Z.L.id});if(error){toast(error.message||"Couldn't start the draft");return}await loadLeague(Z.L.id);await loadRoom();Z.sub='room';render();toast('The draft is live')}
+  else if(a==='pick'){el.disabled=true;const {error}=await sb.rpc('cr_make_pick',{p_room:Z.room.id,p_fighter:v});if(error){toast(error.message||"Couldn't make that pick");el.disabled=false}await refreshRoom(true)}
   else if(a==='sub'){Z.sub=v;if(v==='chat')await loadMsgs();render();scrollTo(0,0)}
   else if(a==='toast_m')toast(v);
   else if(a==='copy'){try{await navigator.clipboard.writeText(joinLink(Z.L));toast('Invite link copied')}catch(_){toast(joinLink(Z.L))}}
@@ -302,6 +331,23 @@ document.addEventListener('click',async e=>{const el=e.target.closest('[data-a]'
 document.addEventListener('submit',async e=>{if(e.target.id!=='cf')return;e.preventDefault();const i=$('#ci'),b=(i.value||'').trim();if(!b)return;i.value='';
   const {error}=await sb.from('chat_messages').insert({league_id:Z.L.id,display_name:teamName(Z.dn),body:b});if(error){toast("Couldn't send");return}await loadMsgs();render();setTimeout(()=>{const x=$('#ci');x&&x.focus()},0)});
 setInterval(async()=>{if(Z.v==='league'&&Z.sub==='chat'&&!document.hidden&&!document.activeElement?.matches('input')){const n=Z.msgs.length;await loadMsgs();if(Z.msgs.length!==n)render()}},6000);
+
+async function refreshRoom(force){
+  if(!Z.room||!Z.L)return;const before=Z.room.current_pick_number+Z.room.status;
+  await loadRoom();
+  if(Z.room.status==='complete'&&Z.L.status!=='active'){await loadLeague(Z.L.id)}
+  if(force||Z.room.current_pick_number+Z.room.status!==before)if(Z.v==='league'&&Z.sub==='room'){const s=$('#rs');const f=s&&document.activeElement===s;render();if(f){const n=$('#rs');n.focus();n.setSelectionRange(n.value.length,n.value.length)}}
+}
+let ticking=false;
+setInterval(async()=>{
+  if(Z.v!=='league'||!Z.room||Z.room.status!=='live'||document.hidden||ticking)return;
+  ticking=true;try{
+    const dl=Z.room.current_pick_deadline?new Date(Z.room.current_pick_deadline).getTime():0;
+    if(dl&&Date.now()>dl+600){await sb.rpc('cr_tick',{p_room:Z.room.id})}
+    if(Z.sub==='room'||Z.sub==='draft')await refreshRoom();else await loadRoom();
+  }catch(e){console.error(e)}ticking=false},1500);
+setInterval(()=>{const c=$('#clk');if(!c||!Z.room||!Z.room.current_pick_deadline)return;const t=Math.max(0,Math.ceil((new Date(Z.room.current_pick_deadline)-Date.now())/1000));c.textContent=t}, 250);
+document.addEventListener('input',e=>{if(e.target.id==='rs'){Z.rq=e.target.value;const l=$('#plist');if(l)l.innerHTML=poolRows()}});
 
 /* ---------- start ---------- */
 (async()=>{
