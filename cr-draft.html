@@ -535,10 +535,10 @@
   /* ---------- Octagon pass: every box and rectangle gets the app's cut corners ---------- */
   *{--P:polygon(var(--c) 0,calc(100% - var(--c)) 0,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0 calc(100% - var(--c)),0 var(--c))}
   .ob{--c:16px;padding:1.5px;background:var(--ol);clip-path:var(--P);min-width:0;}
-  .ob>.i{min-width:0;--c:calc(var(--oc,16px) - 1px);clip-path:var(--P);background:var(--fill,#141417);padding:var(--pad,14px);height:100%;box-sizing:border-box;}
+  .ob>.i{min-width:0;--c:calc(var(--oc,16px) - 1px);clip-path:var(--P);background:var(--fill,linear-gradient(155deg,rgba(212,175,55,.12),rgba(0,0,0,0) 60%),#131317);padding:var(--pad,14px);height:100%;box-sizing:border-box;}
   .ob.sm{--c:10px;--oc:10px}.ob.md{--c:14px;--oc:14px}.ob.lg{--c:22px;--oc:22px}
   .filter-tab,.division-chip,.queue-chip,.board-link,input.search,.board-team-cell,.board-cell,.divtag2,.news-tag,.tslot .divtag,.tag{border-radius:0 !important;--c:8px;clip-path:var(--P);box-shadow:none !important;}
-  input.search{--c:12px;}
+  input.search{--c:9px;}
   .board-link{--c:11px;display:inline-flex;align-items:center;gap:8px;}
   .board-cell{--c:12px;}
   .ibtn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;background:#26262B;color:var(--text);border:0;cursor:pointer;--c:11px;clip-path:var(--P);flex:none;}
@@ -568,6 +568,11 @@
   .mbtn.gold{background:linear-gradient(135deg,#F2D675,#D4AF37 60%,#9C7A1E);color:#14120A;font-weight:700;}
   .mbtn.grow{flex:1;}
   button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+
+  /* ---------- League look: same maroon background as the league page ---------- */
+  :root{--bg:#0B0B0D;}
+  body{background:radial-gradient(900px 600px at 20% -5%,rgba(236,60,80,.45),rgba(226,40,60,0) 70%),linear-gradient(180deg,#4A121C 0,#1A0A0E 420px,#0B0B0D 900px),#0B0B0D !important;background-attachment:fixed !important;}
+  #modalRoot .mpn{background:#0B0B0D;}
 </style>
 </head>
 <body>
@@ -780,7 +785,7 @@ let modal = null;      // pick trade sheet state
 let fighterPoolError = null;
 
 /* ---------- octagon box (same construction as the league screens) ---------- */
-const ob = (html, o = {}) => `<div class="ob ${o.cls || "md"}" style="--ol:${o.ol || "rgba(255,255,255,0.10)"};${o.st || ""}"><div class="i" style="--pad:${o.pad || "18px"};--fill:${o.fill || "#141417"}">${html}</div></div>`;
+const ob = (html, o = {}) => `<div class="ob ${o.cls || "md"}" style="--ol:${o.ol || "#D4AF37aa"};${o.st || ""}"><div class="i" style="--pad:${o.pad || "18px"};--fill:${o.fill || "linear-gradient(155deg,rgba(212,175,55,.12),rgba(0,0,0,0) 60%),#131317"}">${html}</div></div>`;
 
 /* ---------- draft order helpers ---------- */
 function roomSeat(pick){
@@ -938,7 +943,7 @@ function renderDraft(){
   /* ---- just signed ---- */
   const newList = (room.pool_new || []).map((id) => fightersById[id]).filter(Boolean);
   const newBox = newList.length && !complete
-    ? ob(`<div class="h-font" style="font-size:12px;letter-spacing:2px;color:var(--gold);margin-bottom:8px;">JUST SIGNED</div><div style="font-size:13.5px;color:#D8D5CC;line-height:1.6;">${newList.slice(0, 14).map((f) => esc(f.full_name)).join(" &middot; ")}${newList.length > 14 ? " &middot; +" + (newList.length - 14) + " more" : ""}</div><div style="font-size:11px;color:#6A6A72;margin-top:6px;">Added after the draft started.</div>`, { cls: "md", pad: "16px 20px", fill: "#16161A", ol: "rgba(212,175,55,0.35)" })
+    ? ob(`<div class="h-font" style="font-size:12px;letter-spacing:2px;color:var(--gold);margin-bottom:8px;">JUST SIGNED</div><div style="font-size:13.5px;color:#D8D5CC;line-height:1.6;">${newList.slice(0, 14).map((f) => esc(f.full_name)).join(" &middot; ")}${newList.length > 14 ? " &middot; +" + (newList.length - 14) + " more" : ""}</div><div style="font-size:11px;color:#6A6A72;margin-top:6px;">Added after the draft started.</div>`, { cls: "md", pad: "16px 20px", ol: "rgba(212,175,55,0.35)" })
     : "";
 
   /* ---- stage ---- */
@@ -999,22 +1004,22 @@ function renderDraft(){
             <div><div class="h-font" style="font-size:64px;font-weight:700;line-height:1;">${fmtNum(projectedFPById[spotlight.id], 1)}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Projected points</div></div>
             <div><div class="h-font" style="font-size:64px;font-weight:700;line-height:1;">${fmtRank(overallRankById[spotlight.id])}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Overall rank</div></div>
           </div></div></div>`, { cls: "lg", pad: "30px 34px", ol: sdc + "59", fill: `linear-gradient(120deg,${sdc}57 0%,${sdc}1F 55%,${sdc}08 100%),#121214`, st: `filter:drop-shadow(0 18px 40px ${sdc}1F);` })}
-      <div class="hero-stats">${bigStats.map((c) => ob(`<div class="v hs-v">${esc(c.v)}</div><div class="l hs-l">${esc(c.l)}</div>`, { cls: "md", pad: "18px", fill: "#16161A" })).join("")}</div>
+      <div class="hero-stats">${bigStats.map((c) => ob(`<div class="v hs-v">${esc(c.v)}</div><div class="l hs-l">${esc(c.l)}</div>`, { cls: "md", pad: "18px" })).join("")}</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
-        ${ob(`<div class="h-font" style="font-size:20px;letter-spacing:1px;margin-bottom:12px;">LAST 5 FIGHTS</div><div style="display:flex;gap:10px;flex-wrap:wrap;">${formHtml}</div>`, { cls: "md", pad: "20px 22px", fill: "#16161A" })}
-        ${ob(`<div style="display:flex;flex-direction:column;gap:10px;"><div class="h-font" style="font-size:20px;letter-spacing:1px;">FINISH RATE</div><div class="h-font" style="font-size:40px;font-weight:700;line-height:1;">${finishRate}</div><div style="font-size:13px;color:#B8B5AE;">${spotlight.finishes ?? 0} finishes in ${spotlight.wins ?? 0} wins</div><div style="font-size:13px;color:${myDivCount >= 3 ? "#E8C93A" : "#B8B5AE"};border-top:1px solid var(--border-2);padding-top:10px;">${divFitText}</div></div>`, { cls: "md", pad: "20px 22px", fill: "#16161A" })}
+        ${ob(`<div class="h-font" style="font-size:20px;letter-spacing:1px;margin-bottom:12px;">LAST 5 FIGHTS</div><div style="display:flex;gap:10px;flex-wrap:wrap;">${formHtml}</div>`, { cls: "md", pad: "20px 22px" })}
+        ${ob(`<div style="display:flex;flex-direction:column;gap:10px;"><div class="h-font" style="font-size:20px;letter-spacing:1px;">FINISH RATE</div><div class="h-font" style="font-size:40px;font-weight:700;line-height:1;">${finishRate}</div><div style="font-size:13px;color:#B8B5AE;">${spotlight.finishes ?? 0} finishes in ${spotlight.wins ?? 0} wins</div><div style="font-size:13px;color:${myDivCount >= 3 ? "#E8C93A" : "#B8B5AE"};border-top:1px solid var(--border-2);padding-top:10px;">${divFitText}</div></div>`, { cls: "md", pad: "20px 22px" })}
       </div>
       ${ob(`<div class="h-font" style="font-size:20px;letter-spacing:1px;margin-bottom:12px;">TALE OF THE TAPE</div>
         <div style="display:grid;grid-template-columns:1fr auto 1fr;padding-bottom:8px;border-bottom:1px solid var(--border-2);margin-bottom:6px;">
           <div class="h-font" style="font-size:12px;letter-spacing:1px;color:${sdc};">${esc(spotlight.full_name.toUpperCase())}</div><div></div>
           <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#8C8982;text-align:right;">${lastOwnPick ? esc(lastOwnPick.full_name.toUpperCase()) + " (YOUR LAST PICK)" : "NO PRIOR PICK YET"}</div></div>
-        ${tapeRows.map((r) => `<div class="tape-row"><div class="a">${esc(r.a)}</div><div class="lbl">${esc(r.label)}</div><div class="b">${esc(r.b)}</div></div>`).join("")}`, { cls: "md", pad: "20px 22px", fill: "#16161A" })}
+        ${tapeRows.map((r) => `<div class="tape-row"><div class="a">${esc(r.a)}</div><div class="lbl">${esc(r.label)}</div><div class="b">${esc(r.b)}</div></div>`).join("")}`, { cls: "md", pad: "20px 22px" })}
       ${upNext.length ? ob(`<div class="h-font" style="font-size:14px;letter-spacing:2px;color:#9A9AA2;margin-bottom:10px;">BEST AVAILABLE AFTER THIS PICK</div>
-        <div style="display:flex;gap:18px;flex-wrap:wrap;">${upNext.map((f) => `<div style="display:flex;align-items:center;gap:10px;">${octagonRingAvatar(f, fighterDc(f), 38)}<div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div><div style="font-size:11px;color:#B8B5AE;">${esc(DIV_SHORT[f.announced_weight_class] || "")} · ${fmtRank(overallRankById[f.id])}</div></div></div>`).join("")}</div>`, { cls: "md", pad: "16px 22px", fill: "#16161A" }) : ""}
+        <div style="display:flex;gap:18px;flex-wrap:wrap;">${upNext.map((f) => `<div style="display:flex;align-items:center;gap:10px;">${octagonRingAvatar(f, fighterDc(f), 38)}<div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div><div style="font-size:11px;color:#B8B5AE;">${esc(DIV_SHORT[f.announced_weight_class] || "")} · ${fmtRank(overallRankById[f.id])}</div></div></div>`).join("")}</div>`, { cls: "md", pad: "16px 22px" }) : ""}
       <button id="lockBtn" class="lock-pick-btn oct-btn" style="background:var(--red);color:#F5F2EA;cursor:pointer;">LOCK PICK — ${esc(spotlight.full_name.toUpperCase())}</button>
       <div class="error" id="pickError" style="display:none;"></div>`;
   } else {
-    stageMainHtml = ob(`<div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;text-align:center;">Waiting on ${esc(teamName(onClockTeam))}…</div>`, { cls: "lg", pad: "30px", ol: "rgba(255,255,255,0.10)" });
+    stageMainHtml = ob(`<div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;text-align:center;">Waiting on ${esc(teamName(onClockTeam))}…</div>`, { cls: "lg", pad: "30px" });
   }
 
   /* ---- your slip ---- */
@@ -1034,7 +1039,7 @@ function renderDraft(){
   const slipPanel = ob(`<div class="slip-head"><div class="h-font" style="font-size:13px;letter-spacing:2px;color:var(--gold);">YOUR SLIP</div><div class="h-font" style="font-size:11px;letter-spacing:1px;color:#6A6A72;">TEAM &ldquo;${esc(userTeamName.toUpperCase())}&rdquo;</div></div>
     <div class="slip-list">${slipHtml}</div>
     <div class="slip-foot"><div style="display:flex;align-items:center;justify-content:space-between;"><div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">PROJECTED FANTASY PTS</div><div class="h-font" style="font-size:24px;font-weight:700;color:var(--gold);">${fmtNum(projectedTotal, 1)}</div></div>
-    ${complete ? "" : `<div class="h-font" style="font-size:10px;letter-spacing:1px;color:#4A4A52;margin-top:6px;">${myLeft.length} PICK${myLeft.length === 1 ? "" : "S"} LEFT${myLeft.length ? " &middot; " + myLeft.slice(0, 6).map((p) => "#" + p).join(", ") + (myLeft.length > 6 ? "…" : "") : ""}</div>`}</div>`, { cls: "lg", pad: "0", ol: "rgba(255,255,255,0.10)" });
+    ${complete ? "" : `<div class="h-font" style="font-size:10px;letter-spacing:1px;color:#4A4A52;margin-top:6px;">${myLeft.length} PICK${myLeft.length === 1 ? "" : "S"} LEFT${myLeft.length ? " &middot; " + myLeft.slice(0, 6).map((p) => "#" + p).join(", ") + (myLeft.length > 6 ? "…" : "") : ""}</div>`}</div>`, { cls: "lg", pad: "0" });
 
   /* ---- live feed ---- */
   const feedHtml = picks.slice().reverse().slice(0, 12).map((p) => {
@@ -1091,7 +1096,7 @@ function renderDraft(){
   }).join("");
   const poolTable = ob(`<div class="pool-table-scroll"><div class="pool-grid">
       <div class="pool-head">FIGHTER</div><div class="pool-head">DIV</div><div class="pool-head">RECORD</div><div class="pool-head">SIG STR</div><div class="pool-head">TD</div><div class="pool-head">KD</div><div class="pool-head">CTRL</div><div class="pool-head">SUB ATT</div><div class="pool-head">REV</div><div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div><div class="pool-head">FIGHTS/YR</div><div class="pool-head">PROJ FP</div><div class="pool-head" style="color:var(--gold);">OVERALL RANK</div><div class="pool-head">★</div>
-      ${poolRows || `<div style="grid-column:1/-1;padding:24px;color:#6A6A72;font-size:13px;">${paused ? "Every announced fighter is drafted. New fights will show up here." : "No fighters match."}</div>`}</div></div>`, { cls: "lg", pad: "0", ol: "rgba(255,255,255,0.10)" });
+      ${poolRows || `<div style="grid-column:1/-1;padding:24px;color:#6A6A72;font-size:13px;">${paused ? "Every announced fighter is drafted. New fights will show up here." : "No fighters match."}</div>`}</div></div>`, { cls: "lg", pad: "0" });
 
   /* ---- header ---- */
   const hasTrades = !!userTeamId && !complete;
@@ -1232,14 +1237,14 @@ function renderModal(){
   const inc = pt.filter((t) => t.to_team === userTeamId && new Date(t.expires_at) > now), out = pt.filter((t) => t.from_team === userTeamId && new Date(t.expires_at) > now);
   const card = (t, mineOut) => ob(`<div style="font-size:11px;color:#8C8982;">${mineOut ? "Offer to" : "Offer from"} ${esc(teamName(mineOut ? t.to_team : t.from_team))}</div>
     <div style="display:flex;gap:6px;margin-top:8px;align-items:center;">${assetBox(mineOut ? t.send_fighter : t.get_fighter, mineOut ? t.send_pick : t.get_pick, "YOU SEND", "rgba(212,175,55,0.6)")}<div class="swapic">&#8644;</div>${assetBox(mineOut ? t.get_fighter : t.send_fighter, mineOut ? t.get_pick : t.send_pick, "YOU GET", "rgba(63,216,197,0.6)")}</div>
-    <div style="display:flex;gap:8px;margin-top:10px;">${mineOut ? `<button class="mbtn grow" data-act="pt_act" data-v="cancel" data-id="${t.id}">CANCEL OFFER</button>` : `<button class="mbtn gold grow" data-act="pt_act" data-v="accept" data-id="${t.id}">ACCEPT</button><button class="mbtn grow" data-act="pt_act" data-v="decline" data-id="${t.id}">DECLINE</button>`}</div>`, { cls: "md", pad: "12px", fill: "#16161A", st: "margin-bottom:10px;" });
+    <div style="display:flex;gap:8px;margin-top:10px;">${mineOut ? `<button class="mbtn grow" data-act="pt_act" data-v="cancel" data-id="${t.id}">CANCEL OFFER</button>` : `<button class="mbtn gold grow" data-act="pt_act" data-v="accept" data-id="${t.id}">ACCEPT</button><button class="mbtn grow" data-act="pt_act" data-v="decline" data-id="${t.id}">DECLINE</button>`}</div>`, { cls: "md", pad: "12px", st: "margin-bottom:10px;" });
   const others = teams.filter((t) => t.id !== userTeamId && t.owner_user_id);
   const opts = (tid, nm, key, cur) => {
     const pk = (room.status === "live" || room.status === "paused") ? myUpcoming(tid) : [];
     const fs = picks.filter((p) => p.team_id === tid).map((p) => p.fighter_id);
     const row = (val, lab, sub) => `<label class="orow"><input type="radio" name="${nm}" ${cur === val ? "checked" : ""} data-act="${key}" data-v="${val}"><span class="grow" style="font-family:Oswald,sans-serif;font-size:15px;">${lab}</span><span style="font-size:11px;color:#8C8982;">${sub}</span></label>`;
     const rows = [...pk.map((p) => row("p:" + p, "&#128278; " + esc(pickLbl(p)), "Pick " + p)), ...fs.map((f) => row("f:" + f, esc((fightersById[f] || {}).full_name || "Fighter"), esc((fightersById[f] || {}).announced_weight_class || "")))];
-    return ob(rows.length ? rows.join("") : `<div style="color:#6A6A72;font-size:13px;">No picks or fighters to trade yet.</div>`, { cls: "md", pad: "4px 12px", fill: "#141417" });
+    return ob(rows.length ? rows.join("") : `<div style="color:#6A6A72;font-size:13px;">No picks or fighters to trade yet.</div>`, { cls: "md", pad: "4px 12px" });
   };
   const tm = modal.to ? teamById(modal.to) : null;
   root.innerHTML = `<div class="mbk" data-act="close"></div><div class="mpn"><div class="mhead"><div class="h-font" style="font-size:24px;letter-spacing:1px;">PICK TRADES</div><button class="ibtn" data-act="close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
