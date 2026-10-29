@@ -1739,6 +1739,7 @@ function renderModePick(){
           <div class="mc-title">Card Redraft<span class="mc-soon h-font" style="border-color:var(--gold);color:var(--gold);">RECOMMENDED</span></div>
           <div class="mc-desc">Draft fighters off the next 4 UFC cards, no bench. Roster size scales with league size, from 6 fighters at 12 teams up to 20 at 4 teams.</div>
           <div class="mc-meta">4&ndash;12 TEAMS</div>
+          <div class="mc-meta" id="pickCrLeagueBtn" style="margin-top:10px;color:var(--gold);text-decoration:underline;cursor:pointer;">OR CREATE A LEAGUE WITH FRIENDS &rarr;</div>
         </button>
         <button type="button" class="mode-card gold" id="pickFaceoffBtn">
           <div class="mc-kicker">PER-EVENT &middot; 2 TEAMS</div>
@@ -1760,6 +1761,7 @@ function renderModePick(){
     </div>
   `;
   document.getElementById("modeBackLink").addEventListener("click", () => { screen = "landing"; render(); });
+  document.getElementById("pickCrLeagueBtn").addEventListener("click", (e) => { e.stopPropagation(); location.href = "league.html"; });
   document.getElementById("pickFaceoffBtn").addEventListener("click", () => { foPickIntent = "solo"; screen = "foCardPick"; render(); });
   document.getElementById("pickFaceoffLiveBtn").addEventListener("click", (e) => { e.stopPropagation(); foPickIntent = "live"; screen = "foCardPick"; render(); });
   document.getElementById("pickDynastyBtn").addEventListener("click", () => { leagueMode = "dynasty"; screen = "setup"; render(); });

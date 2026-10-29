@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Combat Leagues</title>
+<meta name="theme-color" content="#0B0B0D">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Mobile league app: one column, sticky header, five bottom tabs, sub-tabs inside each. */
+:root{--bg:#0B0B0D;--surf:#131317;--surf2:#1B1B20;--fg:#F2EFE6;--mut:#B8B5AE;--dim:#8C8982;--gold:#D4AF37;--gold2:#E8C93A;--red:#E2283C;--redl:#FF6A78;--teal:#3FD8C5;--green:#4CD08A;--ol:#D4AF37aa;
+--tc-cage:#D4AF37;--tc-iron:#FF5468;--tc-sub:#1FB5A3;--tc-td:#4C8BFF;--tc-ko:#B57BFF;--tc-gp:#FF7A2F;color-scheme:dark;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,system-ui,sans-serif;font-size:14px}
+body{min-height:100vh;background:radial-gradient(900px 600px at 20% -5%,rgba(236,60,80,.45),rgba(226,40,60,0) 70%),linear-gradient(180deg,#4A121C 0,#1A0A0E 420px,#0B0B0D 900px),var(--bg);background-attachment:fixed}
+.h{font-family:Oswald,Impact,sans-serif;letter-spacing:.5px}
+#app{max-width:560px;margin:0 auto;padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
+.pad{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+*{--P:polygon(var(--c) 0,calc(100% - var(--c)) 0,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0 calc(100% - var(--c)),0 var(--c))}
+.ob{--c:16px;padding:1.5px;background:var(--ol);clip-path:var(--P)}
+.ob{min-width:0}.ob>.i{min-width:0;--c:calc(var(--oc,16px) - 1px);clip-path:var(--P);background:var(--fill,linear-gradient(155deg,rgba(212,175,55,.12),rgba(0,0,0,0) 60%),#131317);padding:var(--pad,14px);height:100%}
+.ob.sm{--oc:10px}.ob.sm{--c:10px}.ob.md{--c:14px;--oc:14px}.ob.lg{--c:22px;--oc:22px}
+.oc{clip-path:polygon(29.29% 0,70.71% 0,100% 29.29%,100% 70.71%,70.71% 100%,29.29% 100%,0 70.71%,0 29.29%)}
+.fav{width:var(--s);height:var(--s);padding:3px;flex:none;background:radial-gradient(circle at 35% 28%,#fff,var(--dc) 55%,#000 130%);cursor:pointer}
+.fav>i{display:block;width:100%;height:100%;background:#0F0F12}
+.tav{width:var(--s);height:var(--s);flex:none;background:var(--tc);position:relative;display:flex;align-items:center;justify-content:center}
+.tav>b{position:absolute;inset:max(2px,calc(var(--s)/14));background:#131317;display:flex;align-items:center;justify-content:center;font-family:Oswald,sans-serif;font-size:calc(var(--s)*.34);color:var(--tc);background-size:cover;background-position:center}
+.tav>b>u{position:absolute;inset:0;background-size:cover;background-position:center}
+.hdr{position:sticky;top:0;z-index:20;padding-top:calc(env(safe-area-inset-top,0px) + 10px);padding-bottom:10px;background:linear-gradient(180deg,rgba(26,10,14,.96),rgba(26,10,14,.88));backdrop-filter:blur(8px);display:flex;align-items:center;gap:12px}
+.hdr .t{flex:1;min-width:0}.hdr .t b{display:block;font-size:20px;line-height:1.1;color:var(--tc-cage)}.hdr .t span{font-size:11px;color:var(--mut)}
+.ibtn{width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#26262B;color:var(--fg);border:0;cursor:pointer;--c:11px;clip-path:var(--P);position:relative}
+.ibtn svg{width:20px;height:20px}
+.dot{position:absolute;right:6px;top:6px;width:9px;height:9px;border-radius:50%;background:var(--red)}
+.seg{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none}.seg::-webkit-scrollbar{display:none}
+.chip{--c:9px;clip-path:var(--P);background:linear-gradient(135deg,#6E5622,#3A2E14);color:var(--fg);border:0;padding:9px 16px;font-family:Oswald,sans-serif;font-size:14px;letter-spacing:1px;white-space:nowrap;cursor:pointer}
+.chip.on{background:linear-gradient(135deg,#F2D675,#D4AF37 60%,#9C7A1E);color:#14120A}
+.chip.sm{padding:6px 12px;font-size:12px;--c:7px;background:#26262B;color:var(--mut)}.chip.sm.on{background:linear-gradient(135deg,#F2D675,#D4AF37 60%,#9C7A1E);color:#14120A}
+.sec{display:flex;flex-direction:column;gap:12px;padding-top:6px}
+.sh{display:flex;justify-content:space-between;align-items:baseline;margin:8px 0 0}.sh .h{font-size:18px;letter-spacing:1px}.sh span{font-size:12px;color:var(--dim)}
+.row{display:flex;align-items:center;gap:12px}.col{display:flex;flex-direction:column}.grow{flex:1;min-width:0}
+.mut{color:var(--mut)}.dim{color:var(--dim)}.gold{color:var(--gold2)}.small{font-size:12px}.tiny{font-size:11px}
+.nm{font-family:Oswald,sans-serif;font-size:17px;font-weight:700;line-height:1.1}
+.pts{font-family:Oswald,sans-serif;font-size:22px;text-align:right}
+.tag{--c:6px;clip-path:var(--P);font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1px;padding:2px 8px;background:rgba(255,255,255,.08);display:inline-block;white-space:nowrap}
+.tag.ph{border:1px dashed #33333A;color:#55555D;clip-path:none;background:none;font-family:Inter}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:linear-gradient(180deg,rgba(19,19,23,.92),#101013);border-top:1px solid #2a2a30;padding:8px max(8px,env(safe-area-inset-left,0px)) calc(8px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center}
+.nav>div{display:flex;gap:4px;width:100%;max-width:560px}
+.nb{flex:1;border:0;background:none;color:var(--dim);display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;cursor:pointer;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1px;--c:12px;clip-path:var(--P)}
+.nb svg{width:22px;height:22px}.nb.on{color:#14120A;background:linear-gradient(135deg,#F2D675,#D4AF37 60%,#9C7A1E)}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}.tbl th{font-size:10px;letter-spacing:1px;color:var(--dim);text-align:right;font-weight:500;padding:4px 4px}.tbl td{padding:8px 4px;text-align:right;border-top:1px solid #26262C}.tbl th:first-child,.tbl td:first-child{text-align:left}
+.scroll{overflow-x:auto;scrollbar-width:none}.scroll::-webkit-scrollbar{display:none}
+.live{display:inline-flex;align-items:center;gap:5px;color:var(--redl);font-family:Oswald;font-size:12px;letter-spacing:1.5px}.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--red);animation:lp 1.2s infinite}
+@keyframes lp{50%{opacity:.25}}
+.bar{height:6px;background:#26262B;border-radius:3px;overflow:hidden}.bar>i{display:block;height:100%}
+.btn{--c:10px;clip-path:var(--P);border:0;padding:11px 20px;font-family:Oswald,sans-serif;font-size:14px;letter-spacing:1px;background:#26262B;color:var(--fg);cursor:pointer}
+.btn.g{background:linear-gradient(135deg,#F2D675,#D4AF37 60%,#9C7A1E);color:#14120A;font-weight:700}
+.sheet{position:fixed;inset:0;z-index:50;display:none}.sheet.on{display:block}
+.sheet .bk{position:absolute;inset:0;background:rgba(0,0,0,.7)}
+.sheet .pn{position:absolute;left:0;right:0;bottom:0;top:24px;max-width:560px;margin:0 auto;overflow-y:auto;background:var(--bg);--c:22px;clip-path:polygon(var(--c) 0,calc(100% - var(--c)) 0,100% var(--c),100% 100%,0 100%,0 var(--c));padding-bottom:calc(30px + env(safe-area-inset-bottom,0px))}
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;background:var(--gold);color:#14120A;font-family:Oswald;letter-spacing:1px;padding:10px 20px;--c:10px;clip-path:var(--P);display:none}
+.bub{--c:9px;clip-path:var(--P);padding:1.5px;background:var(--bc)}.bub>div{--c:8px;clip-path:var(--P);background:#17171B;padding:7px 10px;font-size:12px;line-height:1.35}
+input,textarea{font:inherit;color:inherit}
+.msg{display:flex;gap:10px;align-items:flex-start}
+.fi{width:100%;background:#26262B;border:0;padding:12px 14px;--c:10px;clip-path:var(--P);color:var(--fg);outline:none}
+.sw{width:30px;height:30px;border:0;padding:0;cursor:pointer;--c:9px;clip-path:var(--P)}
+.wv{display:inline-block;width:3px;background:var(--gold2);animation:wv .9s infinite}@keyframes wv{0%,100%{height:3px}50%{height:12px}}
+@media (prefers-reduced-motion:reduce){.live::before,.wv{animation:none}}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+
+</style>
+</head><body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
+<script>
+/* Combat leagues: create, join, find and set up a Card Redraft league. Real data only. */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ob=(h,o={})=>`<div class="ob ${o.cls||''}" style="${o.col?`--ol:${o.col}aa;--fill:linear-gradient(155deg,${o.col}38,${o.col}10 60%,rgba(0,0,0,0)),#131317;`:''}${o.pad?`--pad:${o.pad};`:''}${o.st||''}"><div class="i">${h}</div></div>`;
+const secH=(t,r)=>`<div class="sh"><span class="h" style="font-size:18px;color:var(--fg)">${t}</span>${r||''}</div>`;
+const ICON={back:'<path d="M15 5l-7 7 7 7"/>',chat:'<path d="M4 5h16v11H9l-5 4z"/>',share:'<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 11l7.6-4M8.2 13l7.6 4"/>',copy:'<rect x="9" y="9" width="11" height="11"/><path d="M5 15V5h10"/>'};
+const svg=(p,w=20)=>`<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const SIZES=[[12,7],[12,5],[10,8],[10,6],[8,10],[8,8],[6,12],[6,10],[4,15]];
+const DTS=[['snake','SNAKE','Snake (Default)','Moderate','Draft in a set or random order. Each round the order reverses. Most common way to draft.'],
+['3rr','3RD ROUND REVERSAL','Snake, 3rd round reversal','Moderate','Snake order, but the order flips again in round 3 so the last picker gets two in a row early and the first picker waits longer.'],
+['linear','LINEAR','Linear','Moderate','Same order every round. Pick 1 stays first in every round.'],
+['auction','AUCTION','Auction','Long','Every team gets a budget and bids on fighters. Highest bid wins the fighter.']];
+const DTI={snake:'<path d="M14 18h38a10 10 0 0 1 0 20H26a10 10 0 0 0 0 20h28" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path d="M48 49l8 9-8 9" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>',
+'3rr':'<path d="M14 16h36a8 8 0 0 1 0 16H26a8 8 0 0 0 0 16h24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M14 64h32a6 6 0 0 0 0-12" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M52 64l8-8-8-8" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>',
+linear:'<g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 24h46M50 16l8 8-8 8"/><path d="M12 42h46M50 34l8 8-8 8"/><path d="M12 60h46M50 52l8 8-8 8"/></g>',
+auction:'<g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M26 18l22 22M20 30l22 22M38 12l14 14M14 44l14 14"/><path d="M34 60h32"/></g>'};
+const DTSVG=(k,s)=>`<svg viewBox="0 0 72 72" width="${s}" height="${s}" style="position:absolute;inset:0;margin:auto;color:inherit">${DTI[k]}</svg>`;
+const dtn=k=>(DTS.find(d=>d[0]===k)||DTS[0])[2].replace(' (Default)','');
+const plan=n=>n===12?{c:6,l:6}:n===10?{c:6,l:4}:n===8?{c:4,l:4}:n===6?{c:6,l:0}:{c:4,l:0};
+const PL=n=>{const p=plan(n);return{reg:p.c===6?'Blocks 1 to 7':'Blocks 1 to 8',seed:`Top ${p.c} play for the title${p.c===6?', seeds 1 and 2 get a bye':''}${p.l?'. Bottom '+p.l+' play the last place bracket':''}. Points break ties`,po:p.c===6?'Block 8 round one, Block 9 semis, Block 10 Last Stand':'Block 9 semis, Block 10 Last Stand'}};
+const SCORING=[['Significant strike landed','0.1'],['Takedown landed','2'],['Knockdown','8'],['Control time (per minute)','1'],['Submission attempt','1'],['Reversal','6'],['Takedown defended','0.5']];
+const COLORS=['#D4AF37','#FF5468','#1FB5A3','#4C8BFF','#B57BFF','#FF7A2F','#3FD8C5','#E58CB0','#9ACD32','#E8742A','#A8325A','#F4F4F2'];
+
+const sb=CombatAuth.client;
+const Z={v:'boot',uid:null,dn:'',leagues:[],L:null,teams:[],sub:'draft',step:'name',c:{name:'',start:'new',sz:2,dt:'snake'},cards:null,pub:[],f:'all',msgs:[],conf:null,code:'',found:null,err:'',busy:false,hosts:{}};
+const teamName=dn=>'Team '+dn;
+const initials=n=>{const w=String(n).replace(/^Team\s+/i,'').trim().split(/\s+/).filter(Boolean);return ((w[0]||'?')[0]+((w[1]||w[0]||'')[1]||'')).toUpperCase().slice(0,2)};
+const colorOf=(t,list)=>{const i=(list||Z.teams).findIndex(x=>x.id===t.id);return COLORS[(i<0?0:i)%COLORS.length]};
+const tavT=(t,s,list)=>`<div class="oc tav" style="--s:${s}px;--tc:${colorOf(t,list)}"><b class="oc">${esc(initials(t.name))}${t.photo_url?`<u style="background-image:url('${esc(t.photo_url)}')"></u>`:''}</b></div>`;
+const tavL=(name,s,c)=>`<div class="oc tav" style="--s:${s}px;--tc:${c||'#D4AF37'}"><b class="oc">${esc(initials(name))}</b></div>`;
+const fmtDT=iso=>iso?new Date(iso).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+const fmtD=d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+const genCode=()=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';const r=crypto.getRandomValues(new Uint8Array(6));for(const x of r)s+=a[x%a.length];return s.slice(0,3)+'-'+s.slice(3)};
+const joinLink=L=>location.origin+location.pathname.replace(/[^/]*$/,'')+'league.html?join='+encodeURIComponent(L.join_code);
+function toast(m){const e=$('#toast');e.textContent=m;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2200)}
+const isComm=()=>Z.L&&Z.L.commissioner_user_id===Z.uid;
+const myTeam=()=>Z.teams.find(t=>t.owner_user_id===Z.uid);
+
+/* ---------- data ---------- */
+async function loadMine(){
+  const {data,error}=await sb.from('teams').select('id,name,league_id,leagues!inner(*)').eq('owner_user_id',Z.uid);
+  if(error)throw error;
+  Z.leagues=(data||[]).map(r=>r.leagues).filter(l=>l.team_count).sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  const ids=Z.leagues.map(l=>l.id);Z.counts={};
+  if(ids.length){const {data:t}=await sb.from('teams').select('league_id').in('league_id',ids);(t||[]).forEach(x=>Z.counts[x.league_id]=(Z.counts[x.league_id]||0)+1)}
+}
+async function loadLeague(id){
+  const [{data:L,error},{data:T}]=await Promise.all([sb.from('leagues').select('*').eq('id',id).single(),sb.from('teams').select('*').eq('league_id',id).order('created_at')]);
+  if(error)throw error;Z.L=L;Z.teams=T||[];
+}
+async function loadCards(){
+  if(Z.cards)return;
+  try{
+    const today=new Date().toISOString().slice(0,10);
+    const {data,error}=await sb.from('bouts').select('event_name,bout_date,status,fighter_a,fighter_b').gte('bout_date',today).neq('status','completed').order('bout_date',{ascending:true});
+    if(error)throw error;
+    const m=new Map(),seen=new Set();
+    (data||[]).forEach(b=>{const p=[b.fighter_a,b.fighter_b].sort().join('|');if(seen.has(b.bout_date+p))return;seen.add(b.bout_date+p);const k=b.bout_date+'|'+b.event_name;if(!m.has(k))m.set(k,{eventName:b.event_name,date:b.bout_date,n:0});m.get(k).n++});
+    Z.cards=[...m.values()].sort((a,b)=>a.date.localeCompare(b.date));
+  }catch(e){Z.cards=[];Z.cardsErr=1}
+}
+/* A block never uses the card that is about to happen: it starts with the second upcoming card and needs 4 cards. */
+const blockCards=()=>(Z.cards||[]).slice(1,5);
+async function loadPublic(){
+  const {data,error}=await sb.from('leagues').select('*,teams(id)').eq('is_public',true).eq('status','setup').not('team_count','is',null).order('created_at',{ascending:false}).limit(60);
+  if(error)throw error;
+  Z.pub=data||[];
+  const ids=[...new Set(Z.pub.map(l=>l.commissioner_user_id).filter(Boolean))];
+  if(ids.length){const {data:p}=await sb.from('profiles').select('id,display_name').in('id',ids);(p||[]).forEach(x=>Z.hosts[x.id]=x.display_name)}
+}
+async function loadMsgs(){
+  if(!Z.L)return;
+  const {data}=await sb.from('chat_messages').select('*').eq('league_id',Z.L.id).order('created_at',{ascending:true}).limit(200);
+  Z.msgs=data||[];
+}
+
+/* ---------- screens ---------- */
+const back=(a,v)=>`<button class="ibtn" data-a="${a}" data-v="${v||''}" aria-label="Back">${svg(ICON.back)}</button>`;
+const btn=(a,v,l,dis)=>`<button class="btn g" style="width:100%;padding:15px;font-size:16px;${dis?'opacity:.4':''}" data-a="${a}" data-v="${v||''}">${l}</button>`;
+const shell=(bk,title,sub,body,foot)=>`<div class="pad" style="padding-top:calc(env(safe-area-inset-top,0px) + 12px);min-height:100vh;display:flex;flex-direction:column"><div class="row">${bk}<div class="grow"></div></div><div class="h" style="font-size:30px;margin-top:18px;letter-spacing:1px">${title}</div>${sub?`<div class="mut" style="margin:4px 0 18px">${sub}</div>`:'<div style="height:14px"></div>'}<div class="grow">${body}</div>${foot?`<div style="padding:18px 0 calc(22px + env(safe-area-inset-bottom,0px))">${foot}</div>`:'<div style="height:30px"></div>'}</div>`;
+const note=t=>`<div class="small" style="margin-top:12px;color:var(--redl)">${esc(t)}</div>`;
+
+function sBoot(){return `<div class="pad" style="padding-top:40vh;text-align:center"><div class="h gold" style="font-size:22px;letter-spacing:2px">LOADING</div></div>`}
+function sSignin(){return shell(`<a class="ibtn" href="index.html" aria-label="Back">${svg(ICON.back)}</a>`,'Sign in to play','Leagues are saved to your account, so friends can join and your draft is waiting for you.',ob(`<div class="mut" style="margin-bottom:12px">Create a league, join one with a code, or find a public league.</div><a class="btn g" style="display:block;text-align:center;text-decoration:none;padding:14px" href="login.html?redirect=${encodeURIComponent('league.html'+location.search)}">SIGN IN OR CREATE ACCOUNT</a>`,{cls:'md',pad:'16px',col:'#D4AF37'}))}
+function sName(){return shell(back('go','home'),'Pick your username','This becomes your team name. If your username is Rasta Willy, your team is Team Rasta Willy.',`<div style="margin-top:24px"><div class="small" style="color:var(--teal)">Username</div><input id="un" class="fi" style="background:none;clip-path:none;border-bottom:2px solid var(--teal);padding:8px 0;font-size:22px" value="${esc(Z.dn)}" maxlength="30" autocomplete="off" placeholder="Username">${Z.err?note(Z.err):''}</div>`,btn('save_name','','SAVE'))}
+
+function sHome(){
+  const mine=Z.leagues.length?secH('YOUR LEAGUES')+Z.leagues.map(l=>ob(`<div class="row" style="gap:12px">${tavL(l.name,44)}<div class="grow" style="min-width:0"><div class="nm">${esc(l.name)}</div><div class="small mut">Card Redraft · ${l.status==='setup'?'Setting up':l.status==='drafting'?'Drafting':'In season'} · ${Z.counts[l.id]||1}/${l.team_count} teams</div><div class="tiny gold">${l.draft_time?'Draft '+fmtDT(l.draft_time):'Draft time not set'}</div></div><button class="btn g" data-a="open" data-v="${l.id}">OPEN</button></div>`,{cls:'md',col:'#D4AF37',pad:'12px 14px'})).join('<div style="height:10px"></div>'):'';
+  const hero=ob(`<div class="row" data-a="start" style="gap:14px;cursor:pointer"><div class="oc" style="width:58px;height:58px;flex:none;background:linear-gradient(135deg,#F2D675,#9C7A1E);display:flex;align-items:center;justify-content:center;color:#14120A">${svg('<path d="M12 5v14M5 12h14"/>',30)}</div><div class="grow"><div class="h" style="font-size:20px;letter-spacing:1px">CREATE A LEAGUE</div><div class="small mut">Try UFC fantasy draft today</div></div></div><div class="row" style="gap:10px;margin-top:12px"><button class="btn g grow" data-a="start">+ CREATE</button><button class="btn grow" data-a="lobby">FIND A LEAGUE</button></div>`,{cls:'md',col:'#D4AF37',pad:'14px'});
+  const code=ob(`<div class="small mut" style="margin-bottom:6px">Have an invite code?</div><div class="row" style="gap:8px"><input class="fi grow" id="jc" placeholder="ABC-123" maxlength="8" autocomplete="off" style="text-transform:uppercase"><button class="btn g" data-a="join_code">JOIN</button></div>${Z.err?note(Z.err):''}`,{cls:'md',pad:'12px 14px'});
+  return `<div class="hdr pad"><a class="ibtn" href="index.html" aria-label="Home">${svg(ICON.back)}</a><div class="t"><b class="h" style="color:var(--fg)">Leagues</b><span>Card Redraft · ${esc(teamName(Z.dn))}</span></div></div><div class="sec pad">${hero}${mine}${code}</div>`;
+}
+function sCreate(){const c=Z.c,st=Z.step,[tm,fg]=SIZES[c.sz];
+ if(st==='name')return shell(back('cback','exit'),'Name your league','',`<div style="margin-top:34px"><div class="small" style="color:var(--teal)">League Name</div><input id="cln" class="fi" style="background:none;clip-path:none;border-bottom:2px solid var(--teal);padding:8px 0;font-size:22px" value="${esc(c.name)}" maxlength="30" autocomplete="off" placeholder="Name your league"><div class="small mut" style="margin-top:8px">Don't worry. You will be able to change this later.</div>${Z.err?note(Z.err):''}</div>`,btn('cnext','start','NEXT'));
+ if(st==='start'){const cp=Z.leagues;
+  return shell(back('cback'),'Set up your league','',`<div class="h" style="font-size:18px;margin-bottom:10px">Start from scratch</div><div data-a="csel" data-k="start" data-v="new">${ob(`<div class="row" style="gap:14px"><div class="oc" style="width:44px;height:44px;flex:none;background:#26262B;display:flex;align-items:center;justify-content:center">${svg('<path d="M12 5v14M5 12h14"/>',24)}</div><div><div class="nm">Create New League</div><div class="small mut">Pick your own settings</div></div></div>`,{cls:'md',col:c.start==='new'?'#D4AF37':'#4A4A52',pad:'14px'})}</div>${cp.length?`<div class="row" style="gap:12px;margin:16px 0"><div class="grow" style="height:1px;background:#33333A"></div><span class="dim h">OR</span><div class="grow" style="height:1px;background:#33333A"></div></div><div class="h" style="font-size:18px;margin-bottom:10px">Copy existing league</div><div class="col" style="gap:10px">${cp.map(l=>`<div data-a="csel" data-k="start" data-v="${l.id}">${ob(`<div class="row" style="gap:12px">${tavL(l.name,40)}<div><div class="nm" style="font-size:16px">${esc(l.name)}</div><div class="small mut">Card Redraft · ${esc(dtn(l.draft_type))} · ${l.team_count}-Team</div></div></div>`,{cls:'md',col:c.start===l.id?'#D4AF37':'#4A4A52',pad:'10px 12px'})}</div>`).join('')}</div>`:''}`,btn('cnext','type','NEXT'));}
+ if(st==='type'){const ty=[['redraft','REDRAFT','Rosters clear each block and all fighters are redrafted.','POPULAR'],['keeper','KEEPER','','SOON'],['dynasty','DYNASTY','','SOON'],['faceoff','FACE OFF','','SOON']];
+  return shell(back('cback'),'Choose league type','You can change it later in the settings',`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${ty.map(([k,l,d,b])=>{const on=k==='redraft';return `<div style="opacity:${on?1:.55};position:relative">${ob(`<div class="col" style="align-items:center;text-align:center;gap:8px;min-height:130px;justify-content:center">${b?`<span class="tag" style="position:absolute;left:10px;top:10px;${on?'background:var(--gold);color:#14120A':''}">${b}</span>`:''}<div class="oc" style="width:56px;height:56px;background:${on?'linear-gradient(135deg,#F2D675,#9C7A1E)':'#26262B'};color:${on?'#14120A':'var(--mut)'};display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${k==='redraft'?'<path d="M4 12a8 8 0 1 0 3-6.2M4 4v5h5"/>':k==='keeper'?'<rect x="5" y="11" width="14" height="9"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>':k==='dynasty'?'<path d="M4 18l2-10 4 4 2-6 2 6 4-4 2 10z"/>':'<path d="M4 20L20 4M14 4h6v6M4 4l6 6"/>'}</svg></div><div class="h" style="font-size:18px;letter-spacing:1.5px;color:${on?'var(--gold2)':'var(--mut)'}">${l}</div>${d?`<div class="tiny mut">${d}</div>`:''}</div>`,{cls:'md',col:on?'#D4AF37':'#4A4A52',pad:'10px'})}</div>`}).join('')}</div>`,btn('cnext','size','NEXT'));}
+ if(st==='size')return shell(back('cback'),'Choose league size','Teams and fighters per team. You can change it later in the settings',`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">${SIZES.map(([t,f],i)=>`<div data-a="csel" data-k="sz" data-v="${i}">${ob(`<div class="col" style="align-items:center;gap:2px;padding:6px 0"><div class="h" style="font-size:30px;line-height:1">${t}</div><div class="tiny mut">teams</div><div style="width:24px;height:1px;background:#33333A;margin:4px 0"></div><div class="h gold" style="font-size:22px;line-height:1">${f}</div><div class="tiny mut">fighters</div><div class="tiny dim" style="margin-top:4px">~${104-t*f} free</div></div>`,{cls:'md',col:c.sz===i?'#D4AF37':'#4A4A52',pad:'8px'})}</div>`).join('')}</div><div class="small mut" style="margin-top:14px">About 104 fighters fight across 4 cards. ${tm} teams drafting ${fg} each takes ${tm*fg}, so ${104-tm*fg} stay in the pool for trades and waivers. ${104-tm*fg<=24?'This is the compact mode: your draft picks matter most.':104-tm*fg>=36?'Lots of free agents, so trades and waivers matter.':'A balance of draft and waivers.'}</div>`,btn('cnext','draft','NEXT'));
+ if(st==='draft'){const d=DTS.find(x=>x[0]===c.dt);return shell(back('cback'),'Choose draft type','You can change it later in the settings',`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${DTS.map(x=>`<div ${x[0]==='auction'?'':`data-a="csel" data-k="dt" data-v="${x[0]}"`} class="col" style="align-items:center;gap:8px;cursor:pointer;${x[0]==='auction'?'opacity:.5':''}"><div class="oc" style="position:relative;width:96px;height:96px;background:${c.dt===x[0]?'linear-gradient(135deg,#F2D675,#9C7A1E)':'linear-gradient(135deg,#2A2A31,#1B1B20)'};color:${c.dt===x[0]?'#14120A':'#9AA0B5'}">${DTSVG(x[0],64)}</div><div class="h" style="font-size:13px;letter-spacing:1px;text-align:center;color:${c.dt===x[0]?'var(--gold2)':'var(--fg)'}">${x[1]}</div>${x[0]==='auction'?'<span class="tag">COMING SOON</span>':''}</div>`).join('')}</div><div style="margin-top:22px"><div class="nm" style="font-size:22px">${d[2]}</div><div class="small mut" style="margin:2px 0 10px">Duration: ${d[3]}</div><div>${d[4]}</div></div>${Z.err?note(Z.err):''}`,btn('cdone','','DONE',Z.busy));}
+}
+
+function kv(a){return ob(a.map(([l,v],i)=>`<div class="row" style="padding:9px 0;justify-content:space-between;gap:14px;${i?'border-top:1px solid #26262C':''}"><span class="mut">${l}</span><b style="text-align:right">${v}</b></div>`).join(''),{cls:'md',pad:'4px 14px'})}
+function dtab(){const L=Z.L,tm=L.team_count,fg=L.fighters_per_team,comm=isComm(),n=Z.teams.length;
+ const openRow=`<div class="row" ${comm?'data-a="toggle_open" style="cursor:pointer"':''}><div class="grow"><div class="nm" style="font-size:17px">Open league to public</div><div class="tiny mut">We will post the league in the lobby for you</div></div><span class="h" style="font-size:20px;color:${L.is_public?'var(--gold2)':'var(--dim)'}">${L.is_public?'ON':'OFF'}</span></div>`;
+ const inv=secH('INVITE FRIENDS TO PLAY',`<span class="h gold" style="font-size:18px"><span style="color:var(--redl)">${n}</span>/${tm}</span>`)+ob(`<button class="btn g" style="width:100%;padding:13px" data-a="share">+ INVITE FRIENDS TO JOIN</button><div class="row" style="gap:10px;margin:12px 0"><div class="grow" data-a="copy" style="cursor:pointer;min-width:0">${ob(`<div class="small" style="color:var(--gold2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(joinLink(L).replace(/^https?:\/\//,''))}</div>`,{cls:'sm',pad:'10px 12px'})}</div><button class="ibtn" style="background:linear-gradient(135deg,#F2D675,#D4AF37 60%,#9C7A1E);color:#14120A" data-a="copy" aria-label="Copy link">${svg(ICON.copy)}</button><button class="ibtn" style="background:linear-gradient(135deg,#F2D675,#D4AF37 60%,#9C7A1E);color:#14120A" data-a="share" aria-label="Share">${svg(ICON.share)}</button></div><div class="small mut" style="margin-bottom:10px">Invite code <b class="gold h" style="letter-spacing:2px;font-size:16px">${esc(L.join_code)}</b></div>${openRow}`,{cls:'md',pad:'14px'});
+ const bc=blockCards(),ok=bc.length===4;
+ const cards=secH('BLOCK 1 CARDS',`<span>${ok?'4 of 4 cards':bc.length+' of 4 cards'}</span>`)+ob(bc.length?bc.map((c,i)=>`<div class="row" style="padding:8px 0;gap:12px;${i?'border-top:1px solid #26262C':''}"><span class="h gold" style="width:22px;font-size:18px">${i+1}</span><div class="grow"><div class="nm" style="font-size:15px">${esc(c.eventName.replace(/^UFC Fight Night:\s*/,'').replace(/^Polymarket\s*/,''))}</div><div class="tiny mut">${fmtD(c.date)} · ${c.n} fight${c.n===1?'':'s'}</div></div></div>`).join('')+(ok?'':`<div class="row" style="padding:8px 0;gap:12px;border-top:1px solid #26262C"><span class="h dim" style="width:22px;font-size:18px">${bc.length+1}</span><div class="grow"><div class="nm dim" style="font-size:15px">Waiting for the next card</div><div class="tiny mut">Appears here when the UFC announces it</div></div></div>`):`<div class="mut small" style="padding:8px 0">${Z.cardsErr?"Couldn't load the upcoming cards. Try again in a moment.":'No upcoming cards are loaded yet.'}</div>`,{cls:'md',pad:'4px 14px'})+`<div class="tiny dim">A block uses 4 UFC cards. It starts with the second upcoming card, not the one about to happen. The draft opens once all 4 are announced.</div>`;
+ const dtp=ob(comm?`<div class="small mut" style="margin-bottom:6px">Draft date and time</div><div class="row" style="gap:8px"><input class="fi grow" id="dtt" type="datetime-local" value="${L.draft_time?new Date(new Date(L.draft_time)-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16):''}"><button class="btn g" data-a="save_time">SAVE</button></div>`:`<div style="text-align:center"><div class="h gold" style="font-size:18px;letter-spacing:1.5px">${L.draft_time?esc(fmtDT(L.draft_time)):'NOT SET'}</div></div>`,{cls:'md',col:'#D4AF37',pad:'12px'});
+ const db=secH('DRAFTBOARD')+`<div class="small mut" style="margin:-4px 0 0">${L.draft_time?esc(fmtDT(L.draft_time)):'Draft time has not been set'}</div>`+dtp+ob(`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 14px"><span>${L.pick_seconds} Sec Per Pick</span><span>${fg} Rounds</span><span>${esc(dtn(L.draft_type))}</span><span>CPU Autopick</span></div>`,{cls:'md',pad:'12px 14px'});
+ const slots=Array.from({length:tm},(_,i)=>Z.teams[i]);
+ const pos=secH('DRAFT POSITIONS',`<span>${tm-n} spot${tm-n===1?'':'s'} open</span>`)+ob(slots.map((t,i)=>`<div class="row" style="gap:12px;padding:8px 0;${i?'border-top:1px solid #26262C':''}"><span class="h ${t&&t.owner_user_id===Z.uid?'gold':'dim'}" style="width:22px;font-size:18px">${i+1}</span>${t?tavT(t,38):`<div class="oc" style="width:38px;height:38px;flex:none;background:#26262B;display:flex;align-items:center;justify-content:center;color:var(--dim)">${svg('<circle cx="12" cy="9" r="3.5"/><path d="M5 20c1-4 4-5.5 7-5.5s6 1.5 7 5.5"/>')}</div>`}<div class="grow"><div class="nm" style="font-size:16px">${t?esc(t.name):'Open spot'}</div><div class="tiny mut">${t?(t.owner_user_id===L.commissioner_user_id?'Commissioner':'Member'):'Waiting for a friend'}</div></div><span class="tag">POS ${i+1}</span></div>`).join(''),{cls:'md',pad:'4px 14px',col:'#D4AF37'})+`<div class="tiny dim">Positions are set at random when the draft starts.</div>`;
+ const wvc=secH('WAIVERS')+ob(`<div class="row" style="gap:8px"><button class="chip ${L.waiver_type==='faab'?'':'on'}" style="flex:1" ${comm?'data-a="set_wv" data-v="standard"':''}>STANDARD</button><button class="chip ${L.waiver_type==='faab'?'on':''}" style="flex:1" ${comm?'data-a="set_wv" data-v="faab"':''}>FAAB $${L.faab_budget}</button></div><div class="tiny mut" style="margin-top:8px">${L.waiver_type==='faab'?`Every team gets $${L.faab_budget} for the season. Bid on free agents. Highest bid wins. Claims process every Friday at 12 AM. Budget does not refill.`:'Claims process every Friday at 12 AM. Worst record picks first.'}</div>`,{cls:'md',pad:'12px 14px'});
+ const ls=secH('LEAGUE SETTINGS')+kv([['Waivers',(L.waiver_type==='faab'?`FAAB, $${L.faab_budget} budget`:'Standard')+', Fridays 12 AM'],['Format','Card Redraft'],['Number of teams',tm],['Fighters per team',fg+', no bench'],['Draft type',esc(dtn(L.draft_type))],['Pick timer',L.pick_seconds+' seconds'],['Draft order','Random each block'],['Block length','4 cards'],['Season length','10 blocks · 40 cards'],['Regular season',PL(tm).reg],['Matchups','Head to head, one per block'],['Seeding',PL(tm).seed],['Playoffs',PL(tm).po],...(plan(tm).l?[['Last place bracket','Loser moves on, loser of the final is last']]:[]),['Champion','Winner of the Last Stand'],['Fighter is out','Marked OUT, swap any time before the fight'],['Lineup lock','Locked once your fighter fights']]);
+ const ss=secH('SCORING SETTINGS')+kv(SCORING.map(([l,v])=>[l,`<span class="gold">${v}</span>`]))+ob(`<div class="row"><div class="grow"><div class="nm" style="font-size:16px">Finish bonus</div><div class="tiny mut">Win by KO/TKO or submission</div></div><div class="h gold" style="font-size:22px">+10</div></div>`,{cls:'md',pad:'12px 14px'});
+ return inv+cards+db+pos+wvc+ls+ss}
+function chatTab(){
+  return secH('LEAGUE CHAT',`<span>${esc(Z.L.name)} · ${Z.teams.length} teams</span>`)+ob(`<div class="col" style="gap:14px;min-height:260px" id="msgs">${Z.msgs.length?Z.msgs.map(m=>{const t=Z.teams.find(x=>x.name===m.display_name||x.name==='Team '+m.display_name);return `<div class="msg">${t?tavT(t,32):tavL(m.display_name,32,'#8C8982')}<div style="min-width:0"><div class="small"><b style="color:${t?colorOf(t):'var(--mut)'}">${esc(m.display_name)}</b> <span class="dim">${esc(new Date(m.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}))}</span></div><div style="line-height:1.4;word-break:break-word">${esc(m.body)}</div></div></div>`}).join(''):'<div class="mut">Be the first to say hi.</div>'}</div>`,{cls:'md',pad:'14px'})+`<form id="cf" class="row" style="gap:8px"><input class="fi grow" id="ci" placeholder="Message the league" autocomplete="off" maxlength="500"><button class="btn g" type="submit">SEND</button></form>`}
+function roomTab(){const L=Z.L,ok=blockCards().length===4;
+  return ob(`<div class="h" style="font-size:20px">DRAFT ROOM</div><div class="mut" style="margin:6px 0 12px">${!ok?'The draft room opens once all 4 cards of the block are announced.':L.draft_time?'Opens '+esc(fmtDT(L.draft_time))+'.':'Set a draft time on the Draft tab. The room opens then.'}</div><button class="btn" style="width:100%;opacity:.55" data-a="toast_m" data-v="The live draft room is not open yet">ENTER DRAFT ROOM</button>`,{cls:'md',pad:'18px'})+secH('DRAFT ORDER',`<span>${esc(dtn(L.draft_type))}</span>`)+ob(`<div class="mut">The order is picked at random when the draft starts, and it changes every block. ${L.draft_type==='3rr'?'Round 3 repeats the Round 2 order, then the snake continues.':L.draft_type==='linear'?'The order stays the same every round.':'The order flips every round.'}</div>`,{cls:'md',pad:'14px'})}
+function manageTab(){const L=Z.L,comm=isComm(),conf=Z.conf;let h=secH('MANAGE LEAGUE',`<span>${comm?'You are the commissioner':'Commissioner: '+esc(Z.hosts[L.commissioner_user_id]||'the host')}</span>`);
+ const cf=(k,txt,b)=>conf===k?ob(`<div style="font-weight:600;margin-bottom:8px">${txt}</div><div class="row" style="gap:8px"><button class="btn grow" style="background:var(--red);color:#fff" data-a="do_${k}">${b}</button><button class="btn grow" data-a="cancel">CANCEL</button></div>`,{cls:'md',col:'#E2283C',pad:'12px 14px'}):'';
+ if(comm){h+=ob(`<div class="small mut" style="margin-bottom:6px">League name</div><div class="row" style="gap:8px"><input class="fi grow" id="rn" value="${esc(L.name)}" maxlength="30"><button class="btn g" data-a="rename">SAVE</button></div>`,{cls:'md',pad:'12px 14px'});
+  const others=Z.teams.filter(t=>t.owner_user_id!==Z.uid);
+  h+=secH('TEAMS')+ob(others.length?others.map((t,i)=>`<div class="row" style="padding:8px 0;gap:8px;${i?'border-top:1px solid #26262C':''}">${tavT(t,30)}<span class="nm grow" style="font-size:13px;color:${colorOf(t)};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.name)}</span><button class="chip sm" data-a="rm_team" data-v="${t.id}" style="color:var(--redl)">REMOVE</button></div>`).join(''):`<div class="mut small" style="padding:8px 0">No other teams yet. Share your invite link to fill the league.</div>`,{cls:'md',pad:'4px 14px'})+`<div class="tiny dim">Removing a team frees its spot.</div>`;
+  h+=secH('SETTINGS LOCK')+ob(`<div class="row"><div class="grow"><div class="nm" style="font-size:16px">Open until the draft starts</div><div class="tiny mut">Change the name, waivers, draft time and visibility any time before the draft. Everything locks when the draft starts.</div></div><span class="h gold" style="font-size:20px">OPEN</span></div>`,{cls:'md',pad:'12px 14px'});
+ } else h+=ob(`<div class="mut">Only the commissioner can edit settings, remove teams or delete the league.</div>`,{cls:'md',pad:'14px'});
+ h+=secH('LEAVE OR DELETE');
+ h+=ob(`<div class="row" style="gap:10px"><div class="grow"><div class="nm" style="font-size:16px">Leave league</div><div class="tiny mut">${comm?'The commissioner cannot leave. Delete the league instead.':'Your team is released. You can rejoin with the invite code.'}</div></div><button class="chip sm" data-a="ask" data-v="leave" style="${comm?'opacity:.45':''}">LEAVE</button></div>`,{cls:'md',pad:'12px 14px'})+cf('leave','Leave '+esc(L.name)+'?','YES, LEAVE');
+ if(comm)h+=ob(`<div class="row" style="gap:10px"><div class="grow"><div class="nm" style="font-size:16px;color:var(--redl)">Delete league</div><div class="tiny mut">Removes the league for everyone. Cannot be undone.</div></div><button class="chip sm" data-a="ask" data-v="delete" style="color:var(--redl)">DELETE</button></div>`,{cls:'md',col:'#E2283C',pad:'12px 14px'})+cf('delete','Delete '+esc(L.name)+' for everyone?','YES, DELETE');
+ return h}
+function sLeague(){const L=Z.L,items=[['draft','DRAFT'],['chat','CHAT'],['room','DRAFT ROOM'],['manage','MANAGE']];
+  const sg=`<div class="seg">${items.map(([k,l])=>`<button class="chip ${Z.sub===k?'on':''}" data-a="sub" data-v="${k}">${l}</button>`).join('')}</div>`;
+  const inner=L.status!=='setup'?ob(`<div class="h" style="font-size:20px">${L.status==='drafting'?'DRAFT IN PROGRESS':'SEASON IN PROGRESS'}</div><div class="mut" style="margin-top:6px">The live draft and season screens are coming next.</div>`,{cls:'md',pad:'18px'}):Z.sub==='draft'?dtab():Z.sub==='chat'?chatTab():Z.sub==='room'?roomTab():manageTab();
+  return `<div class="hdr pad">${back('go','home')}${tavL(L.name,42)}<div class="t"><b class="h" style="color:var(--fg)">${esc(L.name)}</b><span>Card Redraft · ${L.status==='setup'?'Setting up':'In progress'}</span></div><button class="ibtn" data-a="sub" data-v="chat" aria-label="Chat">${svg(ICON.chat)}</button></div><div class="sec pad">${sg}${inner}</div>`}
+function sLobby(){const f=Z.f;
+  const rows=Z.pub.filter(l=>{const n=l.teams.length;return f==='all'||(f==='open'&&n<l.team_count)||(f==='soon'&&l.draft_time&&new Date(l.draft_time)-Date.now()<7*864e5)});
+  const chips=[['all','ALL'],['open','OPEN SPOTS'],['soon','STARTING SOON']].map(([k,l])=>`<button class="chip ${f===k?'on':''}" data-a="lf" data-v="${k}">${l}</button>`).join('');
+  return `<div class="pad" style="padding-top:calc(env(safe-area-inset-top,0px) + 12px);padding-bottom:30px"><div class="row">${back('go','home')}</div><div class="h" style="font-size:30px;margin:18px 0 4px;letter-spacing:1px">Find a league</div><div class="mut" style="margin-bottom:12px">Public Card Redraft leagues that still have open spots.</div><div class="seg">${chips}</div><div class="col" style="gap:10px">${rows.length?rows.map(l=>{const n=l.teams.length,full=n>=l.team_count,mineL=Z.leagues.some(x=>x.id===l.id);return ob(`<div class="row" style="gap:12px"><div class="grow" style="min-width:0"><div class="nm" style="font-size:18px">${esc(l.name)}</div><div class="tiny mut">Host ${esc(Z.hosts[l.commissioner_user_id]||'a player')} · Card Redraft · ${esc(dtn(l.draft_type))}</div><div class="small" style="margin-top:4px"><b class="gold">${n}/${l.team_count}</b> teams · ${l.fighters_per_team} fighters each</div><div class="tiny dim">${l.draft_time?'Draft '+esc(fmtDT(l.draft_time)):'Draft time not set'}</div></div>${mineL?`<button class="btn" data-a="open" data-v="${l.id}">OPEN</button>`:full?'<button class="btn" disabled style="opacity:.5">FULL</button>':`<button class="btn g" data-a="join_id" data-v="${l.id}">JOIN</button>`}</div>`,{cls:'md',pad:'12px 14px'})}).join(''):`<div class="mut" style="padding:20px 0;text-align:center">${f==='all'?'No public leagues yet. Turn on Open league to public in your league and it shows up here.':'Nothing matches that filter yet.'}</div>`}</div>${Z.err?note(Z.err):''}</div>`}
+function sJoin(){const L=Z.found;if(!L)return shell(back('go','home'),'League not found','Check the code and try again.','',btn('go','home','BACK'));
+  const n=L.teams.length,full=n>=L.team_count;
+  return shell(back('go','home'),'Join this league','You were invited to play.',ob(`<div class="row" style="gap:12px">${tavL(L.name,52)}<div class="grow"><div class="nm" style="font-size:20px">${esc(L.name)}</div><div class="small mut">Host ${esc(Z.hosts[L.commissioner_user_id]||'a player')}</div></div></div><div style="height:12px"></div>${[['Format','Card Redraft'],['Teams',`${n}/${L.team_count}`],['Fighters per team',L.fighters_per_team],['Draft type',esc(dtn(L.draft_type))],['Draft',L.draft_time?esc(fmtDT(L.draft_time)):'Not set'],['Your team',esc(teamName(Z.dn))]].map(([a,b],i)=>`<div class="row" style="padding:8px 0;justify-content:space-between;${i?'border-top:1px solid #26262C':''}"><span class="mut">${a}</span><b>${b}</b></div>`).join('')}${Z.err?note(Z.err):''}`,{cls:'md',col:'#D4AF37',pad:'14px'}),full?'<div class="mut" style="text-align:center">This league is full.</div>':btn('do_join',L.id,'JOIN LEAGUE',Z.busy))}
+
+function render(){const v=Z.v;
+  $('#app').innerHTML=v==='boot'?sBoot():v==='signin'?sSignin():v==='name'?sName():v==='home'?sHome():v==='create'?sCreate():v==='league'?sLeague():v==='lobby'?sLobby():v==='join'?sJoin():'';
+  const n=$('#cln');if(n)n.addEventListener('input',()=>{Z.c.name=n.value});
+  const u=$('#un');if(u)u.addEventListener('input',()=>{Z.dn=u.value});
+}
+function go(v){Z.v=v;Z.err='';Z.conf=null;render();scrollTo(0,0)}
+const fail=(e,fallback)=>{console.error(e);Z.err=(e&&e.message&&/full/i.test(e.message))?'That league is full.':fallback||'Something went wrong. Try again.';render()};
+
+/* ---------- actions ---------- */
+async function openLeague(id){try{await Promise.all([loadLeague(id),loadCards()]);await loadMsgs();Z.sub='draft';const h=[Z.L.commissioner_user_id];const {data:p}=await sb.from('profiles').select('id,display_name').in('id',h);(p||[]).forEach(x=>Z.hosts[x.id]=x.display_name);go('league')}catch(e){toast("Couldn't open that league");console.error(e)}}
+async function createLeague(){
+  if(Z.busy)return;Z.busy=true;Z.err='';render();
+  const c=Z.c,[tm,fg]=SIZES[c.sz];
+  try{
+    let L=null;
+    for(let i=0;i<5&&!L;i++){
+      const row={name:c.name.trim(),commissioner_user_id:Z.uid,team_count:tm,fighters_per_team:fg,draft_type:c.dt,waiver_type:'standard',faab_budget:200,join_code:genCode(),is_public:false,status:'setup',pick_seconds:45,format:'card_redraft'};
+      const {data,error}=await sb.from('leagues').insert(row).select().single();
+      if(!error)L=data;else if(!/join_code|duplicate|unique/i.test(error.message))throw error;
+    }
+    if(!L)throw new Error('Could not make an invite code');
+    const {error:te}=await sb.from('teams').insert({league_id:L.id,name:teamName(Z.dn),owner_user_id:Z.uid,claimed_at:new Date().toISOString()});
+    if(te){await sb.from('leagues').delete().eq('id',L.id);throw te}
+    Z.busy=false;await loadMine();await openLeague(L.id);toast('League created');
+  }catch(e){Z.busy=false;fail(e,"Couldn't create the league. Try again.")}
+}
+async function joinLeague(id){
+  if(Z.busy)return;Z.busy=true;Z.err='';render();
+  try{
+    const {error}=await sb.from('teams').insert({league_id:id,name:teamName(Z.dn),owner_user_id:Z.uid,claimed_at:new Date().toISOString()});
+    if(error&&!/duplicate|unique/i.test(error.message))throw error;
+    Z.busy=false;await loadMine();await openLeague(id);toast('You joined the league');
+  }catch(e){Z.busy=false;fail(e,"Couldn't join the league.")}
+}
+async function lookupCode(code){
+  const {data,error}=await sb.from('leagues').select('*,teams(id)').eq('join_code',code.toUpperCase().trim()).maybeSingle();
+  if(error)throw error;
+  Z.found=data;if(data){const {data:p}=await sb.from('profiles').select('id,display_name').eq('id',data.commissioner_user_id);(p||[]).forEach(x=>Z.hosts[x.id]=x.display_name);
+    if(Z.leagues.some(l=>l.id===data.id)){await openLeague(data.id);return}}
+  go('join');
+}
+async function upd(patch,msg){const {error}=await sb.from('leagues').update(patch).eq('id',Z.L.id);if(error){toast("Couldn't save that");console.error(error);return false}Object.assign(Z.L,patch);render();if(msg)toast(msg);return true}
+
+document.addEventListener('click',async e=>{const el=e.target.closest('[data-a]');if(!el)return;const a=el.dataset.a,v=el.dataset.v,c=Z.c,flow=['name','start','type','size','draft'];
+  try{
+  if(a==='go'){if(v==='home'){await loadMine();}go(v)}
+  else if(a==='start'){Z.c={name:'',start:'new',sz:2,dt:'snake'};Z.step='name';go('create')}
+  else if(a==='cback'){if(v==='exit'){go('home')}else{const i=flow.indexOf(Z.step);Z.step=flow[Math.max(0,i-1)];render();scrollTo(0,0)}}
+  else if(a==='cnext'){if(Z.step==='name'&&!c.name.trim()){Z.err='Name your league first';render();return}Z.err='';Z.step=v;render();scrollTo(0,0)}
+  else if(a==='csel'){const k=el.dataset.k;if(k==='sz')c.sz=+v;else if(k==='start'){c.start=v;const l=Z.leagues.find(x=>x.id===v);if(l){c.sz=Math.max(0,SIZES.findIndex(s=>s[0]===l.team_count&&s[1]===l.fighters_per_team));c.dt=l.draft_type==='auction'?'snake':l.draft_type}}else c[k]=v;render()}
+  else if(a==='cdone')await createLeague();
+  else if(a==='open')await openLeague(v);
+  else if(a==='lobby'){Z.f='all';await loadPublic();await loadMine();go('lobby')}
+  else if(a==='lf'){Z.f=v;render()}
+  else if(a==='join_code'){const code=($('#jc').value||'').trim();if(code.length<4){Z.err='Enter the invite code';render();return}await lookupCode(code)}
+  else if(a==='join_id'){const {data}=await sb.from('leagues').select('*,teams(id)').eq('id',v).single();Z.found=data;go('join')}
+  else if(a==='do_join')await joinLeague(v);
+  else if(a==='save_name'){const n=(Z.dn||'').trim();if(n.length<2){Z.err='Use at least 2 characters';render();return}const {error}=await sb.from('profiles').upsert({id:Z.uid,display_name:n},{onConflict:'id'});if(error){Z.err='Could not save your username';render();return}Z.dn=n;await loadMine();if(Z.pendingJoin){const c2=Z.pendingJoin;Z.pendingJoin=null;await lookupCode(c2)}else go('home')}
+  else if(a==='sub'){Z.sub=v;if(v==='chat')await loadMsgs();render();scrollTo(0,0)}
+  else if(a==='toast_m')toast(v);
+  else if(a==='copy'){try{await navigator.clipboard.writeText(joinLink(Z.L));toast('Invite link copied')}catch(_){toast(joinLink(Z.L))}}
+  else if(a==='share'){const u=joinLink(Z.L);if(navigator.share){try{await navigator.share({title:Z.L.name,text:'Join my Combat league: '+Z.L.name,url:u})}catch(_){}}else{try{await navigator.clipboard.writeText(u);toast('Invite link copied')}catch(_){toast(u)}}}
+  else if(a==='toggle_open')await upd({is_public:!Z.L.is_public},Z.L.is_public?'League is now private':'League posted to the lobby');
+  else if(a==='set_wv')await upd({waiver_type:v},'Waivers updated');
+  else if(a==='save_time'){const t=$('#dtt').value;if(!t){toast('Pick a date and time');return}const d=new Date(t);if(d<new Date()){toast('Pick a time in the future');return}await upd({draft_time:d.toISOString()},'Draft time set')}
+  else if(a==='rename'){const n=($('#rn').value||'').trim();if(!n){toast('Name cannot be empty');return}await upd({name:n},'League renamed')}
+  else if(a==='ask'){if(v==='leave'&&isComm()){toast('Delete the league instead, or ask the commissioner');return}Z.conf=v;render()}
+  else if(a==='cancel'){Z.conf=null;render()}
+  else if(a==='rm_team'){const {error}=await sb.from('teams').delete().eq('id',v);if(error){toast("Couldn't remove that team");return}Z.teams=Z.teams.filter(t=>t.id!==v);render();toast('Team removed')}
+  else if(a==='do_leave'){const t=myTeam();if(t){const {error}=await sb.from('teams').delete().eq('id',t.id);if(error){toast("Couldn't leave");return}}await loadMine();toast('You left the league');go('home')}
+  else if(a==='do_delete'){await sb.from('teams').delete().eq('league_id',Z.L.id);const {error}=await sb.from('leagues').delete().eq('id',Z.L.id);if(error){toast("Couldn't delete the league");await loadLeague(Z.L.id);render();return}await loadMine();toast('League deleted');go('home')}
+  }catch(err){console.error(err);toast('Something went wrong. Try again.')}
+});
+document.addEventListener('submit',async e=>{if(e.target.id!=='cf')return;e.preventDefault();const i=$('#ci'),b=(i.value||'').trim();if(!b)return;i.value='';
+  const {error}=await sb.from('chat_messages').insert({league_id:Z.L.id,display_name:teamName(Z.dn),body:b});if(error){toast("Couldn't send");return}await loadMsgs();render();setTimeout(()=>{const x=$('#ci');x&&x.focus()},0)});
+setInterval(async()=>{if(Z.v==='league'&&Z.sub==='chat'&&!document.hidden&&!document.activeElement?.matches('input')){const n=Z.msgs.length;await loadMsgs();if(Z.msgs.length!==n)render()}},6000);
+
+/* ---------- start ---------- */
+(async()=>{
+  try{
+    const user=await CombatAuth.getUser();
+    const q=new URLSearchParams(location.search),jc=q.get('join');
+    if(!user){Z.pendingJoin=jc;return go('signin')}
+    Z.uid=user.id;
+    const p=await CombatAuth.getProfile(user.id);
+    Z.dn=(p&&p.display_name)||'';
+    if(!Z.dn){Z.pendingJoin=jc;return go('name')}
+    await loadMine();
+    if(jc)return await lookupCode(jc);
+    go('home');
+  }catch(e){console.error(e);$('#app').innerHTML=`<div class="pad" style="padding-top:30vh;text-align:center"><div class="h" style="font-size:22px">Couldn't load your leagues</div><div class="mut" style="margin:8px 0 16px">Check your connection and try again.</div><button class="btn g" onclick="location.reload()">RETRY</button></div>`}
+})();
+
+</script>
+</body></html>
