@@ -145,3 +145,9 @@ grant execute on function public.cr_start_draft(uuid), public.cr_make_pick(uuid,
 -- were redefined to write to them. See the live database for the final function bodies.
 -- cr_picks(draft_room_id, pick_number, round_number, team_id, fighter_id, division, is_autopick, picked_at)
 -- cr_rosters(team_id, block_no, fighter_id, division, round_number)
+
+-- ===== Migration "card_redraft_season" =====
+-- cr_matchups (head-to-head pairings per block, scores, winner, final flag) with member read policy;
+-- cr_make_schedule (circle-method round robin, blocks 1-7 for 12/10/6 teams, 1-8 for 8/4 teams),
+-- trigger cr_draft_complete (builds the schedule when the block 1 draft completes),
+-- cr_refresh_scores(league) (sums performances.fantasy_points for rostered fighters on the block's cards, finalizes when all cards are done).
