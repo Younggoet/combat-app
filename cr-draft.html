@@ -571,8 +571,21 @@
 
   /* ---------- League look: same maroon background as the league page ---------- */
   :root{--bg:#0B0B0D;}
-  body{background:radial-gradient(900px 600px at 20% -5%,rgba(236,60,80,.45),rgba(226,40,60,0) 70%),linear-gradient(180deg,#4A121C 0,#1A0A0E 420px,#0B0B0D 900px),#0B0B0D !important;background-attachment:fixed !important;}
+  body{background:#0B0B0D !important;}
+  body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;transform:translateZ(0);background:radial-gradient(900px 600px at 20% -5%,rgba(236,60,80,.45),rgba(226,40,60,0) 70%),linear-gradient(180deg,#4A121C 0,#1A0A0E 420px,#0B0B0D 900px);}
+  /* cheaper pulse: opacity instead of an animated blur filter */
+  @keyframes octglow{0%,100%{opacity:1;}50%{opacity:.6;}}
+  .oct-wrap.pulse{filter:drop-shadow(0 0 8px rgba(226,40,60,.7));}
   #modalRoot .mpn{background:#0B0B0D;}
+
+  .queue-card{all:unset;cursor:pointer;display:block;}
+  .queue-card:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+  [data-profile]{cursor:pointer;}
+  #profRoot .pbk{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.72);}
+  #profRoot .ppn{position:fixed;z-index:96;left:50%;top:3vh;bottom:3vh;width:min(760px,95vw);transform:translateX(-50%);overflow-y:auto;background:#0B0B0D;padding:22px 22px 28px;--c:22px;clip-path:var(--P);}
+  .prof-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px;}
+  .queue-row{align-items:center;}
+  .more-btn{display:block;width:100%;border:0;background:#1B1B20;color:var(--gold);font-size:13px;letter-spacing:2px;padding:14px;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -580,6 +593,7 @@
   <div id="content"><div class="loading">Loading the draft room…</div></div>
 </div>
 <div id="modalRoot"></div>
+<div id="profRoot"></div>
 
 <script>
 const DIVISION_COLOR = {
@@ -779,6 +793,7 @@ let newsLoaded = false;
 let userId = null, L = null, teams = [], room = null, picks = [], po = {}, pt = [];
 let userTeamId = null, userTeamName = "";
 let activeFilter = "ALL";
+let poolLimit = 40;
 let selectedFighterId = null;
 let lastSig = "";
 let modal = null;      // pick trade sheet state
@@ -1003,7 +1018,7 @@ function renderDraft(){
           <div style="display:flex;gap:34px;margin-top:10px;flex-wrap:wrap;">
             <div><div class="h-font" style="font-size:64px;font-weight:700;line-height:1;">${fmtNum(projectedFPById[spotlight.id], 1)}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Projected points</div></div>
             <div><div class="h-font" style="font-size:64px;font-weight:700;line-height:1;">${fmtRank(overallRankById[spotlight.id])}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Overall rank</div></div>
-          </div></div></div>`, { cls: "lg", pad: "30px 34px", ol: sdc + "59", fill: `linear-gradient(120deg,${sdc}57 0%,${sdc}1F 55%,${sdc}08 100%),#121214`, st: `filter:drop-shadow(0 18px 40px ${sdc}1F);` })}
+          </div></div></div>`, { cls: "lg", pad: "30px 34px", ol: sdc + "59", fill: `linear-gradient(120deg,${sdc}57 0%,${sdc}1F 55%,${sdc}08 100%),#121214`, st: "" })}
       <div class="hero-stats">${bigStats.map((c) => ob(`<div class="v hs-v">${esc(c.v)}</div><div class="l hs-l">${esc(c.l)}</div>`, { cls: "md", pad: "18px" })).join("")}</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
         ${ob(`<div class="h-font" style="font-size:20px;letter-spacing:1px;margin-bottom:12px;">LAST 5 FIGHTS</div><div style="display:flex;gap:10px;flex-wrap:wrap;">${formHtml}</div>`, { cls: "md", pad: "20px 22px" })}
@@ -1015,7 +1030,7 @@ function renderDraft(){
           <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#8C8982;text-align:right;">${lastOwnPick ? esc(lastOwnPick.full_name.toUpperCase()) + " (YOUR LAST PICK)" : "NO PRIOR PICK YET"}</div></div>
         ${tapeRows.map((r) => `<div class="tape-row"><div class="a">${esc(r.a)}</div><div class="lbl">${esc(r.label)}</div><div class="b">${esc(r.b)}</div></div>`).join("")}`, { cls: "md", pad: "20px 22px" })}
       ${upNext.length ? ob(`<div class="h-font" style="font-size:14px;letter-spacing:2px;color:#9A9AA2;margin-bottom:10px;">BEST AVAILABLE AFTER THIS PICK</div>
-        <div style="display:flex;gap:18px;flex-wrap:wrap;">${upNext.map((f) => `<div style="display:flex;align-items:center;gap:10px;">${octagonRingAvatar(f, fighterDc(f), 38)}<div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div><div style="font-size:11px;color:#B8B5AE;">${esc(DIV_SHORT[f.announced_weight_class] || "")} · ${fmtRank(overallRankById[f.id])}</div></div></div>`).join("")}</div>`, { cls: "md", pad: "16px 22px" }) : ""}
+        <div style="display:flex;gap:18px;flex-wrap:wrap;">${upNext.map((f) => `<div data-profile="${f.id}" style="display:flex;align-items:center;gap:10px;cursor:pointer;">${octagonRingAvatar(f, fighterDc(f), 38)}<div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div><div style="font-size:11px;color:#B8B5AE;">${esc(DIV_SHORT[f.announced_weight_class] || "")} · ${fmtRank(overallRankById[f.id])}</div></div></div>`).join("")}</div>`, { cls: "md", pad: "16px 22px" }) : ""}
       <button id="lockBtn" class="lock-pick-btn oct-btn" style="background:var(--red);color:#F5F2EA;cursor:pointer;">LOCK PICK — ${esc(spotlight.full_name.toUpperCase())}</button>
       <div class="error" id="pickError" style="display:none;"></div>`;
   } else {
@@ -1062,7 +1077,7 @@ function renderDraft(){
 
   /* ---- queue, filters, pool ---- */
   const queueSource = available.slice(spotlight ? 1 : 0, spotlight ? 4 : 3);
-  const queueHtml = queueSource.map((f, i) => `<div style="display:flex;align-items:center;gap:6px;"><div class="queue-chip" style="${i === 0 ? "background:rgba(212,175,55,0.12);border-color:var(--gold);color:var(--gold);" : "background:#16161A;color:#9A9AA2;"}">${esc(f.full_name)}</div>${i < queueSource.length - 1 ? `<span style="color:#3A3A40;font-size:13px;">&rarr;</span>` : ""}</div>`).join("");
+  const queueHtml = queueSource.map((f, i) => { const dc = fighterDc(f); return `<div style="display:flex;align-items:center;gap:6px;"><button class="queue-card" data-profile="${f.id}">${ob(`<div style="display:flex;align-items:center;gap:10px;">${octagonRingAvatar(f, dc, 46)}<div style="text-align:left;min-width:0;"><div class="h-font" style="font-size:14px;font-weight:600;color:${i === 0 ? "var(--gold)" : "var(--text)"};white-space:nowrap;">${esc(f.full_name)}</div><div style="font-size:11px;color:#B8B5AE;white-space:nowrap;">${esc(DIV_SHORT[f.announced_weight_class] || "")} &middot; ${esc(fmtRecord(f))} &middot; ${esc(fmtRank(overallRankById[f.id]))}</div></div></div>`, { cls: "sm", pad: "8px 14px", ol: i === 0 ? "var(--gold)" : "#D4AF37aa" })}</button>${i < queueSource.length - 1 ? `<span style="color:#6A5A3A;font-size:13px;">&rarr;</span>` : ""}</div>`; }).join("");
   const filterTabsHtml = FILTER_TABS.map((r) => { const active = r === activeFilter; const rc = "var(--gold)";
     return `<button class="filter-tab" data-filter="${r}" style="${active ? `background:${rc}22;border-color:${rc};color:${rc};font-weight:700;` : "color:#9A9AA2;"}">${esc(r)}</button>`; }).join("");
   const divisionStripHtml = DIVISION_LIST.map((d) => { const active = d === activeFilter; const dc = DIVISION_COLOR[d];
@@ -1074,10 +1089,10 @@ function renderDraft(){
   const searchSelStart = searchWasFocused ? existingSearchInput.selectionStart : null;
   const searchSelEnd = searchWasFocused ? existingSearchInput.selectionEnd : null;
   const searched = filterVal ? available.filter((f) => f.full_name.toLowerCase().includes(filterVal.toLowerCase())) : available;
-  const poolRows = searched.slice(0, 60).map((f) => {
+  const poolRows = searched.slice(0, poolLimit).map((f) => {
     const dc = fighterDc(f), isSpot = !!spotlight && f.id === spotlight.id, hl = isSpot ? "background:rgba(212,175,55,0.06);" : "";
-    return `<button class="pool-row-btn" data-fighter-id="${f.id}" ${isMyTurn ? "" : "disabled"}>
-      <div style="${hl}box-shadow:inset 6px 0 0 ${dc};padding-left:14px;" class="pool-cell fname-cell">${octagonRingAvatar(f, dc, 42)}<span class="h-font" style="font-size:14px;font-weight:600;color:${isSpot ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span>${isNewF(f.id) ? `<span class="newtag">NEW</span>` : ""}</div>
+    return `<button class="pool-row-btn" data-fighter-id="${f.id}">
+      <div style="${hl}box-shadow:inset 6px 0 0 ${dc};padding-left:14px;" class="pool-cell fname-cell" data-profile="${f.id}">${octagonRingAvatar(f, dc, 42)}<span class="h-font" style="font-size:14px;font-weight:600;color:${isSpot ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span>${isNewF(f.id) ? `<span class="newtag">NEW</span>` : ""}</div>
       <div style="${hl}" class="pool-cell cell-div"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div></div>
       <div style="${hl}" class="pool-cell cell-record" data-label="REC">${esc(fmtRecord(f))}</div>
       <div style="${hl}" class="pool-cell cell-sigstr">${esc(fmtNum(f.avg_sig_strikes))}</div>
@@ -1096,7 +1111,7 @@ function renderDraft(){
   }).join("");
   const poolTable = ob(`<div class="pool-table-scroll"><div class="pool-grid">
       <div class="pool-head">FIGHTER</div><div class="pool-head">DIV</div><div class="pool-head">RECORD</div><div class="pool-head">SIG STR</div><div class="pool-head">TD</div><div class="pool-head">KD</div><div class="pool-head">CTRL</div><div class="pool-head">SUB ATT</div><div class="pool-head">REV</div><div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div><div class="pool-head">FIGHTS/YR</div><div class="pool-head">PROJ FP</div><div class="pool-head" style="color:var(--gold);">OVERALL RANK</div><div class="pool-head">★</div>
-      ${poolRows || `<div style="grid-column:1/-1;padding:24px;color:#6A6A72;font-size:13px;">${paused ? "Every announced fighter is drafted. New fights will show up here." : "No fighters match."}</div>`}</div></div>`, { cls: "lg", pad: "0" });
+      ${poolRows || `<div style="grid-column:1/-1;padding:24px;color:#6A6A72;font-size:13px;">${paused ? "Every announced fighter is drafted. New fights will show up here." : "No fighters match."}</div>`}</div></div>${searched.length > poolLimit ? `<button id="moreBtn" class="more-btn h-font">SHOW MORE FIGHTERS (${searched.length - poolLimit} LEFT)</button>` : ""}`, { cls: "lg", pad: "0" });
 
   /* ---- header ---- */
   const hasTrades = !!userTeamId && !complete;
@@ -1147,9 +1162,17 @@ function renderDraft(){
   const clearBtn = document.getElementById("clearSelectedBtn");
   if (clearBtn) clearBtn.addEventListener("click", () => { selectedFighterId = null; render(); });
   document.querySelectorAll(".pool-row-btn").forEach((btn) => {
-    if (btn.disabled) return;
-    btn.addEventListener("click", () => { selectedFighterId = btn.dataset.fighterId; render(); });
+    btn.addEventListener("click", (e) => {
+      if (e.target.closest("[data-profile]") || !isMyTurn) { openProfile(btn.dataset.fighterId); return; }
+      selectedFighterId = btn.dataset.fighterId; render();
+    });
   });
+  document.querySelectorAll("[data-profile]").forEach((el) => {
+    if (el.closest(".pool-row-btn")) return;
+    el.addEventListener("click", () => openProfile(el.dataset.profile));
+  });
+  const moreBtn = document.getElementById("moreBtn");
+  if (moreBtn) moreBtn.addEventListener("click", () => { poolLimit += 40; render(); });
   const searchInput = document.getElementById("fighterSearch");
   if (searchInput) {
     searchInput.addEventListener("input", render);
@@ -1227,6 +1250,50 @@ function assetLbl(f, pk){ return pk ? pickLbl(pk) + " (#" + pk + ")" : ((fighter
 function assetBox(f, pk, label, col){
   return ob(`<div class="h-font" style="font-size:10px;letter-spacing:1px;color:#6A6A72;">${label}</div><div class="h-font" style="font-size:15px;font-weight:700;margin-top:4px;">${pk ? "&#128278; " + esc(pickLbl(pk)) : esc(assetLbl(f))}</div><div style="font-size:11px;color:#8C8982;">${pk ? "Overall pick " + pk : esc((fightersById[f] || {}).announced_weight_class || "")}</div>`, { cls: "sm", pad: "8px 10px", ol: col, st: "flex:1;min-width:0;" });
 }
+function isMyTurnNow(){ if (!room || room.status !== "live") return false; const n = room.team_order.length, total = n * room.rounds; return pickTid(Math.min(room.current_pick_number, total)) === userTeamId; }
+let profId = null;
+function openProfile(id){ profId = id; ensureForm(id); renderProfile(); let n = 0; const t = setInterval(() => { n++; if (!profId || profId !== id || formById[id] !== null || n > 20) { clearInterval(t); if (profId === id) renderProfile(); } }, 300); }
+function closeProfile(){ profId = null; document.getElementById("profRoot").innerHTML = ""; if (!modal) document.body.style.overflow = ""; }
+function renderProfile(){
+  const root = document.getElementById("profRoot");
+  const f = profId && fightersById[profId];
+  if (!f) { root.innerHTML = ""; return; }
+  document.body.style.overflow = "hidden";
+  const dc = fighterDc(f), champ = isChamp(f);
+  const nb = nextBoutById[f.id], opp = nb ? fightersById[nb.oppId] : null;
+  const form = formById[f.id];
+  const formHtml = form === null || form === undefined ? `<div style="font-size:13px;color:#8C8982;">Loading recent fights…</div>`
+    : form.length ? form.map((r) => { const c = r.result === "W" ? "#3DBE6B" : r.result === "L" ? "#E2283C" : "#8C8982"; const o = fightersById[r.opponent_id];
+        return `<div style="text-align:center;min-width:58px;"><div class="h-font form-badge" style="font-size:20px;font-weight:700;color:${c};border:2px solid ${c};padding:4px 0;">${r.result}</div><div style="font-size:11px;color:#B8B5AE;margin-top:4px;">${esc(fmtMethod(r.method))}</div><div style="font-size:10px;color:#8C8982;">${esc(o ? o.full_name.split(" ").slice(-1)[0] : "")}</div></div>`; }).join("")
+    : `<div style="font-size:13px;color:#8C8982;">No fight history on file.</div>`;
+  const pk = picks.find((p) => p.fighter_id === f.id);
+  const owner = pk ? `Drafted by <b>${esc(teamName(pk.team_id))}</b> &middot; pick ${pk.pick_number}` : "Available in the pool";
+  const finishRate = f.wins ? Math.round(((f.finishes || 0) / f.wins) * 100) + "%" : "—";
+  const tiles = [["Projected pts", fmtNum(projectedFPById[f.id], 1)], ["Overall rank", fmtRank(overallRankById[f.id])], ["Finish rate", finishRate], ["Fights / year", fmtFightsPerYear(f)],
+    ["Sig. strikes", fmtNum(f.avg_sig_strikes)], ["Takedowns", fmtNum(f.avg_takedowns)], ["Knockdowns", fmtNum(f.avg_knockdowns, 2)], ["Control time", fmtCtrl(f.avg_control_seconds)],
+    ["Sub attempts", fmtNum(f.avg_sub_attempts)], ["Reversals", fmtNum(f.avg_reversals, 2)], ["TD defense", fmtPct(f.td_def_pct)], ["Finishes", String(f.finishes ?? "—")]];
+  const news = (newsItems || []).filter((it) => (it.sport || "").toLowerCase() === "mma" && (it.fighters || []).some((mf) => mf.id === f.id)).slice(0, 4);
+  const canPick = isMyTurnNow() && !pk;
+  root.innerHTML = `<div class="pbk" data-pact="close"></div><div class="ppn">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div class="h-font" style="font-size:12px;letter-spacing:3px;color:#9A9AA2;">FIGHTER PROFILE</div><button class="ibtn" data-pact="close" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    ${ob(`<div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">${octagonRingAvatar(f, dc, 150)}<div style="flex:1 1 220px;min-width:0;">
+      <div style="font-size:14px;font-weight:600;color:${dc};">${esc(f.announced_weight_class || "")} &middot; ${esc(fmtRecord(f))}${champ ? ` &middot; <span style="font-weight:700;letter-spacing:1px;">CHAMPION</span>` : ""}</div>
+      <div class="h-font" style="font-size:clamp(26px,5vw,40px);font-weight:700;line-height:1.05;">${esc(f.full_name.toUpperCase())}</div>
+      ${f.nickname ? `<div style="font-size:13px;color:#B8B5AE;">&ldquo;${esc(f.nickname)}&rdquo;</div>` : ""}
+      <div style="font-size:13px;color:#D8D5CC;margin-top:8px;">${nb ? `Next fight: <b>${esc(fmtShortDate(nb.date))}</b> vs ${esc(opp ? opp.full_name : "TBA")}${nb.title ? " &middot; title fight" : ""}` : "No fight booked yet"}</div>
+      <div style="font-size:12px;color:#9A9AA2;margin-top:4px;">${owner}</div></div></div>`, { cls: "lg", pad: "22px 24px", ol: dc + "59", fill: `linear-gradient(120deg,${dc}57 0%,${dc}1F 55%,${dc}08 100%),#121214` })}
+    <div class="prof-tiles">${tiles.map(([l, v]) => ob(`<div class="h-font" style="font-size:26px;font-weight:700;line-height:1;">${esc(String(v))}</div><div style="font-size:11px;color:#B8B5AE;margin-top:6px;">${esc(l)}</div>`, { cls: "sm", pad: "12px 14px" })).join("")}</div>
+    ${ob(`<div class="h-font" style="font-size:18px;letter-spacing:1px;margin-bottom:12px;">LAST 5 FIGHTS</div><div style="display:flex;gap:10px;flex-wrap:wrap;">${formHtml}</div>`, { cls: "md", pad: "16px 20px", st: "margin-top:12px;" })}
+    ${ob(`<div class="h-font" style="font-size:18px;letter-spacing:1px;margin-bottom:8px;">NEWS</div>${news.length ? news.map((it) => `<div class="news-item"><a href="${esc(it.link)}" target="_blank" rel="noopener noreferrer">${esc(it.title)}</a></div>`).join("") : `<div style="color:var(--text-faint);font-size:12.5px;">No recent news on ${esc(f.full_name)}.</div>`}`, { cls: "md", pad: "16px 20px", st: "margin-top:12px;" })}
+    ${canPick ? `<button class="lock-pick-btn oct-btn" data-pact="select" style="margin-top:14px;background:var(--red);color:#F5F2EA;cursor:pointer;">SELECT FOR MY PICK</button>` : ""}
+  </div>`;
+}
+document.getElementById("profRoot").addEventListener("click", (e) => {
+  const el = e.target.closest("[data-pact]"); if (!el) return;
+  if (el.dataset.pact === "close") closeProfile();
+  else if (el.dataset.pact === "select") { selectedFighterId = profId; closeProfile(); render(); }
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && profId) closeProfile(); });
 function openTrades(){ modal = { to: null, send: null, get: null }; renderModal(); }
 function closeTrades(){ modal = null; document.getElementById("modalRoot").innerHTML = ""; document.body.style.overflow = ""; }
 function renderModal(){
