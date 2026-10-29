@@ -155,7 +155,7 @@ grant execute on function public.cr_start_draft(uuid), public.cr_make_pick(uuid,
 -- ===== Migrations "card_redraft_waivers_trades" (+ order fix, trade fix) =====
 -- cr_claims (waiver claims: add/drop, FAAB bid, priority, status), cr_trades (1-for-1 offers, 2 day expiry),
 -- cr_locked(league, block, fighter), cr_my_team(league),
--- cr_submit_claim / cr_cancel_claim, cr_process_waivers (runs claims placed before the latest Friday 12 AM Eastern;
+-- cr_submit_claim / cr_cancel_claim, cr_process_waivers (runs claims placed before the latest Tuesday 12 AM Eastern;
 -- standard = worst record first, FAAB = highest bid first, ties by waiver order), cr_propose_trade, cr_respond_trade (accept/decline/cancel).
 
 -- ===== Migration "card_redraft_next_block_draft" =====
