@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Combat — Card Redraft Draft Room</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B0B0D">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0B0D; --panel:#141417; --panel-2:#1A1A1E; --panel-3:#0F0F12; --border:#242428; --border-2:#1C1C20;
+    --text:#F5F2EA; --text-dim:#9A9AA2; --text-faint:#5A5A62; --text-faint-2:#4A4A52; --gold:#D4AF37; --red:#E2283C;
+    /* Elevation: cards are told apart by depth (shadow), not a hairline
+       border — a thin rgba edge keeps things crisp but the shadow carries
+       the weight. Two sizes: small controls vs. hero panels. */
+    --edge:1px solid rgba(255,255,255,0.06);
+    --shadow-sm:0 4px 14px rgba(0,0,0,0.35);
+    --shadow-lg:0 16px 40px rgba(0,0,0,0.5);
+    --r-sm:8px; --r-md:14px; --r-lg:20px;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0; color:var(--text);
+    font-family:'Barlow',-apple-system,sans-serif; min-height:100vh;
+    background:
+      radial-gradient(900px 500px at 12% -5%, rgba(212,175,55,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(226,40,60,0.08), transparent 55%),
+      var(--bg);
+  }
+  a{color:inherit;text-decoration:none;}
+  button{font-family:inherit;}
+  .h-font{font-family:'Oswald',sans-serif;text-transform:uppercase;}
+  .wrap{max-width:1440px;margin:0 auto;padding:24px 20px 60px;}
+  ::-webkit-scrollbar{height:8px;width:8px;}
+  ::-webkit-scrollbar-thumb{background:#2A2A30;border-radius:4px;}
+  @media (max-width:760px){
+    .wrap{padding:14px 14px 40px;}
+  }
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:10px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .name{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:19px;font-weight:700;letter-spacing:1px;color:var(--gold);}
+
+  .loading, .msg{text-align:center;color:var(--text-dim);padding:60px 0;font-size:14px;}
+  .error{
+    background:rgba(226,40,60,0.1);border:1px solid rgba(226,40,60,0.3);color:#F0897D;
+    font-size:13px;padding:14px 16px;border-radius:8px;margin-bottom:16px;
+  }
+
+  /* ---------- Landing ---------- */
+  .hero{
+    max-width:720px;margin:80px auto 0;text-align:center;padding:0 10px;
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .hero .wordmark{
+    font-family:'Oswald',sans-serif;text-transform:uppercase;font-weight:700;
+    font-size:clamp(48px,10vw,88px);line-height:1;letter-spacing:2px;color:var(--gold);margin:0;
+    text-shadow:0 2px 0 rgba(0,0,0,0.5);
+  }
+  .hero .tagline{
+    font-family:'Oswald',sans-serif;text-transform:uppercase;font-weight:600;
+    font-size:clamp(14px,2.6vw,20px);letter-spacing:6px;color:var(--text-dim);margin:10px 0 44px;
+  }
+  .octagon{
+    clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  button.cta{
+    background:linear-gradient(180deg,#E6C75C,var(--gold));color:#17120A;border:3px solid #17120A;border-radius:10px;
+    padding:28px 52px;font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:clamp(17px,3vw,22px);
+    font-weight:700;letter-spacing:1.5px;cursor:pointer;
+    box-shadow:0 0 0 1px rgba(212,175,55,0.5), 0 18px 40px rgba(212,175,55,0.28);
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  button.cta:hover{
+    background:linear-gradient(180deg,#F0D878,#E0BC4E);transform:translateY(-2px);
+    box-shadow:0 0 0 1px rgba(212,175,55,0.6), 0 22px 46px rgba(212,175,55,0.38);
+  }
+  .hero .welcome{font-size:13.5px;color:var(--text-faint);margin-top:18px;letter-spacing:0.5px;}
+
+  /* ---------- Weekly card teasers (homepage) ---------- */
+  .week-cards{max-width:960px;margin:52px auto 0;padding:0 10px;display:flex;flex-direction:column;gap:22px;}
+  @media (min-width:860px){
+    .week-cards{flex-direction:row;align-items:stretch;}
+    .week-card{flex:1 1 0;}
+  }
+  .week-card{
+    position:relative;border-radius:var(--r-lg);overflow:hidden;min-height:340px;
+    display:flex;flex-direction:column;justify-content:flex-end;
+    border:var(--edge);box-shadow:var(--shadow-lg);
+  }
+  .week-card-bg{
+    position:absolute;inset:0;background-size:cover;background-position:center;
+  }
+  .week-card-bg::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(11,11,13,0.25) 0%, rgba(11,11,13,0.55) 46%, rgba(11,11,13,0.94) 100%);
+  }
+  .week-card.gold .week-card-bg::before{
+    content:"";position:absolute;inset:0;z-index:1;background:rgba(212,175,55,0.22);mix-blend-mode:multiply;
+  }
+  .week-card.maroon .week-card-bg::before{
+    content:"";position:absolute;inset:0;z-index:1;background:rgba(122,24,32,0.32);mix-blend-mode:multiply;
+  }
+  .week-card-content{position:relative;z-index:2;padding:22px 24px 26px;text-align:center;}
+  .week-card-kicker{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:11px;letter-spacing:3px;color:var(--text-dim);margin-bottom:16px;}
+  .week-card.gold .week-card-kicker{color:#E6C75C;}
+  .week-card.maroon .week-card-kicker{color:#E88A90;}
+  .week-card-matchup{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:16px;}
+  .week-card-fighter-ring{
+    width:84px;height:84px;padding:4px;box-sizing:border-box;flex-shrink:0;
+    clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  }
+  .week-card.gold .week-card-fighter-ring{background:linear-gradient(135deg,#F6DE8C,var(--gold));}
+  .week-card.maroon .week-card-fighter-ring{background:linear-gradient(135deg,#FF8A96,var(--red));}
+  .week-card-fighter-ring img{
+    width:100%;height:100%;object-fit:cover;background:#0F0F12;
+    clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  }
+  .week-card-vs{font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;color:var(--text-faint);letter-spacing:1px;}
+  .week-card-name{font-family:'Oswald',sans-serif;text-transform:uppercase;font-weight:700;font-size:clamp(20px,3.6vw,26px);letter-spacing:0.5px;margin-bottom:6px;}
+  .week-card-sub{font-size:12px;color:var(--text-dim);letter-spacing:0.5px;margin-bottom:20px;}
+  .week-card-cta{
+    font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:14px;font-weight:700;letter-spacing:1px;
+    padding:13px 28px;border-radius:9px;cursor:pointer;width:100%;max-width:280px;
+  }
+  .week-card-cta:not(:disabled){
+    background:linear-gradient(180deg,#E6C75C,var(--gold));color:#17120A;border:2px solid #17120A;
+  }
+  .week-card-cta:disabled{
+    background:transparent;color:var(--text-dim);border:1.5px solid rgba(255,255,255,0.18);cursor:default;
+  }
+
+  /* ---------- Setup ---------- */
+  .settings-card{
+    max-width:520px;margin:20px auto;background:var(--panel);border:var(--edge);
+    border-radius:var(--r-md);padding:28px 30px 32px;box-shadow:var(--shadow-lg);
+  }
+  @media (max-width:760px){
+    .settings-card{padding:22px 20px 26px;margin:14px auto;}
+  }
+  .settings-card .kicker{font-size:11px;letter-spacing:2px;color:var(--text-faint);margin-bottom:4px;}
+  .settings-card h2{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:20px;margin:0 0 6px;letter-spacing:1px;}
+  .settings-card .desc{font-size:13px;color:var(--text-dim);margin:0 0 26px;line-height:1.5;}
+  .field{margin-bottom:22px;}
+  .field label{display:block;font-size:11px;letter-spacing:1.5px;color:var(--text-faint);margin-bottom:8px;text-transform:uppercase;}
+  input[type=text].field-input{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);border-radius:6px;color:var(--text);
+    font-size:14px;padding:11px 14px;
+  }
+  input[type=text].field-input:focus{outline:none;border-color:var(--gold);}
+  .stepper{display:flex;align-items:center;gap:14px;}
+  .stepper button{
+    width:36px;height:36px;border-radius:6px;background:var(--panel-2);border:1px solid var(--border);
+    color:var(--text);font-size:17px;cursor:pointer;
+  }
+  .stepper button:hover{border-color:var(--gold);}
+  .stepper .val{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;min-width:28px;text-align:center;}
+  .photo-row{display:flex;align-items:center;gap:14px;}
+  .timer-options{display:flex;flex-wrap:wrap;gap:8px;}
+  .timer-opt{
+    border-radius:var(--r-sm);padding:9px 16px;cursor:pointer;background:var(--panel-2);border:1px solid var(--border);
+    color:var(--text-dim);font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:0.5px;
+  }
+  .timer-opt:hover{border-color:var(--gold);}
+  .timer-opt.active{background:rgba(212,175,55,0.14);border-color:var(--gold);color:var(--gold);font-weight:700;}
+  .timer-hint{font-size:11.5px;color:var(--text-faint);margin-top:8px;line-height:1.5;}
+  .photo-preview{width:60px;height:60px;border-radius:8px;object-fit:cover;background:var(--panel-2);border:1px solid var(--border);flex-shrink:0;}
+  .photo-preview-ph{
+    width:60px;height:60px;border-radius:8px;background:var(--panel-2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:9px;flex-shrink:0;text-align:center;
+  }
+  input[type=file]{font-size:12px;color:var(--text-dim);}
+  button.primary{
+    background:var(--red);color:#fff;border:none;border-radius:4px;padding:13px 30px;
+    font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;width:100%;font-family:'Oswald',sans-serif;text-transform:uppercase;
+  }
+  button.primary:disabled{opacity:0.4;cursor:not-allowed;}
+  .back-link{display:inline-block;margin-bottom:14px;font-size:12px;color:var(--text-faint);text-decoration:none;cursor:pointer;}
+  .back-link:hover{color:var(--text-dim);}
+  .lobby{
+    max-width:480px;margin:50px auto;background:var(--panel);border:var(--edge);
+    border-radius:var(--r-lg);padding:40px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;
+    box-shadow:var(--shadow-lg);
+  }
+  @media (max-width:760px){
+    .lobby{margin:20px auto;padding:28px 22px;}
+  }
+  .share-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px;}
+  button.ghost{
+    background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:4px;
+    padding:10px 20px;font-size:12px;letter-spacing:1px;cursor:pointer;font-family:'Oswald',sans-serif;text-transform:uppercase;
+  }
+  button.ghost:hover{border-color:var(--gold);color:var(--gold);}
+  .roster-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:16px;margin-top:16px;}
+  .roster-role{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;border-bottom:1px dashed var(--panel-2);}
+  .roster-role .rname{color:var(--text-dim);}
+  .roster-role .rfill{color:var(--gold);font-weight:600;}
+  .feed-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:16px;margin-top:16px;max-height:280px;overflow-y:auto;}
+  .feed-row{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px dashed var(--panel-2);font-size:12.5px;}
+  .feed-row .fname{font-weight:600;}
+  .feed-row .meta{color:var(--text-faint);font-size:11px;}
+
+  /* ---------- Draft room header ---------- */
+  .dr-bg{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(700px 520px at 36% 30%,var(--spot-a,rgba(212,175,55,0.16)),transparent 70%),radial-gradient(900px 600px at 100% 0%,rgba(226,40,60,0.12),transparent 60%);}
+  .dr-bg::after{content:"";position:absolute;inset:0;opacity:0.5;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,0.028) 0 1px,transparent 1px 22px),repeating-linear-gradient(-45deg,rgba(255,255,255,0.028) 0 1px,transparent 1px 22px);}
+  @keyframes octglow{0%,100%{filter:drop-shadow(0 0 0 rgba(226,40,60,0));}50%{filter:drop-shadow(0 0 14px rgba(226,40,60,0.85));}}
+  @keyframes livedot{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  @keyframes pickin{from{transform:scale(0.6);opacity:0;}to{transform:none;opacity:1;}}
+  .oct-wrap.pulse{animation:octglow 1.6s ease-in-out infinite;}
+  .live-dot{animation:livedot 1.2s ease-in-out infinite;}
+  .tslot.just{animation:pickin 0.45s ease-out;}
+  .oct-btn{border-radius:0 !important;clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 16px,100% calc(100% - 16px),calc(100% - 16px) 100%,16px 100%,0 calc(100% - 16px),0 16px);}
+  .hero-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}
+  .hero-stat{background:#16161A;border-radius:16px;padding:18px;}
+  .hero-stat .v{font-family:'Oswald',sans-serif;font-weight:700;font-size:40px;line-height:1;}
+  .hero-stat .l{font-size:13px;color:#B8B5AE;margin-top:6px;}
+  @media (max-width:700px){.hero-stats{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media (prefers-reduced-motion:reduce){.oct-wrap.pulse,.live-dot,.tslot.just{animation:none;}}
+  .dr-header{display:flex;align-items:center;justify-content:space-between;padding:18px 0;border-bottom:1px solid #1C1C20;margin-bottom:0;flex-wrap:wrap;gap:14px;}
+  .dr-header-left{display:flex;align-items:center;gap:14px;}
+  .vrule{width:1px;height:22px;background:#2A2A30;}
+  .board-link{border:var(--edge);border-radius:var(--r-sm);padding:10px 18px;cursor:pointer;background:var(--panel-2);color:#D8D5CC;font-weight:600;box-shadow:var(--shadow-sm);}
+  .board-link:hover{color:var(--gold);}
+  .status-group{display:flex;align-items:center;gap:24px;}
+  .status-right{text-align:right;}
+  .status-right .lbl{font-size:10px;letter-spacing:1.5px;color:#7A7A82;}
+  .status-right .val{font-size:22px;font-weight:700;}
+  button.start-draft{background:linear-gradient(180deg,#F0423F,var(--red));color:#fff;border:none;border-radius:var(--r-sm);padding:16px 36px;cursor:pointer;box-shadow:0 10px 26px rgba(226,40,60,0.35);}
+  @media (max-width:560px){
+    .dr-header-subtitle{display:none;}
+    .status-group, .status-right{gap:16px;}
+  }
+
+  /* ---------- Octagon tracker ---------- */
+  .tracker{display:flex;align-items:flex-start;gap:14px;padding:22px 0;background:var(--panel-3);border-bottom:1px solid var(--border-2);margin:0 -20px;padding-left:20px;padding-right:20px;overflow-x:auto;scroll-snap-type:x proximity;}
+  .tslot{display:flex;flex-direction:column;align-items:center;gap:7px;width:108px;flex-shrink:0;scroll-snap-align:start;}
+  .tslot .oct{width:52px;height:52px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);}
+  .tslot .pickline{display:flex;align-items:center;gap:5px;}
+  .tslot .pickline .n{font-size:10px;letter-spacing:1px;color:#5A5A62;}
+  .tslot .info{font-size:11px;letter-spacing:0.5px;text-align:center;line-height:1.3;}
+  .tslot .divtag{border-radius:10px;padding:1px 8px;}
+  @media (max-width:760px){
+    .tracker{gap:10px;padding:16px 14px;margin:0 -14px;}
+    .tslot{width:82px;}
+    .tslot .oct{width:42px;height:42px;}
+  }
+
+  /* ---------- Main stage ---------- */
+  .stage{display:flex;gap:24px;padding:28px 0;align-items:flex-start;flex-wrap:wrap;}
+  .stage-main{flex:2;min-width:320px;display:flex;flex-direction:column;gap:20px;}
+  .stage-side{flex:0 0 360px;display:flex;flex-direction:column;min-width:300px;}
+  @media (max-width:900px){
+    .stage{flex-direction:column;padding:20px 0;}
+    .stage-main, .stage-side{flex:unset;width:100%;min-width:0;}
+  }
+
+  .spotlight-card{background:var(--panel);border:var(--edge);border-radius:var(--r-md);padding:26px;display:flex;gap:26px;flex-wrap:wrap;box-shadow:var(--shadow-lg);}
+  .spotlight-photo{flex:0 0 200px;height:260px;background:#1C1C20;border:var(--edge);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border-radius:var(--r-sm);overflow:hidden;}
+  .spotlight-body{flex:1;min-width:260px;display:flex;flex-direction:column;gap:18px;}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:10px;margin-bottom:18px;}
+  .stat-cell{background:#1C1C20;border:var(--edge);border-radius:var(--r-sm);padding:12px 6px;text-align:center;}
+  .stat-cell .v{font-family:'Oswald',sans-serif;font-size:24px;font-weight:700;color:var(--text);line-height:1.1;}
+  .stat-cell .l{font-size:9px;letter-spacing:0.5px;color:#6A6A72;margin-top:4px;}
+  .tape-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-2);}
+  .tape-row .a{font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;color:var(--text);}
+  .tape-row .lbl{font-size:10.5px;letter-spacing:1px;color:#6A6A72;text-align:center;padding:0 18px;}
+  .tape-row .b{font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;color:#8A8A92;text-align:right;}
+  @media (max-width:760px){
+    .spotlight-card{padding:18px;gap:16px;}
+    .spotlight-photo{flex:unset;width:100%;height:220px;}
+    .stat-grid{grid-template-columns:repeat(3,1fr);}
+    .tape-row .a, .tape-row .b{font-size:16px;}
+  }
+
+  .role-pills{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .role-pill{border-radius:var(--r-lg);padding:10px 18px;border:var(--edge);background:var(--panel-2);min-height:40px;}
+  .lock-pick-btn{align-self:stretch;border:none;border-radius:var(--r-sm);padding:16px 32px;font-size:15px;font-weight:700;letter-spacing:2px;font-family:'Oswald',sans-serif;text-transform:uppercase;box-shadow:var(--shadow-sm);}
+  @media (max-width:760px){
+    .lock-pick-btn{padding:16px 20px;}
+  }
+
+  .slip-panel{background:var(--panel);border:var(--edge);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-lg);}
+  .slip-head{padding:18px 22px;border-bottom:1px solid var(--border-2);display:flex;align-items:center;justify-content:space-between;}
+  .slip-list{padding:6px 22px;max-height:420px;overflow-y:auto;}
+  .slip-group{display:flex;align-items:center;gap:8px;padding:12px 0 6px;}
+  .slip-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-2);gap:8px;}
+  .slip-foot{padding:16px 22px;background:var(--panel-3);}
+
+  .side-card{background:var(--panel);border:var(--edge);border-radius:var(--r-md);overflow:hidden;margin-top:18px;box-shadow:var(--shadow-lg);}
+  .side-card-head{padding:16px 22px;border-bottom:1px solid var(--border-2);display:flex;align-items:center;gap:8px;}
+  .side-card-body{padding:6px 22px;}
+  .feed-item{padding:11px 0;border-bottom:1px solid var(--border-2);display:flex;align-items:baseline;gap:10px;font-size:13px;}
+  .news-item{padding:12px 0;border-bottom:1px solid var(--border-2);display:flex;align-items:flex-start;gap:10px;}
+  .news-item a{font-size:12px;color:#C9C6BD;line-height:1.4;}
+  .news-item a:hover{color:var(--gold);}
+  .news-tag{border-radius:var(--r-sm);padding:2px 7px;flex:0 0 auto;margin-top:1px;font-size:8px;letter-spacing:0.5px;}
+
+  /* ---------- Queue / filters / table ---------- */
+  .queue-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+  .queue-chip{border-radius:var(--r-lg);padding:6px 14px;border:var(--edge);background:var(--panel-2);font-size:11px;}
+  .filter-tabs{display:flex;align-items:center;gap:8px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px;}
+  .filter-tab{border-radius:var(--r-lg);padding:9px 18px;cursor:pointer;background:var(--panel-2);border:var(--edge);font-size:11.5px;letter-spacing:1px;flex-shrink:0;min-height:40px;}
+  .division-strip{display:flex;align-items:center;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px;}
+  .division-chip{border-radius:var(--r-sm);padding:5px 10px;cursor:pointer;font-size:9px;letter-spacing:0.3px;border:var(--edge);flex-shrink:0;min-height:30px;}
+  .search-row{display:flex;gap:10px;margin-bottom:14px;}
+  input.search{
+    background:var(--panel-2);border:var(--edge);border-radius:var(--r-sm);color:var(--text);
+    font-size:15px;padding:13px 16px;flex:1;box-shadow:var(--shadow-sm);
+  }
+  input.search:focus{outline:none;box-shadow:0 0 0 2px var(--gold);}
+
+  .pool-table{border:var(--edge);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-lg);}
+  .pool-table-scroll{overflow-x:auto;}
+  .pool-grid{display:grid;grid-template-columns:1.8fr 0.9fr 0.8fr 0.8fr 0.6fr 0.6fr 0.8fr 0.8fr 0.6fr 0.8fr 0.8fr 0.8fr 0.9fr 1fr 0.5fr;min-width:1140px;}
+  .pool-head{padding:12px 16px;background:var(--panel-3);border-bottom:1px solid var(--border-2);font-size:10px;letter-spacing:1px;color:#6A6A72;}
+  button.pool-row-btn{all:unset;display:contents;cursor:pointer;}
+  .pool-cell{padding:13px 16px;border-bottom:1px solid var(--border-2);font-size:13.5px;color:#C4C1B8;display:flex;align-items:center;}
+  .pool-row-btn:hover .pool-cell{background:rgba(255,255,255,0.02);}
+  .fname-cell{gap:10px;min-width:0;}
+  .fname-cell .av{width:32px;height:32px;border-radius:50%;background:#1C1C20;border:var(--edge);flex:0 0 auto;}
+  .divtag2{border-radius:var(--r-sm);padding:2px 7px;font-size:8px;letter-spacing:0.5px;width:fit-content;}
+  .footnote{font-size:10px;letter-spacing:1px;color:var(--text-faint-2);margin-top:10px;}
+
+  /* Card-ified pool list on phones: the 14-column grid becomes a stack of
+     tappable fighter cards — name + photo up top, the handful of stats that
+     actually help a quick decision (division, record, projected points,
+     rating) as labeled chips below. Full per-stat columns stay on desktop,
+     where there's room to actually read them. */
+  @media (max-width:760px){
+    .pool-table-scroll{overflow-x:visible;}
+    .pool-grid{display:block;min-width:0;}
+    .pool-head{display:none;}
+    button.pool-row-btn{
+      display:flex !important;flex-wrap:wrap;align-items:center;gap:6px 10px;
+      background:var(--panel-2);border-radius:var(--r-sm);padding:14px;margin-bottom:10px;box-shadow:var(--shadow-sm);
+    }
+    .pool-cell{padding:0;border-bottom:none;font-size:13px;}
+    .fname-cell{order:1;flex:1 1 100%;}
+    .cell-rank{order:2;margin-left:auto;}
+    .cell-star{order:3;}
+    .cell-div, .cell-record, .cell-finishes, .cell-fpy, .cell-projfp{order:4;}
+    .cell-sigstr, .cell-td, .cell-kd, .cell-ctrl, .cell-subatt, .cell-rev, .cell-tddef{display:none;}
+    .pool-cell[data-label]::before{content:attr(data-label) " ";color:var(--text-faint-2);font-size:10px;letter-spacing:0.5px;margin-right:4px;}
+  }
+
+  /* ---------- Full Draft Board ---------- */
+  .board-wrap{overflow-x:auto;padding:12px 0;-webkit-overflow-scrolling:touch;}
+  .board-min{min-width:1280px;}
+  .board-team-row{display:grid;gap:10px;margin-bottom:14px;}
+  .board-team-cell{text-align:center;padding:10px 6px;border-radius:var(--r-sm);background:var(--panel);border:var(--edge);}
+  .board-round-row{display:grid;gap:10px;margin-bottom:14px;align-items:center;}
+  .board-round-lbl{display:flex;flex-direction:column;justify-content:center;padding-right:6px;}
+  .board-cell{padding:12px 10px 10px;border-radius:var(--r-sm);min-height:108px;display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--panel);border:var(--edge);box-shadow:var(--shadow-sm);}
+  .board-cell .oct{width:46px;height:46px;display:flex;align-items:center;justify-content:center;}
+  .board-cell .nm{font-size:12px;font-weight:600;text-align:center;line-height:1.15;}
+  .board-cell .tag{border-radius:var(--r-sm);padding:2px 8px;font-size:8px;letter-spacing:0.5px;}
+  .board-hint{display:none;font-size:11px;color:var(--text-faint);margin-bottom:8px;}
+  @media (max-width:760px){
+    .board-hint{display:block;}
+  }
+
+
+  /* ---------- Homepage ---------- */
+  .home-top{display:flex;align-items:center;justify-content:space-between;max-width:1000px;margin:0 auto;padding:18px 10px 0;}
+  .home-top .home-brand{font-family:'Oswald',sans-serif;font-weight:700;font-size:22px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;}
+  .home-top a{color:var(--text-dim);font-size:13px;text-decoration:none;letter-spacing:1px;}
+  .home-top a:hover{color:var(--gold);}
+  .home-section{max-width:1000px;margin:56px auto 0;padding:0 10px;}
+  .home-section > h2{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:clamp(22px,4vw,30px);letter-spacing:1px;margin:0 0 18px;}
+  .home-section > .sub{color:var(--text-dim);font-size:14px;margin:-12px 0 22px;max-width:60ch;line-height:1.5;}
+  .home-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .home-step{background:var(--panel);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:22px;}
+  .home-step .t{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:18px;letter-spacing:0.5px;margin-bottom:8px;}
+  .home-step .d{font-size:13.5px;color:var(--text-dim);line-height:1.55;}
+  .home-formats{display:flex;flex-wrap:wrap;gap:10px;}
+  .home-chip{border:1.5px solid var(--border);background:var(--panel);border-radius:var(--r-sm);padding:10px 16px;font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:1px;font-size:14px;}
+  .home-chip.live{border-color:var(--gold);color:var(--gold);}
+  .home-chip.soon{color:var(--text-faint);}
+  @media (max-width:700px){ .home-steps{grid-template-columns:1fr;} }
+
+  /* ---------- Mode picker ---------- */
+  .mode-wrap{max-width:900px;margin:40px auto 0;padding:0 10px;}
+  .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:28px;}
+  @media (max-width:700px){ .mode-grid{grid-template-columns:1fr;} }
+  button.mode-card{
+    all:unset;cursor:pointer;display:block;background:var(--panel);border:1.5px solid var(--border);
+    border-radius:var(--r-lg);padding:30px 26px;box-shadow:var(--shadow-lg);text-align:left;
+    transition:border-color 0.15s ease, transform 0.15s ease;
+  }
+  button.mode-card:hover{transform:translateY(-2px);}
+  .mode-grid > :last-child:nth-child(odd){grid-column:1 / -1;}
+  button.mode-card.soon{cursor:not-allowed;opacity:0.6;}
+  button.mode-card.soon:hover{transform:none;border-color:var(--border);}
+  .mode-card .mc-soon{display:inline-block;margin-left:10px;padding:2px 8px;border-radius:var(--r-sm);border:1px solid var(--text-faint);color:var(--text-faint);font-size:10px;letter-spacing:1.5px;vertical-align:middle;}
+  button.mode-card.gold:hover{border-color:var(--gold);}
+  button.mode-card.red:hover{border-color:var(--red);}
+  .mode-card .mc-kicker{font-size:11px;letter-spacing:2px;margin-bottom:10px;}
+  .mode-card.gold .mc-kicker{color:var(--gold);}
+  .mode-card.red .mc-kicker{color:var(--red);}
+  .mode-card .mc-title{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:24px;font-weight:700;letter-spacing:0.5px;margin-bottom:10px;}
+  .mode-card .mc-desc{font-size:13.5px;color:var(--text-dim);line-height:1.55;margin-bottom:18px;}
+  .mode-card .mc-meta{font-size:11px;color:var(--text-faint);letter-spacing:0.5px;}
+
+  /* ---------- Face-off draft ---------- */
+  .fo-topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding-bottom:18px;border-bottom:1px solid var(--border-2);margin-bottom:22px;}
+  .fo-gear{display:flex;align-items:center;gap:6px;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:9px 13px;cursor:pointer;}
+  .fo-gear.active{background:rgba(212,175,55,0.14);border-color:var(--gold);}
+  .fo-settings{background:var(--panel);border:1px solid var(--gold);border-radius:var(--r-md);padding:22px 26px;margin-bottom:22px;display:flex;flex-wrap:wrap;gap:34px;}
+  .fo-settings-col .fo-settings-label{font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:12px;}
+  .fo-pill{all:unset;cursor:pointer;}
+  .fo-mode-opt{padding:12px 16px;border-radius:9px;min-width:150px;}
+  /* Multiplayer lobby / waiting-room screens */
+  .fo-lobby-error{background:rgba(226,40,60,0.1);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:10px 14px;font-size:12.5px;margin-top:18px;}
+  .fo-lobby-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px;}
+  @media (max-width:700px){ .fo-lobby-grid{grid-template-columns:1fr;} }
+  .fo-lobby-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-md);padding:20px 22px;}
+  .fo-lobby-cta{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;padding:14px 18px;border-radius:9px;background:var(--panel-2);border:1.5px solid var(--border);color:var(--text);text-align:left;}
+  .fo-lobby-cta.gold{background:rgba(212,175,55,0.14);border-color:var(--gold);color:var(--gold);}
+  .fo-lobby-cta span{display:block;font-family:'Inter',sans-serif;font-size:11px;font-weight:400;letter-spacing:0;color:var(--text-faint);margin-top:4px;}
+  .fo-lobby-list{margin-top:14px;display:flex;flex-direction:column;gap:10px;}
+  .fo-lobby-row{display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 18px;}
+  .fo-lobby-host{font-weight:700;font-size:13.5px;color:var(--text);}
+  .fo-lobby-meta{font-size:11.5px;color:var(--text-faint);margin-top:3px;}
+  .fo-lobby-join-btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;padding:9px 20px;border-radius:7px;background:rgba(212,175,55,0.14);border:1.5px solid var(--gold);color:var(--gold);}
+  .fo-lobby-empty{font-size:13px;color:var(--text-faint);padding:18px 4px;}
+  .fo-room-code{font-family:'Oswald',sans-serif;font-size:36px;font-weight:700;letter-spacing:8px;color:var(--gold);margin-top:8px;}
+  .fo-turn-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--panel);border:1.5px solid var(--border);border-radius:10px;padding:12px 18px;margin-bottom:16px;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;color:var(--text-dim);}
+  .fo-turn-banner.mine{border-color:var(--gold);color:var(--gold);background:rgba(212,175,55,0.08);}
+  .fo-pick-clock-val{font-variant-numeric:tabular-nums;font-size:16px;letter-spacing:0.5px;}
+  .fo-turn-room-code{font-size:11px;letter-spacing:2px;color:var(--text-faint);font-weight:400;}
+  /* True octagon frame — a bold border split cleanly gold (team A side) /
+     red (team B side) down the middle, not a diagonal gradient bleed. */
+  .fo-head{position:relative;margin-bottom:22px;padding:4px;background:linear-gradient(90deg, #F6DE8C 0%, var(--gold) 24%, #2A2015 48%, #2A1317 52%, var(--red) 76%, #FF8A96 100%);clip-path:polygon(120px 0, calc(100% - 120px) 0, 100% 120px, 100% calc(100% - 120px), calc(100% - 120px) 100%, 120px 100%, 0 calc(100% - 120px), 0 120px);box-shadow:var(--shadow-lg);}
+  .fo-head-inner{position:relative;overflow:hidden;display:flex;align-items:center;min-height:360px;background-color:var(--panel);clip-path:polygon(117px 0, calc(100% - 117px) 0, 100% 117px, 100% calc(100% - 117px), calc(100% - 117px) 100%, 117px 100%, 0 calc(100% - 117px), 0 117px);}
+  .fo-team{position:relative;z-index:1;}
+  /* Event background photo is a fixed, full-viewport backdrop layer behind
+     the whole app — position:fixed escapes .wrap's max-width/padding so it
+     reaches every edge of the screen, not just the padded content column.
+     A light gradient (not a heavy scrim) keeps the UI legible while still
+     showing the photo at close to its real brightness. --fo-bg-url is set
+     inline per-render from FO_EVENT_BG_URL. */
+  .fo-bg-fixed{position:fixed;inset:0;z-index:-1;pointer-events:none;background-color:var(--bg);background-image:linear-gradient(to bottom, rgba(11,11,13,0.32), rgba(11,11,13,0.7)), var(--fo-bg-url, none);background-size:cover;background-position:center top;}
+  .fo-page-bg{position:relative;border-radius:18px;padding:24px;}
+  @media (max-width:760px){ .fo-page-bg{padding:16px;border-radius:12px;} }
+  @media (max-width:760px){
+    .fo-head{padding:3px;clip-path:polygon(32px 0, calc(100% - 32px) 0, 100% 32px, 100% calc(100% - 32px), calc(100% - 32px) 100%, 32px 100%, 0 calc(100% - 32px), 0 32px);}
+    .fo-head-inner{flex-direction:column;min-height:0;clip-path:polygon(30px 0, calc(100% - 30px) 0, 100% 30px, 100% calc(100% - 30px), calc(100% - 30px) 100%, 30px 100%, 0 calc(100% - 30px), 0 30px);}
+  }
+  .fo-team{flex:1;display:flex;align-items:center;gap:24px;padding:36px 44px;min-width:0;}
+  .fo-team.b{flex-direction:row-reverse;text-align:right;}
+  @media (max-width:760px){ .fo-team, .fo-team.b{flex-direction:row;text-align:left;padding:24px;width:100%;} }
+  .fo-avatar-wrap{position:relative;flex-shrink:0;}
+  /* Gold/red radial-gradient octagon ring behind each team's avatar. */
+  .fo-avatar-ring{width:150px;height:150px;padding:5px;box-sizing:border-box;box-shadow:var(--shadow-sm);clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);}
+  .fo-avatar-ring.gold{background:radial-gradient(circle at 35% 28%, #F6DE8C 0%, var(--gold) 55%, #7A5A10 100%);}
+  .fo-avatar-ring.red{background:radial-gradient(circle at 35% 28%, #FF8A96 0%, var(--red) 55%, #7A1620 100%);}
+  @media (max-width:760px){ .fo-avatar-ring{width:100px;height:100px;} }
+  .fo-avatar{width:100%;height:100%;background:#1C1C20;overflow:hidden;clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);}
+  .fo-avatar img{width:100%;height:100%;object-fit:cover;}
+  .fo-pencil{all:unset;cursor:pointer;position:absolute;bottom:-2px;right:-2px;width:30px;height:30px;border-radius:50%;background:var(--panel);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;}
+  .fo-team.b .fo-pencil{right:auto;left:-2px;border-color:var(--red);}
+  .fo-name{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:26px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;}
+  .fo-record{font-size:12px;letter-spacing:1px;color:var(--text-faint);margin:6px 0 12px;}
+  .fo-total{font-family:'Oswald',sans-serif;font-size:46px;font-weight:700;line-height:1;}
+  .fo-total-lbl{font-size:12px;letter-spacing:1.5px;color:var(--text-dim);}
+  .fo-roster-strip{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;}
+  .fo-roster-strip.b{justify-content:flex-end;}
+  .fo-mini{width:34px;height:34px;background:#1C1C20;border:2px solid var(--border);box-sizing:border-box;flex-shrink:0;overflow:hidden;clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);}
+  .fo-mini img{width:100%;height:100%;object-fit:cover;}
+  .fo-vs{width:1px;background:var(--border-2);align-self:stretch;position:relative;z-index:1;flex-shrink:0;}
+  .fo-vs-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);border:3px solid var(--red);border-radius:50%;width:58px;height:58px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;color:var(--red);}
+  @media (max-width:760px){ .fo-vs{display:none;} }
+  .fo-editor{background:var(--panel);border:1px solid var(--gold);border-radius:var(--r-md);padding:22px 26px;margin-bottom:22px;}
+  .fo-swatch{all:unset;cursor:pointer;}
+  .fo-rule-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:22px;}
+  .fo-rule-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(226,40,60,0.1);border:1px solid var(--red);border-radius:8px;padding:8px 16px;font-size:11px;letter-spacing:1px;color:var(--red);}
+  .fo-status-chip{font-size:11px;font-weight:700;letter-spacing:1px;padding:7px 14px;border-radius:7px;background:rgba(212,175,55,0.1);border:1.5px solid var(--gold);color:var(--gold);}
+  .fo-section-div{display:flex;align-items:center;gap:12px;margin:14px 0 2px;}
+  .fo-section-div .ln{flex:1;height:1px;background:var(--border-2);}
+  .fo-section-div .lbl{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:3px;color:var(--gold);}
+  .fo-bouts{display:flex;flex-direction:column;gap:18px;max-width:780px;margin:0 auto;}
+  /* Octagon-cornered bout card — edge color split left/right by each
+     fighter's draft-state color (clean split, same gold/red-split idea as the header). */
+  .fo-bout{position:relative;padding:3px;box-shadow:var(--shadow-sm);clip-path:polygon(26px 0, calc(100% - 26px) 0, 100% 26px, 100% calc(100% - 26px), calc(100% - 26px) 100%, 26px 100%, 0 calc(100% - 26px), 0 26px);}
+  .fo-bout-inner{position:relative;background:var(--panel);clip-path:polygon(24px 0, calc(100% - 24px) 0, 100% 24px, 100% calc(100% - 24px), calc(100% - 24px) 100%, 24px 100%, 0 calc(100% - 24px), 0 24px);}
+  .fo-bout-billing{text-align:center;padding-top:14px;font-family:'Oswald',sans-serif;letter-spacing:2px;}
+  .fo-bout-row{display:flex;align-items:stretch;position:relative;padding:8px 0 18px;}
+  .fo-bout-vs-line{position:absolute;top:0;left:50%;width:1px;height:100%;background:var(--border-2);pointer-events:none;}
+  .fo-bout-vs-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);border:2px solid var(--border);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:9px;font-weight:700;color:var(--text-faint);pointer-events:none;}
+  .fo-half{display:block;cursor:pointer;flex:1;box-sizing:border-box;padding:10px 16px;}
+  .fo-half:hover{filter:brightness(1.1);}
+  /* Small octagon ring (division color) behind each bout-card fighter photo. */
+  .fo-fighter-ring{width:84px;height:84px;margin:0 auto 10px;padding:3px;box-sizing:border-box;clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);}
+  .fo-fighter-av{width:100%;height:100%;background:#0F0F12;box-sizing:border-box;overflow:hidden;clip-path:polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);}
+  .fo-fighter-av img{width:100%;height:100%;object-fit:cover;}
+  .fo-fighter-name-row{display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:4px;}
+  .fo-fighter-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;line-height:1.15;}
+  .fo-flag{width:16px;height:12px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(255,255,255,0.14);flex-shrink:0;}
+  .fo-fighter-div{font-size:10.5px;margin-bottom:2px;}
+  .fo-fighter-record{font-size:10.5px;color:var(--text-faint);margin-bottom:6px;}
+  /* Tale-of-the-tape: pre-fight bio stats (height/weight/reach/age/stance),
+     distinct from the fo-stat-grid below it (that one is in-cage performance
+     averages). Only fields present in FO_FIGHTERS render — debut fighters
+     with no UFC.com bio yet (Nick Galanti, Cody Chovancek) just skip this
+     row rather than show fabricated numbers. */
+  .fo-tape{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin:0 auto 8px;padding-bottom:7px;border-bottom:1px solid var(--border-2);max-width:220px;}
+  .fo-tape-item{text-align:center;min-width:30px;}
+  .fo-tape-item .l{display:block;font-size:8px;font-weight:700;letter-spacing:0.4px;color:var(--text-faint);margin-bottom:1px;}
+  .fo-tape-item .v{display:block;font-size:10.5px;font-weight:700;color:var(--text-dim);}
+  /* Shown instead of the stat grid for a fighter with zero recorded UFC
+     fights — no in-cage averages exist to show, so a clear badge reads
+     better than six dashes in a row. */
+  .fo-debut-badge{display:inline-flex;align-items:center;gap:5px;font-family:'Oswald',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:1.2px;padding:6px 11px;border-radius:6px;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.35);color:var(--gold);margin-bottom:9px;}
+  .fo-stat-grid{display:inline-grid;grid-template-columns:auto auto;column-gap:10px;row-gap:3px;margin:0 auto 8px;text-align:left;}
+  .fo-stat-grid .l{font-size:9px;font-weight:700;letter-spacing:0.3px;color:var(--text-dim);}
+  .fo-stat-grid .v{font-size:11px;font-weight:700;color:var(--text);}
+  .fo-stat-grid .v.live{color:var(--gold);}
+  .fo-proj{font-size:9px;letter-spacing:0.5px;color:var(--text-faint);margin-bottom:2px;}
+  .fo-live-row{display:flex;align-items:center;justify-content:center;gap:5px;}
+  .fo-live-val{font-family:'Oswald',sans-serif;font-size:17px;font-weight:700;}
+  .fo-live-lbl{font-size:8.5px;letter-spacing:0.5px;color:var(--text-faint);margin-bottom:10px;}
+  .fo-tag{font-family:'Oswald',sans-serif;display:inline-block;font-size:9.5px;letter-spacing:1px;padding:5px 11px;border-radius:6px;margin-bottom:6px;}
+  .fo-role-row{display:flex;gap:4px;justify-content:center;}
+  .fo-role-btn{font-family:'Oswald',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.5px;padding:3px 7px;border-radius:4px;cursor:pointer;}
+  @keyframes fo-livepulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+  .fo-live-dot{animation:fo-livepulse 1.1s ease-in-out infinite;width:6px;height:6px;border-radius:50%;background:var(--red);}
+
+  /* ---------- Octagon pass: every box and rectangle gets the app's cut corners ---------- */
+  *{--P:polygon(var(--c) 0,calc(100% - var(--c)) 0,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0 calc(100% - var(--c)),0 var(--c))}
+  .ob{--c:16px;padding:1.5px;background:var(--ol);clip-path:var(--P);min-width:0;}
+  .ob>.i{min-width:0;--c:calc(var(--oc,16px) - 1px);clip-path:var(--P);background:var(--fill,#141417);padding:var(--pad,14px);height:100%;box-sizing:border-box;}
+  .ob.sm{--c:10px;--oc:10px}.ob.md{--c:14px;--oc:14px}.ob.lg{--c:22px;--oc:22px}
+  .filter-tab,.division-chip,.queue-chip,.board-link,input.search,.board-team-cell,.board-cell,.divtag2,.news-tag,.tslot .divtag,.tag{border-radius:0 !important;--c:8px;clip-path:var(--P);box-shadow:none !important;}
+  input.search{--c:12px;}
+  .board-link{--c:11px;display:inline-flex;align-items:center;gap:8px;}
+  .board-cell{--c:12px;}
+  .ibtn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;background:#26262B;color:var(--text);border:0;cursor:pointer;--c:11px;clip-path:var(--P);flex:none;}
+  .badge{background:var(--red);color:#fff;font-size:10px;padding:1px 6px;--c:4px;clip-path:var(--P);}
+  .newtag{margin-left:8px;background:var(--gold);color:#14120A;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;padding:2px 7px;--c:5px;clip-path:var(--P);flex:none;}
+  .form-badge{border-radius:0 !important;--c:8px;clip-path:var(--P);}
+  .hs-v{font-family:'Oswald',sans-serif;font-weight:700;font-size:40px;line-height:1;}
+  .hs-l{font-size:13px;color:#B8B5AE;margin-top:6px;}
+  .offer-strip{all:unset;display:block;cursor:pointer;width:100%;}
+  .side-card-head{padding:16px 22px;border-bottom:1px solid var(--border-2);display:flex;align-items:center;gap:8px;}
+  .side-card-body{padding:6px 22px;}
+  .grow{flex:1;min-width:0;}
+  .swapic{width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#F6DE8C,#D4AF37 55%,#6A5412);color:#14120A;font-family:'Oswald',sans-serif;clip-path:polygon(29.29% 0,70.71% 0,100% 29.29%,100% 70.71%,70.71% 100%,29.29% 100%,0 70.71%,0 29.29%);}
+  /* pick trade sheet */
+  #modalRoot .mbk{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.72);}
+  #modalRoot .mpn{position:fixed;z-index:91;left:50%;top:3vh;bottom:3vh;width:min(560px,94vw);transform:translateX(-50%);overflow-y:auto;background:var(--bg);padding:24px 22px 30px;--c:22px;clip-path:var(--P);}
+  .mhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .msec{font-family:'Oswald',sans-serif;letter-spacing:2px;font-size:12px;color:#7A7A82;margin:16px 0 8px;}
+  .mlab{font-size:12px;color:#9A9AA2;margin:12px 0 6px;}
+  .seg2{display:flex;gap:8px;flex-wrap:wrap;}
+  .chipx{border:0;background:#26262B;color:#9A9AA2;font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:1px;padding:8px 14px;cursor:pointer;--c:8px;clip-path:var(--P);}
+  .chipx.on{background:linear-gradient(135deg,#F2D675,#D4AF37 60%,#9C7A1E);color:#14120A;}
+  .orow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #26262C;cursor:pointer;}
+  .orow:first-child{border-top:0;}
+  .orow input{width:18px;height:18px;accent-color:#D4AF37;}
+  .mbtn{border:0;background:#26262B;color:var(--text);font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:1px;padding:12px 18px;cursor:pointer;--c:10px;clip-path:var(--P);}
+  .mbtn.gold{background:linear-gradient(135deg,#F2D675,#D4AF37 60%,#9C7A1E);color:#14120A;font-weight:700;}
+  .mbtn.grow{flex:1;}
+  button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="content"><div class="loading">Loading the draft room…</div></div>
+</div>
+<div id="modalRoot"></div>
+
+<script>
+const DIVISION_COLOR = {
+  "Heavyweight": "#E2283C",
+  "Light Heavyweight": "#E8742A",
+  "Middleweight": "#3A7BFF",
+  "Welterweight": "#F4F4F2",
+  "Lightweight": "#B5452B",
+  "Featherweight": "#1FB5A3",
+  "Bantamweight": "#1F6B3A",
+  "Flyweight": "#9ACD32",
+  "Women's Strawweight": "#D4476B",
+  "Women's Flyweight": "#5EC8E8",
+  "Women's Bantamweight": "#A855F7",
+};
+const DIV_SHORT = {
+  "Heavyweight": "HW", "Light Heavyweight": "LHW", "Middleweight": "MW",
+  "Welterweight": "WW", "Lightweight": "LW", "Featherweight": "FW",
+  "Bantamweight": "BW", "Flyweight": "FLW",
+  "Women's Strawweight": "WSW", "Women's Flyweight": "WFLW", "Women's Bantamweight": "WBW",
+};
+const DIVISION_LIST = Object.keys(DIVISION_COLOR);
+const FILTER_TABS = ["ALL"];
+const ACTIVE_TIMER_CHOICES = [30, 60, 90, 120];   // seconds — 30s / 1:00 / 1:30 / 2:00
+const CAGESIDE_TIMER_CHOICES = [15, 30, 45];      // seconds
+
+function fmtCtrl(sec){
+  if (sec === null || sec === undefined) return "—";
+  const s = Math.round(sec);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+function fmtPct(x){
+  if (x === null || x === undefined) return "—";
+  return `${Math.round(x * 100)}%`;
+}
+function fmtNum(x, d){
+  if (x === null || x === undefined) return "—";
+  return Number(x).toFixed(d === undefined ? 1 : d);
+}
+function fmtRecord(f){
+  if (f.wins === null || f.wins === undefined || f.losses === null || f.losses === undefined) return "—";
+  return `${f.wins}-${f.losses}-${f.draws || 0}`;
+}
+// Tale-of-the-tape height: stored as decimal inches (UFC.com's own bio
+// format, e.g. 70 for 5'10") -> "5'10&Prime;".
+function fmtHeight(totalInches){
+  if (totalInches === null || totalInches === undefined) return "—";
+  const whole = Math.round(totalInches);
+  const ft = Math.floor(whole / 12);
+  const inch = whole % 12;
+  return `${ft}&#39;${inch}&Prime;`;
+}
+function fmtClock(totalSeconds){
+  const s = Math.max(0, Math.round(totalSeconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+// Labels used on the setup screen's timer pickers, e.g. 30 -> "0:30", 90 -> "1:30"
+function fmtTimerLabel(seconds){ return seconds < 60 ? `${seconds}s` : fmtClock(seconds); }
+// Average UFC fights per year, from the fighter_fight_rate view: fights in the
+// last 3 years divided by the years of history (3-year window, 1-year floor).
+let championById = {};
+let nextBoutById = {};      // fighter id -> next scheduled bout {date, event, oppId, title, ml}
+let formById = {};          // fighter id -> last-5 results (lazy), null while loading
+// Odds stay OFF until the odds source's terms allow showing them in the app.
+const SHOW_ODDS = false;
+let fightRateById = {};
+function fightsPerYear(f){
+  const v = f ? fightRateById[f.id] : null;
+  return v === undefined || v === null ? null : Number(v);
+}
+function fmtFightsPerYear(f){
+  const v = fightsPerYear(f);
+  return v === null ? "—" : v.toFixed(1);
+}
+function fmtRank(rank){
+  return (rank === null || rank === undefined) ? "—" : `#${rank}`;
+}
+
+// Same "Standard Fight Points" weights used to score real leagues
+// (combat-sync/netlify/functions/scoring.js) — applied here to each
+// fighter's career per-fight averages to project a per-fight fantasy score.
+// TD-defense bonus (0.5 pt per takedown defended) is estimated from
+// td_def_pct against a league-average opponent-attempt rate, since the
+// fighters table stores a per-fighter aggregate, not opponent-specific
+// raw attempt counts.
+const FANTASY_WEIGHTS = { sigStrike: 0.1, takedown: 2, knockdown: 8, controlMinute: 1, subAttempt: 1, reversal: 6, tdDefended: 0.5 };
+const ASSUMED_OPP_TD_ATTEMPTS = 3;
+function projectedFantasyPoints(f){
+  if (!f) return null;
+  const sig = Number(f.avg_sig_strikes) || 0;
+  const td = Number(f.avg_takedowns) || 0;
+  const kd = Number(f.avg_knockdowns) || 0;
+  const ctrlMin = (Number(f.avg_control_seconds) || 0) / 60;
+  const subAtt = Number(f.avg_sub_attempts) || 0;
+  const rev = Number(f.avg_reversals) || 0;
+  const tdDefBonus = (f.td_def_pct !== null && f.td_def_pct !== undefined)
+    ? Number(f.td_def_pct) * ASSUMED_OPP_TD_ATTEMPTS * FANTASY_WEIGHTS.tdDefended
+    : 0;
+  return sig * FANTASY_WEIGHTS.sigStrike + td * FANTASY_WEIGHTS.takedown + kd * FANTASY_WEIGHTS.knockdown
+    + ctrlMin * FANTASY_WEIGHTS.controlMinute + subAtt * FANTASY_WEIGHTS.subAttempt + rev * FANTASY_WEIGHTS.reversal
+    + tdDefBonus;
+}
+
+
+function fmtMethod(m){
+  const t = (m || "").toUpperCase();
+  if (!t) return "";
+  if (t.includes("KO")) return "KO";
+  if (t.includes("SUB")) return "SUB";
+  if (t.includes("DEC")) return "DEC";
+  return t.slice(0, 4);
+}
+function fmtShortDate(d){
+  return new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+function ensureForm(id){
+  if (formById[id] !== undefined) return;
+  formById[id] = null;
+  CombatAuth.client.from("fighter_recent_form").select("bout_date, opponent_id, result, method").eq("fighter_id", id).lte("rn", 5).order("bout_date", { ascending: false })
+    .then(({ data, error }) => {
+      formById[id] = error ? [] : (data || []);
+      if (screen === "draft") render();
+    }, () => { formById[id] = []; });
+}
+function fmtMoneyline(n){ return n === null || n === undefined ? "" : (n > 0 ? "+" + n : String(n)); }
+function isChamp(f){ return !!(f && championById[f.id]); }
+function fighterDc(f){ return isChamp(f) ? "#D4AF37" : ((f && DIVISION_COLOR[f.announced_weight_class]) || "#D4AF37"); }
+function octagonAvatar(f, strokeColor, size){
+  if (f && f.photo_url) {
+    return `<img src="${esc(f.photo_url)}" style="width:100%;height:100%;object-fit:cover;" alt="">`;
+  }
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${strokeColor}" stroke-width="1.6"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path></svg>`;
+}
+const OCT_CLIP = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
+// Dynasty's picked-fighter octagon, upgraded to match the two-layer
+// gradient-ring look used for every fighter photo in Face-Off (.fo-avatar-ring
+// / .fo-fighter-ring): a padded outer octagon in a radial gradient of the
+// division color for depth, wrapping an inner clipped photo panel — instead
+// of the old flat single-color border.
+function octagonRingAvatar(f, dc, outerSize){
+  const pad = Math.max(2, Math.round(outerSize * 0.036));
+  return `
+    <div style="width:${outerSize}px;height:${outerSize}px;padding:${pad}px;box-sizing:border-box;clip-path:${OCT_CLIP};background:radial-gradient(circle at 35% 28%, #fff 0%, ${dc} 55%, #000 130%);flex-shrink:0;">
+      <div style="width:100%;height:100%;clip-path:${OCT_CLIP};background:#0F0F12;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+        ${octagonAvatar(f, dc, Math.round(outerSize * 0.4))}
+      </div>
+    </div>`;
+}
+// Same two-layer octagon for slots with no fighter yet. kind: "upcoming"
+// (dim grey), "clock" (red, on the clock) — never a bare clipped border,
+// which only ever drew four straight edges.
+function octagonEmptyAvatar(outerSize, kind, glyphHtml){
+  const pad = Math.max(2, Math.round(outerSize * 0.036));
+  const clock = kind === "clock";
+  const ring = clock
+    ? "radial-gradient(circle at 35% 28%, #fff 0%, var(--red) 55%, #000 130%)"
+    : "radial-gradient(circle at 35% 28%, #55555D 0%, #2A2A30 55%, #000 130%)";
+  const inner = clock ? "#2A0F13" : "#0F0F12";
+  const stroke = clock ? "var(--red)" : "#3A3A40";
+  const glyph = glyphHtml || `<svg width="${Math.round(outerSize * 0.42)}" height="${Math.round(outerSize * 0.42)}" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="1.6"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path></svg>`;
+  return `
+    <div style="width:${outerSize}px;height:${outerSize}px;padding:${pad}px;box-sizing:border-box;clip-path:${OCT_CLIP};background:${ring};flex-shrink:0;">
+      <div style="width:100%;height:100%;clip-path:${OCT_CLIP};background:${inner};display:flex;align-items:center;justify-content:center;">${glyph}</div>
+    </div>`;
+}
+
+const NEWS_ENDPOINT = "https://combat-sync.netlify.app/.netlify/functions/get-news";
+async function loadNews(){
+  if (newsLoaded) return;
+  newsLoaded = true;
+  try {
+    const res = await fetch(NEWS_ENDPOINT);
+    const data = await res.json();
+    newsItems = data.items || [];
+  } catch (e) {
+    newsItems = [];
+  }
+  if (screen === "draft") render();
+}
+
+
+/* =========================================================================
+   Card Redraft league draft room. Same look as the mock draft room in
+   index.html, with octagon panels, driven by the league's server-side draft
+   (draft_rooms / cr_picks / cr_make_pick / pick trades).
+   ========================================================================= */
+const content = document.getElementById("content");
+function esc(s){ return CombatAuth.escapeHtml(s); }
+const sb = CombatAuth.client;
+const LEAGUE_ID = new URLSearchParams(location.search).get("league");
+
+let screen = "draft"; // draft | board
+let fighters = [];
+let fightersById = {};
+let newsItems = [];
+let newsLoaded = false;
+let userId = null, L = null, teams = [], room = null, picks = [], po = {}, pt = [];
+let userTeamId = null, userTeamName = "";
+let activeFilter = "ALL";
+let selectedFighterId = null;
+let lastSig = "";
+let modal = null;      // pick trade sheet state
+let fighterPoolError = null;
+
+/* ---------- octagon box (same construction as the league screens) ---------- */
+const ob = (html, o = {}) => `<div class="ob ${o.cls || "md"}" style="--ol:${o.ol || "rgba(255,255,255,0.10)"};${o.st || ""}"><div class="i" style="--pad:${o.pad || "18px"};--fill:${o.fill || "#141417"}">${html}</div></div>`;
+
+/* ---------- draft order helpers ---------- */
+function roomSeat(pick){
+  const r = room, n = r.team_order.length, rd = Math.floor((pick - 1) / n) + 1, pos = (pick - 1) % n + 1;
+  const rev = r.draft_type === "linear" ? 0 : r.draft_type === "3rr" ? (rd === 1 ? 0 : rd === 2 ? 1 : ((rd - 3) % 2 === 0 ? 1 : 0)) : (rd % 2 === 1 ? 0 : 1);
+  return rev ? n - pos + 1 : pos;
+}
+function pickTid(pick){ return po[pick] || room.team_order[roomSeat(pick) - 1]; }
+function teamById(id){ return teams.find((t) => t.id === id); }
+function teamName(id){ const t = teamById(id); return t ? t.name : "Team"; }
+function teamInitials(id){
+  if (id === userTeamId) return "YOU";
+  return teamName(id).split(/\s+/).map((w) => w[0]).join("").slice(0, 3).toUpperCase();
+}
+function pickLbl(p){ const n = room.team_order.length; return "Round " + (Math.floor((p - 1) / n) + 1) + ", Pick " + ((p - 1) % n + 1); }
+function myUpcoming(tid){
+  const n = room.team_order.length, total = n * room.rounds, out = [];
+  for (let p = room.current_pick_number + (room.status === "paused" ? 0 : 1); p <= total; p++) if (pickTid(p) === tid) out.push(p);
+  return out;
+}
+const isNewF = (id) => !!(room && (room.pool_new || []).includes(id));
+
+/* ---------- data ---------- */
+async function loadRoomState(){
+  const { data: r } = await sb.from("draft_rooms").select("*").eq("league_id", LEAGUE_ID).eq("format", "card_redraft").order("block_no", { ascending: false }).limit(1).maybeSingle();
+  room = r || null; picks = []; po = {}; pt = [];
+  if (!room) return;
+  const open = room.status === "live" || room.status === "paused";
+  const [pk, pw, pr] = await Promise.all([
+    sb.from("cr_picks").select("*").eq("draft_room_id", room.id).order("pick_number"),
+    open ? sb.from("cr_pick_owner").select("pick_number,team_id").eq("draft_room_id", room.id) : Promise.resolve({ data: [] }),
+    open ? sb.from("cr_pick_trades").select("*").eq("draft_room_id", room.id).eq("status", "pending") : Promise.resolve({ data: [] }),
+  ]);
+  picks = pk.data || [];
+  (pw.data || []).forEach((o) => { po[o.pick_number] = o.team_id; });
+  pt = (pr.data || []).filter((t) => new Date(t.expires_at) > new Date());
+}
+async function loadTeams(){
+  const { data } = await sb.from("teams").select("*").eq("league_id", LEAGUE_ID).order("created_at");
+  teams = data || [];
+  const me = teams.find((t) => t.owner_user_id === userId);
+  userTeamId = me ? me.id : null; userTeamName = me ? me.name : "";
+}
+const STAT_COLS = "id, full_name, nickname, announced_weight_class, photo_url, current_rating, wins, losses, finishes, avg_sig_strikes, avg_takedowns, avg_knockdowns, avg_control_seconds, avg_sub_attempts, avg_reversals, td_def_pct";
+async function loadFighterPool(){
+  if (fighters.length || fighterPoolError) return;
+  try {
+    const { data, error } = await sb.from("fighters").select(STAT_COLS).order("current_rating", { ascending: false }).limit(1000);
+    if (error) throw error;
+    fighters = data || [];
+    // make sure every fighter in the pool is present, even outside the top 1000
+    const have = new Set(fighters.map((f) => f.id));
+    const missing = ((room && room.pool) || []).filter((id) => !have.has(id));
+    if (missing.length) {
+      const { data: extra } = await sb.from("fighters").select(STAT_COLS).in("id", missing);
+      fighters = fighters.concat(extra || []);
+    }
+    fighters.forEach((f) => { fightersById[f.id] = f; });
+    try {
+      const { data: rates } = await sb.from("fighter_fight_rate").select("fighter_id, fights_per_year").limit(2000);
+      fightRateById = {}; (rates || []).forEach((r) => { fightRateById[r.fighter_id] = r.fights_per_year; });
+    } catch (e) { fightRateById = {}; }
+    try {
+      const { data: champs } = await sb.from("fighters").select("id").eq("is_champion", true).limit(100);
+      championById = {}; (champs || []).forEach((r) => { championById[r.id] = true; });
+    } catch (e) { championById = {}; }
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: ub } = await sb.from("bouts").select("event_name, bout_date, is_title_fight, fighter_a, fighter_b, fighter_a_moneyline, fighter_b_moneyline")
+        .gte("bout_date", today).neq("status", "completed").order("bout_date", { ascending: true }).limit(300);
+      nextBoutById = {};
+      (ub || []).forEach((b) => {
+        if (!nextBoutById[b.fighter_a]) nextBoutById[b.fighter_a] = { date: b.bout_date, event: b.event_name, oppId: b.fighter_b, title: b.is_title_fight, ml: b.fighter_a_moneyline };
+        if (!nextBoutById[b.fighter_b]) nextBoutById[b.fighter_b] = { date: b.bout_date, event: b.event_name, oppId: b.fighter_a, title: b.is_title_fight, ml: b.fighter_b_moneyline };
+      });
+    } catch (e) { nextBoutById = {}; }
+    projectedFPById = {};
+    fighters.forEach((f) => { projectedFPById[f.id] = projectedFantasyPoints(f); });
+    const byFP = fighters.slice().sort((a, b) => (projectedFPById[b.id] || 0) - (projectedFPById[a.id] || 0));
+    overallRankById = {};
+    byFP.forEach((f, idx) => { overallRankById[f.id] = idx + 1; });
+  } catch (err) { fighterPoolError = err.message || "Couldn't load fighters."; }
+}
+function rankValue(f){ const r = overallRankById[f.id]; return (r === null || r === undefined) ? -Infinity : -r; }
+function isDivisionFilter(v){ return DIVISION_LIST.includes(v); }
+function availableFighters(){
+  const taken = new Set(picks.map((p) => p.fighter_id));
+  const pool = new Set((room && room.pool) || []);
+  return fighters.filter((f) => pool.has(f.id) && !taken.has(f.id))
+    .filter((f) => !isDivisionFilter(activeFilter) || f.announced_weight_class === activeFilter)
+    .sort((a, b) => rankValue(b) - rankValue(a));
+}
+
+/* ---------- screens ---------- */
+function backBtn(){ return `<a class="ibtn" href="league.html?open=${esc(LEAGUE_ID)}" aria-label="Back to league"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M15 5l-7 7 7 7"/></svg></a>`; }
+
+function renderNoRoom(){
+  content.innerHTML = `
+    <div class="dr-header"><div class="dr-header-left">${backBtn()}<div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:1px;color:var(--gold);">COMBAT</div><div class="vrule"></div><div class="h-font dr-header-subtitle" style="font-size:15px;letter-spacing:2px;color:#9A9AA2;">CARD REDRAFT</div></div></div>
+    <div style="max-width:520px;margin:60px auto;">${ob(`<div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;">
+      <div class="octagon" style="width:60px;height:60px;background:var(--gold);"></div>
+      <div class="h-font" style="font-size:18px;font-weight:700;letter-spacing:2px;">NO DRAFT YET</div>
+      <div style="font-size:13px;color:#9A9AA2;">The commissioner starts the draft from the league page. This page opens by itself when it begins.</div>
+      <a href="league.html?open=${esc(LEAGUE_ID)}"><button class="start-draft oct-btn h-font" style="font-size:14px;letter-spacing:2px;padding:14px 32px;">BACK TO LEAGUE</button></a></div>`, { cls: "lg", pad: "34px", ol: "rgba(212,175,55,0.5)" })}</div>`;
+}
+
+function renderDraft(){
+  const n = room.team_order.length, total = n * room.rounds;
+  const complete = room.status === "complete", paused = room.status === "paused", live = room.status === "live";
+  const pickNum = Math.min(room.current_pick_number, total);
+  const onClockTeam = complete ? null : pickTid(pickNum);
+  const isMyTurn = live && onClockTeam === userTeamId;
+  const roundNumber = Math.floor((pickNum - 1) / n) + 1;
+  const draftedIds = {};
+  picks.forEach((p) => { draftedIds[p.fighter_id] = true; });
+  const available = availableFighters();
+  const manualTarget = (isMyTurn && selectedFighterId && !draftedIds[selectedFighterId]) ? fightersById[selectedFighterId] : null;
+  const spotlight = isMyTurn ? (manualTarget || available[0]) : null;
+  const isManualPick = !!manualTarget;
+  const remain = room.current_pick_deadline ? Math.max(0, Math.ceil((new Date(room.current_pick_deadline) - Date.now()) / 1000)) : 0;
+
+  /* ---- pick tracker ---- */
+  const feedByPick = {};
+  picks.forEach((p) => { feedByPick[p.pick_number] = p; });
+  const windowStart = Math.max(1, Math.min(pickNum - 3, Math.max(1, total - 7)));
+  const windowEnd = Math.min(total, windowStart + 7);
+  let trackerHtml = "";
+  for (let k = windowStart; k <= windowEnd; k++) {
+    const team = pickTid(k), entry = feedByPick[k];
+    const teamColor = team === userTeamId ? "var(--gold)" : "#6A6A72";
+    const teamWeight = team === userTeamId ? "700" : "500";
+    if (entry) {
+      const ef = fightersById[entry.fighter_id], dc = fighterDc(ef);
+      trackerHtml += `<div class="tslot${k === pickNum - 1 ? " just" : ""}">${octagonRingAvatar(ef, dc, 52)}
+        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${esc(teamInitials(team))}</span></div>
+        <div class="info" style="color:${dc};font-weight:700;">${esc(ef ? ef.full_name : "?")}</div>
+        <div class="divtag" style="background:${dc}2A;"><span class="h-font" style="font-size:8px;letter-spacing:0.5px;color:${dc};">${esc(ef ? (DIV_SHORT[ef.announced_weight_class] || "") : "")}</span></div></div>`;
+    } else if (k === pickNum && !complete) {
+      trackerHtml += `<div class="tslot">${octagonEmptyAvatar(52, paused ? "upcoming" : "clock")}
+        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${paused ? "var(--gold)" : "var(--red)"};font-weight:700;">&middot; ${esc(teamInitials(team))}</span></div>
+        <div class="info" style="color:${paused ? "var(--gold)" : "var(--red)"};font-weight:700;">${paused ? "ON HOLD" : team === userTeamId ? "ON THE CLOCK" : "ON CLOCK"}</div></div>`;
+    } else {
+      trackerHtml += `<div class="tslot">${octagonEmptyAvatar(52, "upcoming")}
+        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${esc(teamInitials(team))}</span></div>
+        <div class="info" style="color:#5A5A62;">UPCOMING</div></div>`;
+    }
+  }
+
+  /* ---- new pick-trade offers for me ---- */
+  const incoming = pt.filter((t) => t.to_team === userTeamId);
+  const offerStrip = incoming.length
+    ? `<button class="offer-strip" data-open-trades="1">${ob(`<div style="display:flex;align-items:center;gap:12px;"><div class="live-dot" style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex:none;"></div><div class="h-font" style="font-size:13px;letter-spacing:2px;color:var(--gold);text-align:left;flex:1;">${incoming.length} PICK TRADE OFFER${incoming.length > 1 ? "S" : ""} WAITING</div><div class="h-font" style="font-size:12px;letter-spacing:2px;color:#D8D5CC;">VIEW</div></div>`, { cls: "md", pad: "12px 18px", ol: "rgba(212,175,55,0.6)", fill: "linear-gradient(rgba(212,175,55,0.12),rgba(212,175,55,0.12)),#141417" })}</button>`
+    : "";
+
+  /* ---- just signed ---- */
+  const newList = (room.pool_new || []).map((id) => fightersById[id]).filter(Boolean);
+  const newBox = newList.length && !complete
+    ? ob(`<div class="h-font" style="font-size:12px;letter-spacing:2px;color:var(--gold);margin-bottom:8px;">JUST SIGNED</div><div style="font-size:13.5px;color:#D8D5CC;line-height:1.6;">${newList.slice(0, 14).map((f) => esc(f.full_name)).join(" &middot; ")}${newList.length > 14 ? " &middot; +" + (newList.length - 14) + " more" : ""}</div><div style="font-size:11px;color:#6A6A72;margin-top:6px;">Added after the draft started.</div>`, { cls: "md", pad: "16px 20px", fill: "#16161A", ol: "rgba(212,175,55,0.35)" })
+    : "";
+
+  /* ---- stage ---- */
+  let stageMainHtml = "";
+  if (complete) {
+    stageMainHtml = ob(`<div style="text-align:center;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT COMPLETE</div>
+      <div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;margin-top:10px;">ALL ${total} PICKS HAVE BEEN MADE ACROSS ALL ${n} TEAMS</div>
+      <a href="league.html?open=${esc(LEAGUE_ID)}" style="display:inline-block;margin-top:20px;"><button class="start-draft oct-btn h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">GO TO LEAGUE</button></a></div>`, { cls: "lg", pad: "34px", ol: "rgba(212,175,55,0.6)" });
+  } else if (paused) {
+    const holdT = teamById(onClockTeam);
+    stageMainHtml = ob(`<div style="display:flex;flex-direction:column;gap:12px;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT PAUSED</div>
+      <div style="font-size:14px;color:#D8D5CC;line-height:1.5;">Every announced fighter has been picked. The draft picks up again when more fights are announced. You can still trade picks while it waits.</div>
+      ${holdT ? `<div style="border-top:1px solid var(--border-2);padding-top:12px;"><div class="h-font" style="font-size:11px;letter-spacing:2px;color:#7A7A82;">PICKS FIRST WHEN IT RESUMES</div><div class="h-font" style="font-size:22px;font-weight:700;margin-top:4px;">${esc(holdT.name.toUpperCase())}${holdT.id === userTeamId ? " (YOU)" : ""}</div><div style="font-size:12px;color:#9A9AA2;">${esc(pickLbl(pickNum))} &middot; Pick ${pickNum} of ${total}</div></div>` : ""}</div>`, { cls: "lg", pad: "28px 30px", ol: "rgba(212,175,55,0.55)", fill: "linear-gradient(120deg,rgba(212,175,55,0.16),rgba(212,175,55,0.03) 60%),#121214" });
+  } else if (isMyTurn && spotlight) {
+    const lastOwnPickEntry = picks.slice().reverse().find((p) => p.team_id === userTeamId);
+    const lastOwnPick = lastOwnPickEntry ? fightersById[lastOwnPickEntry.fighter_id] : null;
+    const tapeRows = [
+      { a: fmtRecord(spotlight), label: "RECORD", b: lastOwnPick ? fmtRecord(lastOwnPick) : "—" },
+      { a: String(spotlight.finishes ?? "—"), label: "FINISHES", b: lastOwnPick ? String(lastOwnPick.finishes ?? "—") : "—" },
+      { a: fmtRank(overallRankById[spotlight.id]), label: "OVERALL RANK", b: lastOwnPick ? fmtRank(overallRankById[lastOwnPick.id]) : "—" },
+      { a: fmtNum(projectedFPById[spotlight.id], 1), label: "PROJ FANTASY PTS", b: lastOwnPick ? fmtNum(projectedFPById[lastOwnPick.id], 1) : "—" },
+    ];
+    const sdc = fighterDc(spotlight), sChamp = isChamp(spotlight);
+    ensureForm(spotlight.id);
+    const nb = nextBoutById[spotlight.id], nbOpp = nb ? fightersById[nb.oppId] : null;
+    const nextFightHtml = nb ? `Next fight: <b>${esc(fmtShortDate(nb.date))}</b> vs ${esc(nbOpp ? nbOpp.full_name : "TBA")}${nb.title ? " · title fight" : ""}` : "No fight booked yet";
+    const form = formById[spotlight.id];
+    const formHtml = form === null || form === undefined
+      ? `<div style="font-size:13px;color:#8C8982;">Loading recent fights…</div>`
+      : form.length ? form.map((r) => {
+          const c = r.result === "W" ? "#3DBE6B" : r.result === "L" ? "#E2283C" : "#8C8982";
+          const opp = fightersById[r.opponent_id];
+          return `<div style="text-align:center;min-width:58px;"><div class="h-font form-badge" style="font-size:20px;font-weight:700;color:${c};border:2px solid ${c};padding:4px 0;">${r.result}</div><div style="font-size:11px;color:#B8B5AE;margin-top:4px;">${esc(fmtMethod(r.method))}</div><div style="font-size:10px;color:#8C8982;">${esc(opp ? opp.full_name.split(" ").slice(-1)[0] : "")}</div></div>`;
+        }).join("") : `<div style="font-size:13px;color:#8C8982;">No fight history on file.</div>`;
+    const myDivCount = picks.filter((p) => p.team_id === userTeamId && (fightersById[p.fighter_id] || {}).announced_weight_class === spotlight.announced_weight_class).length;
+    const finishRate = spotlight.wins ? Math.round(((spotlight.finishes || 0) / spotlight.wins) * 100) + "%" : "—";
+    const divFitText = myDivCount === 0 ? `You have no ${esc(spotlight.announced_weight_class || "")} fighters yet`
+      : myDivCount >= 3 ? `Heads up: you already own ${myDivCount} ${esc(spotlight.announced_weight_class || "")} fighters`
+      : `You own ${myDivCount} ${esc(spotlight.announced_weight_class || "")} fighter${myDivCount > 1 ? "s" : ""}`;
+    const upNext = available.filter((f) => f.id !== spotlight.id).slice(0, 3);
+    const bigStats = [
+      { l: "Sig. strikes", v: fmtNum(spotlight.avg_sig_strikes) }, { l: "Takedowns", v: fmtNum(spotlight.avg_takedowns) },
+      { l: "Control time", v: fmtCtrl(spotlight.avg_control_seconds) }, { l: "Fights / year", v: fmtFightsPerYear(spotlight) },
+    ];
+    stageMainHtml += `
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="live-dot" style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div>
+        <div class="h-font" style="font-size:13px;letter-spacing:3px;color:var(--red);">ON THE CLOCK &mdash; YOUR PICK</div>
+        ${isManualPick ? `<button id="clearSelectedBtn" class="h-font" style="margin-left:auto;font-size:9px;letter-spacing:1.5px;color:var(--red);background:rgba(226,40,60,0.12);border:0;padding:5px 10px;cursor:pointer;--c:6px;clip-path:var(--P);">YOUR PICK &times;</button>` : ""}
+      </div>
+      ${ob(`<div style="display:flex;align-items:center;gap:30px;flex-wrap:wrap;">
+        ${octagonRingAvatar(spotlight, sdc, 210)}
+        <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:14px;font-weight:600;color:${sdc};">${esc(spotlight.announced_weight_class || "")} &middot; ${fmtRecord(spotlight)} &middot; ${spotlight.finishes ?? 0} finishes${sChamp ? ` &middot; <span style="font-weight:700;letter-spacing:1px;">CHAMPION</span>` : ""}</div>
+          <div class="h-font" style="font-size:clamp(30px,5vw,50px);font-weight:700;line-height:1.02;">${esc(spotlight.full_name.toUpperCase())}</div>
+          <div style="font-size:14px;color:#D8D5CC;">${nextFightHtml}</div>
+          <div style="display:flex;gap:34px;margin-top:10px;flex-wrap:wrap;">
+            <div><div class="h-font" style="font-size:64px;font-weight:700;line-height:1;">${fmtNum(projectedFPById[spotlight.id], 1)}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Projected points</div></div>
+            <div><div class="h-font" style="font-size:64px;font-weight:700;line-height:1;">${fmtRank(overallRankById[spotlight.id])}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Overall rank</div></div>
+          </div></div></div>`, { cls: "lg", pad: "30px 34px", ol: sdc + "59", fill: `linear-gradient(120deg,${sdc}57 0%,${sdc}1F 55%,${sdc}08 100%),#121214`, st: `filter:drop-shadow(0 18px 40px ${sdc}1F);` })}
+      <div class="hero-stats">${bigStats.map((c) => ob(`<div class="v hs-v">${esc(c.v)}</div><div class="l hs-l">${esc(c.l)}</div>`, { cls: "md", pad: "18px", fill: "#16161A" })).join("")}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
+        ${ob(`<div class="h-font" style="font-size:20px;letter-spacing:1px;margin-bottom:12px;">LAST 5 FIGHTS</div><div style="display:flex;gap:10px;flex-wrap:wrap;">${formHtml}</div>`, { cls: "md", pad: "20px 22px", fill: "#16161A" })}
+        ${ob(`<div style="display:flex;flex-direction:column;gap:10px;"><div class="h-font" style="font-size:20px;letter-spacing:1px;">FINISH RATE</div><div class="h-font" style="font-size:40px;font-weight:700;line-height:1;">${finishRate}</div><div style="font-size:13px;color:#B8B5AE;">${spotlight.finishes ?? 0} finishes in ${spotlight.wins ?? 0} wins</div><div style="font-size:13px;color:${myDivCount >= 3 ? "#E8C93A" : "#B8B5AE"};border-top:1px solid var(--border-2);padding-top:10px;">${divFitText}</div></div>`, { cls: "md", pad: "20px 22px", fill: "#16161A" })}
+      </div>
+      ${ob(`<div class="h-font" style="font-size:20px;letter-spacing:1px;margin-bottom:12px;">TALE OF THE TAPE</div>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;padding-bottom:8px;border-bottom:1px solid var(--border-2);margin-bottom:6px;">
+          <div class="h-font" style="font-size:12px;letter-spacing:1px;color:${sdc};">${esc(spotlight.full_name.toUpperCase())}</div><div></div>
+          <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#8C8982;text-align:right;">${lastOwnPick ? esc(lastOwnPick.full_name.toUpperCase()) + " (YOUR LAST PICK)" : "NO PRIOR PICK YET"}</div></div>
+        ${tapeRows.map((r) => `<div class="tape-row"><div class="a">${esc(r.a)}</div><div class="lbl">${esc(r.label)}</div><div class="b">${esc(r.b)}</div></div>`).join("")}`, { cls: "md", pad: "20px 22px", fill: "#16161A" })}
+      ${upNext.length ? ob(`<div class="h-font" style="font-size:14px;letter-spacing:2px;color:#9A9AA2;margin-bottom:10px;">BEST AVAILABLE AFTER THIS PICK</div>
+        <div style="display:flex;gap:18px;flex-wrap:wrap;">${upNext.map((f) => `<div style="display:flex;align-items:center;gap:10px;">${octagonRingAvatar(f, fighterDc(f), 38)}<div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div><div style="font-size:11px;color:#B8B5AE;">${esc(DIV_SHORT[f.announced_weight_class] || "")} · ${fmtRank(overallRankById[f.id])}</div></div></div>`).join("")}</div>`, { cls: "md", pad: "16px 22px", fill: "#16161A" }) : ""}
+      <button id="lockBtn" class="lock-pick-btn oct-btn" style="background:var(--red);color:#F5F2EA;cursor:pointer;">LOCK PICK — ${esc(spotlight.full_name.toUpperCase())}</button>
+      <div class="error" id="pickError" style="display:none;"></div>`;
+  } else {
+    stageMainHtml = ob(`<div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;text-align:center;">Waiting on ${esc(teamName(onClockTeam))}…</div>`, { cls: "lg", pad: "30px", ol: "rgba(255,255,255,0.10)" });
+  }
+
+  /* ---- your slip ---- */
+  const myHeld = picks.filter((p) => p.team_id === userTeamId).sort((a, b) => a.pick_number - b.pick_number);
+  const myLeft = userTeamId ? myUpcoming(userTeamId) : [];
+  let projectedTotal = 0;
+  const slipRow = (f, pending) => { const dc = fighterDc(f);
+    return `<div class="slip-row"><div style="display:flex;align-items:center;gap:8px;min-width:0;">${octagonRingAvatar(f, dc, 30)}<div class="h-font" style="font-size:14px;font-weight:600;${pending ? "color:var(--red);" : ""}">${esc(f.full_name)}${pending ? " (PENDING)" : ""}</div></div><div class="h-font" style="font-size:14px;font-weight:700;color:var(--text);">${fmtNum(projectedFPById[f.id], 1)}</div></div>`; };
+  let slipHtml = `<div class="slip-group"><span class="h-font" style="font-size:10px;letter-spacing:2px;color:var(--gold);">ROSTER</span><span class="h-font" style="font-size:9px;letter-spacing:1px;color:#4A4A52;">${myHeld.length} / ${room.rounds}</span></div>`;
+  const slots = Math.max(room.rounds, myHeld.length);
+  for (let i = 0; i < slots; i++) {
+    const p = myHeld[i], f = p ? fightersById[p.fighter_id] : null;
+    if (f) { projectedTotal += Number(projectedFPById[f.id]) || 0; slipHtml += slipRow(f, false); }
+    else if (isMyTurn && i === myHeld.length && spotlight) slipHtml += slipRow(spotlight, true);
+    else slipHtml += `<div class="slip-row"><div style="display:flex;align-items:center;gap:8px;">${octagonEmptyAvatar(30, "upcoming", "")}<div class="h-font" style="font-size:14px;color:#5A5A62;">Empty slot</div></div><div class="h-font" style="font-size:14px;color:#5A5A62;">--</div></div>`;
+  }
+  const slipPanel = ob(`<div class="slip-head"><div class="h-font" style="font-size:13px;letter-spacing:2px;color:var(--gold);">YOUR SLIP</div><div class="h-font" style="font-size:11px;letter-spacing:1px;color:#6A6A72;">TEAM &ldquo;${esc(userTeamName.toUpperCase())}&rdquo;</div></div>
+    <div class="slip-list">${slipHtml}</div>
+    <div class="slip-foot"><div style="display:flex;align-items:center;justify-content:space-between;"><div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">PROJECTED FANTASY PTS</div><div class="h-font" style="font-size:24px;font-weight:700;color:var(--gold);">${fmtNum(projectedTotal, 1)}</div></div>
+    ${complete ? "" : `<div class="h-font" style="font-size:10px;letter-spacing:1px;color:#4A4A52;margin-top:6px;">${myLeft.length} PICK${myLeft.length === 1 ? "" : "S"} LEFT${myLeft.length ? " &middot; " + myLeft.slice(0, 6).map((p) => "#" + p).join(", ") + (myLeft.length > 6 ? "…" : "") : ""}</div>`}</div>`, { cls: "lg", pad: "0", ol: "rgba(255,255,255,0.10)" });
+
+  /* ---- live feed ---- */
+  const feedHtml = picks.slice().reverse().slice(0, 12).map((p) => {
+    const f = fightersById[p.fighter_id], timedOut = p.is_autopick;
+    return `<div class="feed-item"><div class="h-font" style="font-size:11px;color:#5A5A62;flex:0 0 auto;">#${p.pick_number}</div><div class="h-font" style="font-size:13px;color:#C9C6BD;"><span style="color:var(--gold);">${esc(teamInitials(p.team_id))}</span> took ${esc(f ? f.full_name : "?")} <span style="color:#6A6A72;">(${esc(f ? (DIV_SHORT[f.announced_weight_class] || "") : "")})</span>${timedOut ? ` <span style="color:var(--red);">&middot; AUTO</span>` : ""}</div></div>`;
+  }).join("") || `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">No picks yet.</div>`;
+  const feedCard = ob(`<div class="side-card-head"><div class="live-dot" style="width:7px;height:7px;border-radius:50%;background:var(--red);"></div><div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">LIVE DRAFT FEED</div></div><div class="side-card-body">${feedHtml}</div>`, { cls: "lg", pad: "0", st: "margin-top:18px;" });
+
+  /* ---- news ---- */
+  const mmaNews = newsItems.filter((it) => (it.sport || "").toLowerCase() === "mma");
+  const newsFighterIds = new Set();
+  let newsHeading = "FIGHTER NEWS";
+  if (spotlight) { newsFighterIds.add(spotlight.id); newsHeading = "NEWS · " + spotlight.full_name.toUpperCase(); }
+  else { picks.filter((p) => p.team_id === userTeamId).forEach((p) => newsFighterIds.add(p.fighter_id)); newsHeading = "NEWS · YOUR ROSTER"; }
+  const newsToShow = mmaNews.filter((it) => (it.fighters || []).some((mf) => newsFighterIds.has(mf.id))).slice(0, 4);
+  const newsEmptyText = spotlight ? `No recent news on ${esc(spotlight.full_name)}.` : "No recent news on your fighters.";
+  const newsHtml = !newsLoaded ? `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">Loading news…</div>`
+    : (newsToShow.length ? newsToShow.map((it) => `<div class="news-item"><div class="news-tag" style="background:#242428;color:#B8B5AD;">${esc((it.sport || "NEWS").toUpperCase())}</div><a href="${esc(it.link)}" target="_blank" rel="noopener noreferrer">${esc(it.title)}</a></div>`).join("") : `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">${newsEmptyText}</div>`);
+  const newsCard = ob(`<div class="side-card-head"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M4 4h16v16H4z"></path><path d="M8 8h8M8 12h8M8 16h4"></path></svg><div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">${esc(newsHeading)}</div></div><div class="side-card-body">${newsHtml}</div>`, { cls: "lg", pad: "0", st: "margin-top:18px;" });
+
+  /* ---- queue, filters, pool ---- */
+  const queueSource = available.slice(spotlight ? 1 : 0, spotlight ? 4 : 3);
+  const queueHtml = queueSource.map((f, i) => `<div style="display:flex;align-items:center;gap:6px;"><div class="queue-chip" style="${i === 0 ? "background:rgba(212,175,55,0.12);border-color:var(--gold);color:var(--gold);" : "background:#16161A;color:#9A9AA2;"}">${esc(f.full_name)}</div>${i < queueSource.length - 1 ? `<span style="color:#3A3A40;font-size:13px;">&rarr;</span>` : ""}</div>`).join("");
+  const filterTabsHtml = FILTER_TABS.map((r) => { const active = r === activeFilter; const rc = "var(--gold)";
+    return `<button class="filter-tab" data-filter="${r}" style="${active ? `background:${rc}22;border-color:${rc};color:${rc};font-weight:700;` : "color:#9A9AA2;"}">${esc(r)}</button>`; }).join("");
+  const divisionStripHtml = DIVISION_LIST.map((d) => { const active = d === activeFilter; const dc = DIVISION_COLOR[d];
+    return `<button class="division-chip" data-filter="${esc(d)}" style="${active ? `background:${dc}33;border-color:${dc};color:${dc};font-weight:700;` : `background:${dc}14;color:#9A9AA2;`}">${esc(DIV_SHORT[d] || d)}</button>`; }).join("");
+  const poolHeading = isDivisionFilter(activeFilter) ? `${activeFilter.toUpperCase()} · RANKED BY OVERALL RANK` : "ALL FIGHTERS · RANKED BY OVERALL RANK";
+  const existingSearchInput = document.getElementById("fighterSearch");
+  const filterVal = existingSearchInput ? existingSearchInput.value : "";
+  const searchWasFocused = !!existingSearchInput && document.activeElement === existingSearchInput;
+  const searchSelStart = searchWasFocused ? existingSearchInput.selectionStart : null;
+  const searchSelEnd = searchWasFocused ? existingSearchInput.selectionEnd : null;
+  const searched = filterVal ? available.filter((f) => f.full_name.toLowerCase().includes(filterVal.toLowerCase())) : available;
+  const poolRows = searched.slice(0, 60).map((f) => {
+    const dc = fighterDc(f), isSpot = !!spotlight && f.id === spotlight.id, hl = isSpot ? "background:rgba(212,175,55,0.06);" : "";
+    return `<button class="pool-row-btn" data-fighter-id="${f.id}" ${isMyTurn ? "" : "disabled"}>
+      <div style="${hl}box-shadow:inset 6px 0 0 ${dc};padding-left:14px;" class="pool-cell fname-cell">${octagonRingAvatar(f, dc, 42)}<span class="h-font" style="font-size:14px;font-weight:600;color:${isSpot ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span>${isNewF(f.id) ? `<span class="newtag">NEW</span>` : ""}</div>
+      <div style="${hl}" class="pool-cell cell-div"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div></div>
+      <div style="${hl}" class="pool-cell cell-record" data-label="REC">${esc(fmtRecord(f))}</div>
+      <div style="${hl}" class="pool-cell cell-sigstr">${esc(fmtNum(f.avg_sig_strikes))}</div>
+      <div style="${hl}" class="pool-cell cell-td">${esc(fmtNum(f.avg_takedowns))}</div>
+      <div style="${hl}" class="pool-cell cell-kd">${esc(fmtNum(f.avg_knockdowns, 2))}</div>
+      <div style="${hl}" class="pool-cell cell-ctrl">${esc(fmtCtrl(f.avg_control_seconds))}</div>
+      <div style="${hl}" class="pool-cell cell-subatt">${esc(fmtNum(f.avg_sub_attempts))}</div>
+      <div style="${hl}" class="pool-cell cell-rev">${esc(fmtNum(f.avg_reversals, 2))}</div>
+      <div style="${hl}" class="pool-cell cell-tddef">${esc(fmtPct(f.td_def_pct))}</div>
+      <div style="${hl}" class="pool-cell cell-finishes" data-label="FIN">${f.finishes ?? "—"}</div>
+      <div style="${hl}" class="pool-cell cell-fpy" data-label="FIGHTS/YR">${fmtFightsPerYear(f)}</div>
+      <div style="${hl}" class="pool-cell cell-projfp" data-label="PROJ FP">${fmtNum(projectedFPById[f.id], 1)}</div>
+      <div style="${hl}" class="pool-cell cell-rank"><span class="h-font" style="font-size:17px;font-weight:700;color:var(--gold);">${esc(fmtRank(overallRankById[f.id]))}</span></div>
+      <div style="${hl}" class="pool-cell cell-star"><svg width="16" height="16" viewBox="0 0 24 24" fill="${isSpot ? "var(--gold)" : "none"}" stroke="${isSpot ? "var(--gold)" : "#4A4A52"}" stroke-width="1.5"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21.1 7 14.2l-5-4.9 6.9-1L12 2z"></path></svg></div>
+    </button>`;
+  }).join("");
+  const poolTable = ob(`<div class="pool-table-scroll"><div class="pool-grid">
+      <div class="pool-head">FIGHTER</div><div class="pool-head">DIV</div><div class="pool-head">RECORD</div><div class="pool-head">SIG STR</div><div class="pool-head">TD</div><div class="pool-head">KD</div><div class="pool-head">CTRL</div><div class="pool-head">SUB ATT</div><div class="pool-head">REV</div><div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div><div class="pool-head">FIGHTS/YR</div><div class="pool-head">PROJ FP</div><div class="pool-head" style="color:var(--gold);">OVERALL RANK</div><div class="pool-head">★</div>
+      ${poolRows || `<div style="grid-column:1/-1;padding:24px;color:#6A6A72;font-size:13px;">${paused ? "Every announced fighter is drafted. New fights will show up here." : "No fighters match."}</div>`}</div></div>`, { cls: "lg", pad: "0", ol: "rgba(255,255,255,0.10)" });
+
+  /* ---- header ---- */
+  const hasTrades = !!userTeamId && !complete;
+  const clockInner = complete ? `<div class="h-font" style="font-size:28px;font-weight:700;line-height:1;color:var(--gold);">—</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Done</div>`
+    : paused ? `<div class="h-font" style="font-size:20px;font-weight:700;line-height:1;color:var(--gold);">PAUSED</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Waiting on fights</div>`
+    : isMyTurn ? `<div class="h-font pick-clock-val" style="font-size:34px;font-weight:700;line-height:1;color:${remain <= 10 ? "var(--red)" : "#FF6A78"};">${fmtClock(remain)}</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Your pick</div>`
+    : `<div class="h-font" style="font-size:28px;font-weight:700;line-height:1;color:var(--gold);">${esc(teamInitials(onClockTeam))}</div><div class="pick-clock-val" style="font-size:12px;color:#C9C6BD;margin-top:2px;">${fmtClock(remain)}</div>`;
+  const octBg = isMyTurn ? "linear-gradient(135deg,#FF8A96,#E2283C 55%,#7A1620)" : "linear-gradient(135deg,#F6DE8C,#D4AF37 55%,#6A5412)";
+
+  content.innerHTML = `
+    <div class="dr-bg" style="--spot-a:${spotlight ? fighterDc(spotlight) + "42" : "#D4AF3729"};"></div>
+    <div class="dr-header">
+      <div class="dr-header-left">${backBtn()}
+        <div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:1px;color:var(--gold);">COMBAT</div><div class="vrule"></div>
+        <div class="h-font dr-header-subtitle" style="font-size:15px;letter-spacing:2px;color:#9A9AA2;">CARD REDRAFT &middot; BLOCK ${room.block_no}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+        ${hasTrades ? `<button class="board-link h-font" id="tradesBtn" style="font-size:11px;letter-spacing:2px;">TRADE PICKS${incoming.length ? ` <span class="badge">${incoming.length}</span>` : ""}</button>` : ""}
+        <button class="board-link h-font" id="boardLinkBtn" style="font-size:11px;letter-spacing:2px;">FULL DRAFT BOARD</button>
+        <div class="vrule"></div>
+        <div class="status-right"><div class="lbl">ROUND</div>
+          <div class="h-font" style="font-size:44px;font-weight:700;line-height:1;">${roundNumber}<span style="color:#8C8982;font-size:26px;"> / ${room.rounds}</span></div>
+          <div class="h-font" style="font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-top:2px;">${complete ? "DRAFT COMPLETE" : isMyTurn ? "YOUR PICK" : "PICK " + pickNum + " OF " + total}</div></div>
+        <div class="oct-wrap${isMyTurn ? " pulse" : ""}" style="width:104px;height:104px;">
+          <div style="width:104px;height:104px;clip-path:${OCT_CLIP};display:flex;align-items:center;justify-content:center;background:${octBg};">
+            <div style="width:92px;height:92px;clip-path:${OCT_CLIP};background:${isMyTurn ? "#1A0A0D" : "#14120A"};display:flex;flex-direction:column;align-items:center;justify-content:center;">${clockInner}</div>
+          </div></div>
+      </div>
+    </div>
+    <div class="tracker">${trackerHtml}</div>
+    <div class="stage">
+      <div class="stage-main">${offerStrip}${stageMainHtml}${newBox}</div>
+      <div class="stage-side">${slipPanel}${feedCard}${newsCard}</div>
+    </div>
+    <div>
+      <div class="queue-row"><div class="h-font" style="font-size:11px;letter-spacing:2px;color:#7A7A82;">RANKED NEXT</div>${queueHtml}</div>
+      <div class="search-row"><input class="search" id="fighterSearch" placeholder="Search fighters…" value="${esc(filterVal)}"></div>
+      <div class="filter-tabs">${filterTabsHtml}</div>
+      <div class="division-strip">${divisionStripHtml}</div>
+      <div class="h-font" style="font-size:12px;letter-spacing:2px;color:#7A7A82;margin-bottom:12px;">AVAILABLE &mdash; ${esc(poolHeading)}</div>
+      ${poolTable}
+      <div class="footnote">STATS SHOWN ARE PER-FIGHT CAREER AVERAGES FROM SYNCED FIGHT DATA &middot; SIG STR = SIGNIFICANT STRIKES LANDED &middot; TD = TAKEDOWNS LANDED &middot; KD = KNOCKDOWNS &middot; CTRL = CONTROL TIME &middot; FINISHES = CAREER KO/TKO + SUBMISSION WINS &middot; ★ = CURRENTLY SPOTLIGHTED</div>
+    </div>`;
+
+  document.getElementById("boardLinkBtn").addEventListener("click", () => { screen = "board"; lastSig = ""; render(); });
+  const tb = document.getElementById("tradesBtn"); if (tb) tb.addEventListener("click", () => openTrades());
+  document.querySelectorAll("[data-open-trades]").forEach((b) => b.addEventListener("click", () => openTrades()));
+  const clearBtn = document.getElementById("clearSelectedBtn");
+  if (clearBtn) clearBtn.addEventListener("click", () => { selectedFighterId = null; render(); });
+  document.querySelectorAll(".pool-row-btn").forEach((btn) => {
+    if (btn.disabled) return;
+    btn.addEventListener("click", () => { selectedFighterId = btn.dataset.fighterId; render(); });
+  });
+  const searchInput = document.getElementById("fighterSearch");
+  if (searchInput) {
+    searchInput.addEventListener("input", render);
+    if (searchWasFocused) { searchInput.focus(); searchInput.setSelectionRange(searchSelStart, searchSelEnd); }
+  }
+  document.querySelectorAll(".filter-tab, .division-chip").forEach((btn) => {
+    btn.addEventListener("click", () => { activeFilter = btn.dataset.filter; render(); });
+  });
+  const lockBtn = document.getElementById("lockBtn");
+  if (lockBtn) {
+    lockBtn.addEventListener("click", async () => {
+      const errBox = document.getElementById("pickError");
+      const target = manualTarget || available[0];
+      if (!target) return;
+      lockBtn.disabled = true;
+      const { error } = await sb.rpc("cr_make_pick", { p_room: room.id, p_fighter: target.id });
+      if (error) { errBox.textContent = error.message || "That pick isn't legal."; errBox.style.display = "block"; lockBtn.disabled = false; await refresh(false); return; }
+      selectedFighterId = null;
+      await refresh(true);
+    });
+  }
+}
+
+/* ---------------- Full Draft Board ---------------- */
+function renderBoard(){
+  const cols = room.team_order.length, n = cols;
+  const teamHeaderHtml = room.team_order.map((tid) => `
+    <div class="board-team-cell" style="${tid === userTeamId ? "background:rgba(212,175,55,0.12);border-color:var(--gold);" : ""}">
+      <div class="h-font" style="font-size:13px;font-weight:700;color:${tid === userTeamId ? "var(--gold)" : "#C9C6BD"};">${esc(teamInitials(tid))}</div>
+      ${tid === userTeamId ? `<div class="h-font" style="font-size:9px;letter-spacing:1px;color:var(--gold);margin-top:2px;">YOUR TEAM</div>` : ""}
+    </div>`).join("");
+  const byPick = {}; picks.forEach((p) => { byPick[p.pick_number] = p; });
+  const current = room.current_pick_number, complete = room.status === "complete", paused = room.status === "paused";
+  const maxRound = room.rounds;
+  let roundsHtml = "";
+  for (let round = 1; round <= maxRound; round++) {
+    // which pick of this round sits in each original draft column
+    const pickForCol = {};
+    for (let k = (round - 1) * n + 1; k <= round * n; k++) pickForCol[roomSeat(k) - 1] = k;
+    let cellsHtml = "";
+    for (let c = 0; c < cols; c++) {
+      const k = pickForCol[c], p = byPick[k], owner = pickTid(k), traded = owner !== room.team_order[c];
+      const tag = traded ? `<div class="h-font" style="font-size:9px;letter-spacing:1px;color:var(--gold);">&rarr; ${esc(teamInitials(owner))}</div>` : "";
+      if (p) {
+        const f = fightersById[p.fighter_id], dc = (f && DIVISION_COLOR[f.announced_weight_class]) || "var(--gold)";
+        cellsHtml += `<div class="board-cell">${octagonRingAvatar(f, dc, 46)}<div class="nm">${esc(f ? f.full_name : "?")}</div><div class="tag" style="background:${dc}2A;color:${dc};">${esc(f ? (DIV_SHORT[f.announced_weight_class] || "") : "")}</div>${tag}</div>`;
+      } else if (k === current && !complete) {
+        cellsHtml += `<div class="board-cell" style="background:rgba(226,40,60,0.08);border-color:var(--red);">${octagonEmptyAvatar(46, "clock", `<span class="h-font" style="font-size:16px;font-weight:700;color:var(--red);">?</span>`)}<div class="nm" style="color:var(--red);">${paused ? "On hold" : "On the clock"}</div>${tag}</div>`;
+      } else {
+        cellsHtml += `<div class="board-cell" style="background:transparent;border:1px dashed #202024;">${octagonEmptyAvatar(46, "upcoming", "")}<div class="nm" style="color:#3A3A40;">#${k}</div>${tag}</div>`;
+      }
+    }
+    roundsHtml += `<div class="board-round-row" style="grid-template-columns:90px repeat(${cols}, 1fr);">
+      <div class="board-round-lbl"><div class="h-font" style="font-size:10px;letter-spacing:1.5px;color:#6A6A72;">ROUND</div><div class="h-font" style="font-size:24px;font-weight:700;color:#4A4A52;">${round}</div></div>${cellsHtml}</div>`;
+  }
+  content.innerHTML = `
+    <div class="dr-header"><div class="dr-header-left">${backBtn()}
+      <div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:1px;color:var(--gold);">COMBAT</div><div class="vrule"></div>
+      <div class="h-font" style="font-size:15px;letter-spacing:2px;color:#9A9AA2;">FULL DRAFT BOARD</div></div>
+      <button class="board-link h-font" id="backToRoomBtn" style="font-size:11px;letter-spacing:2px;">&larr; BACK TO LIVE ROOM</button></div>
+    <div class="board-hint">Swipe sideways to see every team &rarr;</div>
+    <div class="board-wrap"><div class="board-min" style="min-width:${Math.max(900, 90 + cols * 120)}px;">
+      <div class="board-team-row" style="grid-template-columns:90px repeat(${cols}, 1fr);"><div></div>${teamHeaderHtml}</div>${roundsHtml}</div></div>`;
+  document.getElementById("backToRoomBtn").addEventListener("click", () => { screen = "draft"; lastSig = ""; render(); });
+}
+
+function render(){
+  if (!room) return renderNoRoom();
+  if (screen === "board") return renderBoard();
+  return renderDraft();
+}
+
+/* ---------------- Pick trades ---------------- */
+function assetLbl(f, pk){ return pk ? pickLbl(pk) + " (#" + pk + ")" : ((fightersById[f] || {}).full_name || "Fighter"); }
+function assetBox(f, pk, label, col){
+  return ob(`<div class="h-font" style="font-size:10px;letter-spacing:1px;color:#6A6A72;">${label}</div><div class="h-font" style="font-size:15px;font-weight:700;margin-top:4px;">${pk ? "&#128278; " + esc(pickLbl(pk)) : esc(assetLbl(f))}</div><div style="font-size:11px;color:#8C8982;">${pk ? "Overall pick " + pk : esc((fightersById[f] || {}).announced_weight_class || "")}</div>`, { cls: "sm", pad: "8px 10px", ol: col, st: "flex:1;min-width:0;" });
+}
+function openTrades(){ modal = { to: null, send: null, get: null }; renderModal(); }
+function closeTrades(){ modal = null; document.getElementById("modalRoot").innerHTML = ""; document.body.style.overflow = ""; }
+function renderModal(){
+  const root = document.getElementById("modalRoot");
+  if (!modal) { root.innerHTML = ""; return; }
+  document.body.style.overflow = "hidden";
+  const now = new Date();
+  const inc = pt.filter((t) => t.to_team === userTeamId && new Date(t.expires_at) > now), out = pt.filter((t) => t.from_team === userTeamId && new Date(t.expires_at) > now);
+  const card = (t, mineOut) => ob(`<div style="font-size:11px;color:#8C8982;">${mineOut ? "Offer to" : "Offer from"} ${esc(teamName(mineOut ? t.to_team : t.from_team))}</div>
+    <div style="display:flex;gap:6px;margin-top:8px;align-items:center;">${assetBox(mineOut ? t.send_fighter : t.get_fighter, mineOut ? t.send_pick : t.get_pick, "YOU SEND", "rgba(212,175,55,0.6)")}<div class="swapic">&#8644;</div>${assetBox(mineOut ? t.get_fighter : t.send_fighter, mineOut ? t.get_pick : t.send_pick, "YOU GET", "rgba(63,216,197,0.6)")}</div>
+    <div style="display:flex;gap:8px;margin-top:10px;">${mineOut ? `<button class="mbtn grow" data-act="pt_act" data-v="cancel" data-id="${t.id}">CANCEL OFFER</button>` : `<button class="mbtn gold grow" data-act="pt_act" data-v="accept" data-id="${t.id}">ACCEPT</button><button class="mbtn grow" data-act="pt_act" data-v="decline" data-id="${t.id}">DECLINE</button>`}</div>`, { cls: "md", pad: "12px", fill: "#16161A", st: "margin-bottom:10px;" });
+  const others = teams.filter((t) => t.id !== userTeamId && t.owner_user_id);
+  const opts = (tid, nm, key, cur) => {
+    const pk = (room.status === "live" || room.status === "paused") ? myUpcoming(tid) : [];
+    const fs = picks.filter((p) => p.team_id === tid).map((p) => p.fighter_id);
+    const row = (val, lab, sub) => `<label class="orow"><input type="radio" name="${nm}" ${cur === val ? "checked" : ""} data-act="${key}" data-v="${val}"><span class="grow" style="font-family:Oswald,sans-serif;font-size:15px;">${lab}</span><span style="font-size:11px;color:#8C8982;">${sub}</span></label>`;
+    const rows = [...pk.map((p) => row("p:" + p, "&#128278; " + esc(pickLbl(p)), "Pick " + p)), ...fs.map((f) => row("f:" + f, esc((fightersById[f] || {}).full_name || "Fighter"), esc((fightersById[f] || {}).announced_weight_class || "")))];
+    return ob(rows.length ? rows.join("") : `<div style="color:#6A6A72;font-size:13px;">No picks or fighters to trade yet.</div>`, { cls: "md", pad: "4px 12px", fill: "#141417" });
+  };
+  const tm = modal.to ? teamById(modal.to) : null;
+  root.innerHTML = `<div class="mbk" data-act="close"></div><div class="mpn"><div class="mhead"><div class="h-font" style="font-size:24px;letter-spacing:1px;">PICK TRADES</div><button class="ibtn" data-act="close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div style="font-size:13px;color:#9A9AA2;margin-bottom:14px;">Swap a draft pick for another pick or a drafted fighter. Anyone can trade a pick that has not come up yet.</div>
+    ${inc.length || out.length ? `<div class="msec">OFFERS</div>${inc.map((t) => card(t, 0)).join("")}${out.map((t) => card(t, 1)).join("")}` : ""}
+    <div class="msec">NEW OFFER</div>
+    <div class="seg2">${others.length ? others.map((t) => `<button class="chipx ${modal.to === t.id ? "on" : ""}" data-act="pt_to" data-v="${t.id}">${esc(t.name.replace(/^Team\s+/, ""))}</button>`).join("") : `<span style="color:#6A6A72;font-size:13px;">No other players in this league yet. CPU teams do not trade.</span>`}</div>
+    <div class="mlab">You send</div>${opts(userTeamId, "ps", "pt_send", modal.send)}
+    ${tm ? `<div class="mlab">You get</div>${opts(tm.id, "pg", "pt_get", modal.get)}` : ""}
+    <div style="display:flex;gap:10px;margin-top:14px;"><button class="mbtn gold grow" data-act="pt_offer">SEND OFFER</button><button class="mbtn grow" data-act="close">CANCEL</button></div>
+    <div id="mErr" class="error" style="display:none;margin-top:12px;"></div>
+    <div style="font-size:11px;color:#6A6A72;margin-top:10px;">At least one side must be a pick. A pick that is on the clock can't be traded, except while the draft is paused. Offers expire in 2 days.</div></div>`;
+}
+document.getElementById("modalRoot").addEventListener("click", async (e) => {
+  const el = e.target.closest("[data-act]"); if (!el || !modal) return;
+  const a = el.dataset.act, v = el.dataset.v;
+  const showErr = (m) => { const b = document.getElementById("mErr"); if (b) { b.textContent = m; b.style.display = "block"; } };
+  if (a === "close") { if (e.target.tagName === "INPUT") return; closeTrades(); }
+  else if (a === "pt_to") { modal.to = v; modal.get = null; renderModal(); }
+  else if (a === "pt_send") { modal.send = v; }
+  else if (a === "pt_get") { modal.get = v; }
+  else if (a === "pt_offer") {
+    const h = modal;
+    if (!h.to || !h.send || !h.get) { showErr("Pick a team and one pick or fighter each way."); return; }
+    if (h.send[0] === "f" && h.get[0] === "f") { showErr("At least one side must be a draft pick."); return; }
+    const { error } = await sb.rpc("cr_propose_pick_trade", { p_room: room.id, p_to: h.to, p_send_fighter: h.send[0] === "f" ? h.send.slice(2) : null, p_send_pick: h.send[0] === "p" ? +h.send.slice(2) : null, p_get_fighter: h.get[0] === "f" ? h.get.slice(2) : null, p_get_pick: h.get[0] === "p" ? +h.get.slice(2) : null });
+    if (error) { showErr(error.message || "Couldn't send that offer."); return; }
+    modal = { to: null, send: null, get: null }; await refresh(true); renderModal();
+  } else if (a === "pt_act") {
+    const { error } = await sb.rpc("cr_respond_pick_trade", { p_trade: el.dataset.id, p_action: v });
+    await refresh(true); renderModal();
+    if (error) showErr(error.message || "Couldn't do that.");
+  }
+});
+
+/* ---------------- loop ---------------- */
+function signature(){
+  if (!room) return "none";
+  return [room.status, room.current_pick_number, picks.length, (room.pool || []).length, (room.pool_new || []).length, JSON.stringify(po), pt.map((t) => t.id).join(","), screen].join("|");
+}
+async function refresh(force){
+  await loadRoomState();
+  if (room && room.pool) { const miss = room.pool.filter((id) => !fightersById[id]); if (miss.length) { const { data } = await sb.from("fighters").select(STAT_COLS).in("id", miss); (data || []).forEach((f) => { fighters.push(f); fightersById[f.id] = f; projectedFPById[f.id] = projectedFantasyPoints(f); }); } }
+  const sig = signature();
+  if (force || sig !== lastSig) { lastSig = sig; render(); if (modal) renderModal(); }
+}
+let busy = false, pz = 0;
+setInterval(async () => {
+  if (busy || document.hidden || !room) return;
+  busy = true;
+  try {
+    if (room.status === "live") {
+      const dl = room.current_pick_deadline ? new Date(room.current_pick_deadline).getTime() : 0;
+      if (dl && Date.now() > dl + 600) await sb.rpc("cr_tick", { p_room: room.id });
+    } else if (room.status === "paused") {
+      pz = (pz + 1) % 4; if (!pz) await sb.rpc("cr_tick", { p_room: room.id });
+    }
+    if (room.status !== "complete") await refresh(false);
+  } catch (e) { console.error(e); }
+  busy = false;
+}, 1500);
+setInterval(() => {
+  if (!room || room.status !== "live" || !room.current_pick_deadline) return;
+  const t = Math.max(0, Math.ceil((new Date(room.current_pick_deadline) - Date.now()) / 1000));
+  document.querySelectorAll(".pick-clock-val").forEach((c) => { c.textContent = fmtClock(t); if (c.classList.contains("h-font")) c.style.color = t <= 10 ? "var(--red)" : "#FF6A78"; });
+}, 250);
+
+(async () => {
+  try {
+    if (!LEAGUE_ID) { location.href = "league.html"; return; }
+    const user = await CombatAuth.getUser();
+    if (!user) { location.href = "login.html?redirect=" + encodeURIComponent(location.pathname.split("/").pop() + location.search); return; }
+    userId = user.id;
+    const { data: lg } = await sb.from("leagues").select("*").eq("id", LEAGUE_ID).maybeSingle();
+    L = lg;
+    await Promise.all([loadTeams(), loadRoomState()]);
+    await loadFighterPool();
+    loadNews();
+    render();
+    lastSig = signature();
+  } catch (e) {
+    console.error(e);
+    content.innerHTML = `<div class="error" style="max-width:520px;margin:60px auto;">Couldn't load the draft room. Check your connection and refresh.</div>`;
+  }
+})();
+
+</script>
+</body>
+</html>
