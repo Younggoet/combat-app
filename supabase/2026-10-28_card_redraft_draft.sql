@@ -161,3 +161,7 @@ grant execute on function public.cr_start_draft(uuid), public.cr_make_pick(uuid,
 -- ===== Migration "card_redraft_next_block_draft" =====
 -- cr_start_next_draft(league): commissioner starts the next block's redraft once the current block's cards are all finished
 -- and the next 4 cards are announced (fresh random order, everyone redrafts; earlier blocks' rosters are kept).
+
+-- ===== Migration "card_redraft_test_draft" =====
+-- leagues.is_test + cr_start_test_draft(league): commissioner can start a draft now using the next 4 upcoming cards
+-- (including the imminent one), with CPU teams filling empty seats. The league is marked is_test.
