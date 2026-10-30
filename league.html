@@ -302,7 +302,7 @@ async function loadSeason(){
   const [{data:cl},{data:tr}]=await Promise.all([sb.from('cr_claims').select('*').eq('league_id',Z.L.id).order('created_at',{ascending:false}),sb.from('cr_trades').select('*').eq('league_id',Z.L.id).order('created_at',{ascending:false})]);
   Z.claims=cl||[];Z.trades=tr||[];
   const names=[...new Set((Z.cur.block_cards||[]).map(c=>c.event_name))];
-  const {data:b}=await sb.from('bouts').select('id,event_name,bout_date,status,fighter_a,fighter_b,winner_id,method,is_title_fight').in('event_name',names);
+  const {data:b}=await sb.from('bouts').select('id,event_name,bout_date,status,fighter_a,fighter_b,winner_id,method,is_title_fight,scheduled_rounds').in('event_name',names);
   const dates=new Set((Z.cur.block_cards||[]).map(c=>c.date));
   Z.bouts=(b||[]).filter(x=>dates.has(x.bout_date));
   Z.perf={};
@@ -312,7 +312,14 @@ async function loadSeason(){
       (ms||[]).forEach(m=>{const p=pm[m.performance_id];if(p)Z.bst[p.bout_id+'|'+p.fighter_id]={ss:m.sig_strikes_landed||0,td:m.takedowns_landed||0,kd:m.knockdowns||0,ctrl:m.control_time_seconds||0,sub:m.submission_attempts||0,rev:m.reversals||0,pts:Number(p.fantasy_points||0)}})}}
   const miss=[...new Set(Z.bouts.flatMap(x=>[x.fighter_a,x.fighter_b]))].filter(i=>i&&!Z.fmap[i]);
   if(miss.length){const {data:f}=await sb.from('fighters').select(FCOLS).in('id',miss);(f||[]).forEach(x=>Z.fmap[x.id]=fx(x))}
-}
+  ordBouts()}
+function ordBouts(){const seen=new Set();let bs=Z.bouts.filter(b=>{const k=[b.fighter_a,b.fighter_b].sort().join('|')+b.bout_date;if(seen.has(k))return false;seen.add(k);return true});
+  const sur=n=>String(n||'').trim().split(/\s+/).slice(-1)[0].toLowerCase().replace(/[^a-z]/g,'');
+  const sc=b=>{const A=Z.fmap[b.fighter_a]||{},B=Z.fmap[b.fighter_b]||{},ti=String(b.event_name||'').toLowerCase().replace(/[^a-z0-9 ]/g,' '),sa=sur(A.full_name),sb2=sur(B.full_name);
+    let v=((A.current_rating||1500)+(B.current_rating||1500))/2000;
+    if(sa&&sb2&&ti.includes(sa)&&ti.includes(sb2))v+=1000;
+    if(b.is_title_fight)v+=200;if(Number(b.scheduled_rounds)>=5)v+=500;return v};
+  bs.sort((a,b)=>a.bout_date<b.bout_date?-1:a.bout_date>b.bout_date?1:sc(b)-sc(a));Z.bouts=bs}
 const cb=()=>Z.cur?Z.cur.block_no:1;
 const fnm=id=>(Z.fmap[id]||{}).full_name||'Fighter';
 const WCO=['Heavyweight','Light Heavyweight','Middleweight','Welterweight','Lightweight','Featherweight','Bantamweight','Flyweight'];
