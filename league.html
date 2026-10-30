@@ -453,18 +453,18 @@ async function fpOpen(id){Z.sh={fp:id};openSheet(fpHtml(id));$('#sheet').classLi
 function closeSheet(){$('#sheet').classList.remove('on','fpw','tpw');document.body.style.overflow=''}
 function openSheet(h){$('#sheet').classList.remove('fpw','tpw');$('#pn').innerHTML=h;$('#sheet').classList.add('on');$('#pn').scrollTop=0;document.body.style.overflow='hidden'}
 const TEAM_COLORS=['#D4AF37','#FF5468','#1FB5A3','#4C8BFF','#B57BFF','#FF7A2F','#3FD8C5','#E58CB0','#9ACD32','#E8742A','#A8325A','#F4F4F2'];
-function teamSheet(){const me=myTeam();if(!me)return;Z.sh={team:true,name:me.name,color:colorOf(me)};
-  const body=()=>{const sh=Z.sh,pv={id:me.id,name:sh.name||me.name,color:sh.color,photo_url:me.photo_url};
-  return `<div class="pad" style="padding-top:18px">${sheetHead('TEAM SETTINGS','Your name and octagon color')}
+function teamSheet(){const me=myTeam();if(!me)return;Z.sh={team:true,name:me.name,color:colorOf(me),photo:me.photo_url||''};
+  const body=()=>{const sh=Z.sh,pv={id:me.id,name:sh.name||me.name,color:sh.color,photo_url:sh.photo};
+  return `<div class="pad" style="padding-top:18px">${sheetHead('TEAM SETTINGS','Your name, octagon color and photo')}
   <div style="display:flex;justify-content:center;margin:14px 0 6px">${tavT(pv,96)}</div><div class="h" style="text-align:center;font-size:24px;color:${sh.color}">${esc(sh.name||me.name)}</div>
   <div class="small mut" style="margin:16px 0 6px">Team name</div><input id="tmname" maxlength="24" value="${esc(sh.name)}" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid #3a3628;background:#0F0F12;color:var(--fg);font-size:16px" data-a="tm_name">
-  <div class="small mut" style="margin:16px 0 8px">Octagon color</div><div style="display:flex;flex-wrap:wrap;gap:10px">${TEAM_COLORS.map(c=>`<button data-a="tm_color" data-v="${c}" aria-label="Color ${c}" style="width:40px;height:40px;border-radius:50%;background:${c};border:3px solid ${sh.color===c?'#fff':'transparent'};box-shadow:0 0 0 1px #000 inset;cursor:pointer"></button>`).join('')}<label style="display:inline-flex;align-items:center;gap:6px;color:#B8B5AE;font-size:13px">Custom <input type="color" value="${sh.color.length===7?sh.color:'#D4AF37'}" data-a="tm_color_in" style="width:40px;height:40px;border:0;background:none;padding:0"></label></div>
-  <div class="row" style="gap:10px;margin-top:22px"><button class="btn g grow" data-a="tm_save">SAVE</button><button class="btn grow" data-a="close">CANCEL</button></div><div class="tiny dim" style="margin-top:8px">Everyone in the league sees your new name and color.</div></div>`};
+  <div class="small mut" style="margin:16px 0 8px">Octagon photo</div><div class="row" style="gap:10px"><label class="btn g" style="cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:11px 18px">${sh.photo?'CHANGE PHOTO':'UPLOAD PHOTO'}<input id="tmfile" type="file" accept="image/*" style="display:none"></label>${sh.photo?`<button class="btn" data-a="tm_nophoto" style="padding:11px 18px">REMOVE</button>`:''}</div><div class="small mut" style="margin:16px 0 8px">Octagon color</div><div style="display:flex;flex-wrap:wrap;gap:10px">${TEAM_COLORS.map(c=>`<button data-a="tm_color" data-v="${c}" aria-label="Color ${c}" class="oc" style="width:44px;height:44px;border:0;padding:3px;background:${sh.color===c?'#fff':'#26262C'};cursor:pointer"><span class="oc" style="display:block;width:100%;height:100%;background:${c}"></span></button>`).join('')}<label style="display:inline-flex;align-items:center;gap:6px;color:#B8B5AE;font-size:13px">Custom <input type="color" value="${sh.color.length===7?sh.color:'#D4AF37'}" data-a="tm_color_in" style="width:40px;height:40px;border:0;background:none;padding:0"></label></div>
+  <div class="row" style="gap:10px;margin-top:22px"><button class="btn g grow" data-a="tm_save">SAVE</button><button class="btn grow" data-a="close">CANCEL</button></div><div class="tiny dim" style="margin-top:8px">Everyone in the league sees your new name, color and photo.</div></div>`};
   Z.sh.body=body;openSheet(body())}
 async function teamSave(){const me=myTeam(),sh=Z.sh;if(!me||!sh)return;const nm=($('#tmname')||{value:sh.name}).value.trim().replace(/\s+/g,' ').slice(0,24);if(nm.length<2){toast('Team name needs at least 2 characters');return}
   if(Z.teams.some(t=>t.id!==me.id&&t.name.toLowerCase()===nm.toLowerCase())){toast('Another team already has that name');return}
-  const {error}=await sb.from('teams').update({name:nm,color:sh.color}).eq('id',me.id);if(error){toast("Couldn't save your team");return}
-  me.name=nm;me.color=sh.color;closeSheet();await loadLeague(Z.L.id);render();toast('Team updated')}
+  const {error}=await sb.from('teams').update({name:nm,color:sh.color,photo_url:sh.photo||null}).eq('id',me.id);if(error){toast("Couldn't save your team");return}
+  me.name=nm;me.color=sh.color;me.photo_url=sh.photo||null;closeSheet();await loadLeague(Z.L.id);render();toast('Team updated')}
 const sheetHead=(t,sub)=>`<div class="row" style="justify-content:space-between"><div class="h" style="font-size:26px;letter-spacing:1px">${t}</div><button class="ibtn" data-a="close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="small mut" style="margin:2px 0 12px">${sub}</div>`;
 const faabLeft=tid=>Z.L.faab_budget-Z.claims.filter(c=>c.team_id===tid&&c.status==='won').reduce((a,c)=>a+Number(c.bid),0);
 function addSheet(f){Z.sh={add:f};Z.drop=null;const me=myTeam(),mine=rosterOf(me.id),faab=Z.L.waiver_type==='faab';
@@ -803,6 +803,9 @@ async function lookupCode(code){
 }
 async function upd(patch,msg){const {error}=await sb.from('leagues').update(patch).eq('id',Z.L.id);if(error){toast("Couldn't save that");console.error(error);return false}Object.assign(Z.L,patch);render();if(msg)toast(msg);return true}
 
+document.addEventListener('change',e=>{const t=e.target;if(!t||t.id!=='tmfile'||!Z.sh||!Z.sh.team||!t.files||!t.files[0])return;const f=t.files[0];const url=URL.createObjectURL(f),im=new Image();
+  im.onload=()=>{const n=Math.min(im.width,im.height),c=document.createElement('canvas');c.width=c.height=256;c.getContext('2d').drawImage(im,(im.width-n)/2,(im.height-n)/2,n,n,0,0,256,256);URL.revokeObjectURL(url);Z.sh.name=($('#tmname')||{value:Z.sh.name}).value;Z.sh.photo=c.toDataURL('image/jpeg',.82);$('#pn').innerHTML=Z.sh.body()};
+  im.onerror=()=>{URL.revokeObjectURL(url);toast("Couldn't read that image")};im.src=url});
 document.addEventListener('input',e=>{const t=e.target;if(t&&t.dataset&&t.dataset.a==='tm_color_in'&&Z.sh&&Z.sh.team){Z.sh.name=($('#tmname')||{value:Z.sh.name}).value;Z.sh.color=t.value;const pv=$('#pn').querySelector('.tav');if(pv)pv.style.setProperty('--tc',t.value)}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='pvtxt'){e.preventDefault();pvSend()}});
 document.addEventListener('click',async e=>{let el=e.target.closest('[data-a]');if(el&&el.dataset.a==='fprof'&&el.closest('#sheet'))el=el.parentElement.closest('[data-a]');if(!el)return;const a=el.dataset.a,v=el.dataset.v,c=Z.c,flow=['name','start','type','size','draft'];
@@ -864,6 +867,7 @@ document.addEventListener('click',async e=>{let el=e.target.closest('[data-a]');
   else if(a==='tm_color'){Z.sh.name=($('#tmname')||{value:Z.sh.name}).value;Z.sh.color=v;$('#pn').innerHTML=Z.sh.body()}
   else if(a==='tm_color_in'){Z.sh.name=($('#tmname')||{value:Z.sh.name}).value;Z.sh.color=el.value;$('#pn').innerHTML=Z.sh.body()}
   else if(a==='tm_save'){teamSave()}
+  else if(a==='tm_nophoto'){Z.sh.name=($('#tmname')||{value:Z.sh.name}).value;Z.sh.photo='';$('#pn').innerHTML=Z.sh.body()}
   else if(a==='pvi'){pvInt(v)}
   else if(a==='pvmic'){pvMic()}
   else if(a==='pvsend'){pvSend()}
