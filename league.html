@@ -125,7 +125,7 @@ const sb=CombatAuth.client;
 const Z={v:'boot',uid:null,dn:'',leagues:[],L:null,teams:[],sub:'draft',step:'name',c:{name:'',start:'new',sz:2,dt:'snake'},cards:null,pub:[],f:'all',msgs:[],conf:null,tab:'home',fs:'cards',ps:'pool',dv:'ALL',claims:[],trades:[],sh:null,drop:null,bid:'',card:0,ls:'standings',mu:0,mus:[],ros:[],bouts:[],perf:{},dt:'my',room:null,cur:null,picks:[],fmap:{},rq:'',code:'',found:null,err:'',busy:false,hosts:{}};
 const teamName=dn=>'Team '+dn;
 const initials=n=>{const w=String(n).replace(/^Team\s+/i,'').trim().split(/\s+/).filter(Boolean);return ((w[0]||'?')[0]+((w[1]||w[0]||'')[1]||'')).toUpperCase().slice(0,2)};
-const colorOf=(t,list)=>{const i=(list||Z.teams).findIndex(x=>x.id===t.id);return COLORS[(i<0?0:i)%COLORS.length]};
+const colorOf=(t,list)=>{if(t&&t.color)return t.color;const i=(list||Z.teams).findIndex(x=>x.id===t.id);return COLORS[(i<0?0:i)%COLORS.length]};
 const tavT=(t,s,list)=>`<div class="oc tav" style="--s:${s}px;--tc:${colorOf(t,list)}"><b class="oc">${esc(initials(t.name))}${t.photo_url?`<u style="background-image:url('${esc(t.photo_url)}')"></u>`:''}</b></div>`;
 const tavL=(name,s,c)=>`<div class="oc tav" style="--s:${s}px;--tc:${c||'#D4AF37'}"><b class="oc">${esc(initials(name))}</b></div>`;
 const fmtDT=iso=>iso?new Date(iso).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
@@ -445,6 +445,19 @@ async function fpOpen(id){Z.sh={fp:id};openSheet(fpHtml(id));$('#sheet').classLi
   if(Z.sh&&Z.sh.fp===id){const pn=$('#pn'),t=pn.scrollTop;pn.innerHTML=fpHtml(id);pn.scrollTop=t}}
 function closeSheet(){$('#sheet').classList.remove('on','fpw','tpw');document.body.style.overflow=''}
 function openSheet(h){$('#sheet').classList.remove('fpw','tpw');$('#pn').innerHTML=h;$('#sheet').classList.add('on');$('#pn').scrollTop=0;document.body.style.overflow='hidden'}
+const TEAM_COLORS=['#D4AF37','#FF5468','#1FB5A3','#4C8BFF','#B57BFF','#FF7A2F','#3FD8C5','#E58CB0','#9ACD32','#E8742A','#A8325A','#F4F4F2'];
+function teamSheet(){const me=myTeam();if(!me)return;Z.sh={team:true,name:me.name,color:colorOf(me)};
+  const body=()=>{const sh=Z.sh,pv={id:me.id,name:sh.name||me.name,color:sh.color,photo_url:me.photo_url};
+  return `<div class="pad" style="padding-top:18px">${sheetHead('TEAM SETTINGS','Your name and octagon color')}
+  <div style="display:flex;justify-content:center;margin:14px 0 6px">${tavT(pv,96)}</div><div class="h" style="text-align:center;font-size:24px;color:${sh.color}">${esc(sh.name||me.name)}</div>
+  <div class="small mut" style="margin:16px 0 6px">Team name</div><input id="tmname" maxlength="24" value="${esc(sh.name)}" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid #3a3628;background:#0F0F12;color:var(--fg);font-size:16px" data-a="tm_name">
+  <div class="small mut" style="margin:16px 0 8px">Octagon color</div><div style="display:flex;flex-wrap:wrap;gap:10px">${TEAM_COLORS.map(c=>`<button data-a="tm_color" data-v="${c}" aria-label="Color ${c}" style="width:40px;height:40px;border-radius:50%;background:${c};border:3px solid ${sh.color===c?'#fff':'transparent'};box-shadow:0 0 0 1px #000 inset;cursor:pointer"></button>`).join('')}<label style="display:inline-flex;align-items:center;gap:6px;color:#B8B5AE;font-size:13px">Custom <input type="color" value="${sh.color.length===7?sh.color:'#D4AF37'}" data-a="tm_color_in" style="width:40px;height:40px;border:0;background:none;padding:0"></label></div>
+  <div class="row" style="gap:10px;margin-top:22px"><button class="btn g grow" data-a="tm_save">SAVE</button><button class="btn grow" data-a="close">CANCEL</button></div><div class="tiny dim" style="margin-top:8px">Everyone in the league sees your new name and color.</div></div>`};
+  Z.sh.body=body;openSheet(body())}
+async function teamSave(){const me=myTeam(),sh=Z.sh;if(!me||!sh)return;const nm=($('#tmname')||{value:sh.name}).value.trim().replace(/\s+/g,' ').slice(0,24);if(nm.length<2){toast('Team name needs at least 2 characters');return}
+  if(Z.teams.some(t=>t.id!==me.id&&t.name.toLowerCase()===nm.toLowerCase())){toast('Another team already has that name');return}
+  const {error}=await sb.from('teams').update({name:nm,color:sh.color}).eq('id',me.id);if(error){toast("Couldn't save your team");return}
+  me.name=nm;me.color=sh.color;closeSheet();await loadLeague(Z.L.id);render();toast('Team updated')}
 const sheetHead=(t,sub)=>`<div class="row" style="justify-content:space-between"><div class="h" style="font-size:26px;letter-spacing:1px">${t}</div><button class="ibtn" data-a="close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="small mut" style="margin:2px 0 12px">${sub}</div>`;
 const faabLeft=tid=>Z.L.faab_budget-Z.claims.filter(c=>c.team_id===tid&&c.status==='won').reduce((a,c)=>a+Number(c.bid),0);
 function addSheet(f){Z.sh={add:f};Z.drop=null;const me=myTeam(),mine=rosterOf(me.id),faab=Z.L.waiver_type==='faab';
@@ -721,13 +734,13 @@ function sSeasonDesk(){const L=Z.L,me=myTeam(),t=Z.dt;
   else if(t==='trades')body=tradesDesk()
   else if(t==='history')body=`<div class="sec">${historyTab()}</div>`;
   else body=leagueS();
-  return `<div class="dkwrap"><div class="row" style="gap:14px;align-items:baseline;padding:22px 0 14px"><span class="h gold" style="font-size:34px;letter-spacing:2px">COMBAT</span><span class="small mut" style="letter-spacing:2px">CARD REDRAFT · ${esc(L.name.toUpperCase())}</span><span class="grow"></span><a class="small mut" style="text-decoration:none" href="#" data-a="go" data-v="home">ALL LEAGUES</a></div><div class="seg" style="flex-wrap:wrap;overflow:visible">${tabs.map(([k,l])=>`<button class="chip ${t===k?'on':''}" data-a="dk" data-v="${k}">${l}</button>`).join('')}</div><div style="margin-top:18px" class="dkbody">${body}</div></div>`}
+  return `<div class="dkwrap"><div class="row" style="gap:14px;align-items:baseline;padding:22px 0 14px"><span class="h gold" style="font-size:34px;letter-spacing:2px">COMBAT</span><span class="small mut" style="letter-spacing:2px">CARD REDRAFT · ${esc(L.name.toUpperCase())}</span><span class="grow"></span>${myTeam()?`<a class="small" style="text-decoration:none;color:var(--gold2);margin-right:22px;letter-spacing:1px" href="#" data-a="tm_edit">EDIT TEAM</a>`:''}<a class="small mut" style="text-decoration:none" href="#" data-a="go" data-v="home">ALL LEAGUES</a></div><div class="seg" style="flex-wrap:wrap;overflow:visible">${tabs.map(([k,l])=>`<button class="chip ${t===k?'on':''}" data-a="dk" data-v="${k}">${l}</button>`).join('')}</div><div style="margin-top:18px" class="dkbody">${body}</div></div>`}
 matchMedia('(min-width:900px)').addEventListener('change',()=>{if(Z.v==='league')render()});
 function sSeason(){if(isDesk())return sSeasonDesk();const L=Z.L,me=myTeam(),t=Z.tab;
   const TT={home:[me?me.name:L.name,L.name+' · Block '+cb()+' of 10'],fight:['Fight Night','Block '+cb()+' cards'],match:['Matchup','Block '+cb()],players:['Fighters','Pool and trades'],league:['League',L.name+' · Card Redraft']};
   const body=t==='home'?homeS():t==='match'?matchS():t==='league'?leagueS():t==='fight'?fightS():playersS();
   const nav=[['home','HOME'],['fight','FIGHTS'],['match','MATCHUP'],['players','FIGHTERS'],['league','LEAGUE']];
-  return `<div class="hdr pad">${back('go','home')}${me?tavT(me,42):tavL(L.name,42)}<div class="t"><b class="h" style="${t==='home'?'':'color:var(--fg)'}">${esc(TT[t][0])}</b><span>${esc(TT[t][1])}</span></div><button class="ibtn" data-a="lsub" data-v="chat" aria-label="Chat">${svg(ICON.chat)}</button></div>${body}<div class="nav"><div>${nav.map(([k,l])=>`<button class="nb ${t===k?'on':''}" data-a="tab" data-v="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICN[k]}</svg>${l}</button>`).join('')}</div></div>`}
+  return `<div class="hdr pad">${back('go','home')}${me?`<span data-a="tm_edit" style="cursor:pointer" aria-label="Edit team">${tavT(me,42)}</span>`:tavL(L.name,42)}<div class="t"><b class="h" style="${t==='home'?'':'color:var(--fg)'}">${esc(TT[t][0])}</b><span>${esc(TT[t][1])}</span></div><button class="ibtn" data-a="lsub" data-v="chat" aria-label="Chat">${svg(ICON.chat)}</button></div>${body}<div class="nav"><div>${nav.map(([k,l])=>`<button class="nb ${t===k?'on':''}" data-a="tab" data-v="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICN[k]}</svg>${l}</button>`).join('')}</div></div>`}
 function sLeague(){if(Z.L.status==='active'&&Z.cur)return sSeason();const L=Z.L,items=[['draft','DRAFT'],['chat','CHAT'],['room','DRAFT ROOM'],['manage','MANAGE']];
   const sg=`<div class="seg">${items.map(([k,l])=>`<button class="chip ${Z.sub===k?'on':''}" data-a="sub" data-v="${k}">${l}</button>`).join('')}</div>`;
   const inner=Z.sub==='draft'?dtab():Z.sub==='chat'?chatTab():Z.sub==='room'?roomTab():manageTab();
@@ -783,6 +796,7 @@ async function lookupCode(code){
 }
 async function upd(patch,msg){const {error}=await sb.from('leagues').update(patch).eq('id',Z.L.id);if(error){toast("Couldn't save that");console.error(error);return false}Object.assign(Z.L,patch);render();if(msg)toast(msg);return true}
 
+document.addEventListener('input',e=>{const t=e.target;if(t&&t.dataset&&t.dataset.a==='tm_color_in'&&Z.sh&&Z.sh.team){Z.sh.name=($('#tmname')||{value:Z.sh.name}).value;Z.sh.color=t.value;const pv=$('#pn').querySelector('.tav');if(pv)pv.style.setProperty('--tc',t.value)}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='pvtxt'){e.preventDefault();pvSend()}});
 document.addEventListener('click',async e=>{let el=e.target.closest('[data-a]');if(el&&el.dataset.a==='fprof'&&el.closest('#sheet'))el=el.parentElement.closest('[data-a]');if(!el)return;const a=el.dataset.a,v=el.dataset.v,c=Z.c,flow=['name','start','type','size','draft'];
   try{
@@ -839,6 +853,10 @@ document.addEventListener('click',async e=>{let el=e.target.closest('[data-a]');
   else if(a==='pv'){pvSet(v);render()}
   else if(a==='pvp'){PV.run=!PV.run;pvTimer();render()}
   else if(a==='pvn'){pvStep()}
+  else if(a==='tm_edit'){teamSheet()}
+  else if(a==='tm_color'){Z.sh.name=($('#tmname')||{value:Z.sh.name}).value;Z.sh.color=v;$('#pn').innerHTML=Z.sh.body()}
+  else if(a==='tm_color_in'){Z.sh.name=($('#tmname')||{value:Z.sh.name}).value;Z.sh.color=el.value;$('#pn').innerHTML=Z.sh.body()}
+  else if(a==='tm_save'){teamSave()}
   else if(a==='pvi'){pvInt(v)}
   else if(a==='pvmic'){pvMic()}
   else if(a==='pvsend'){pvSend()}
