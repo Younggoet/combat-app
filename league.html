@@ -115,7 +115,7 @@ const DTSVG=(k,s)=>`<svg viewBox="0 0 72 72" width="${s}" height="${s}" style="p
 const dtn=k=>(DTS.find(d=>d[0]===k)||DTS[0])[2].replace(' (Default)','');
 const plan=n=>n===12?{c:6,l:6}:n===10?{c:6,l:4}:n===8?{c:4,l:4}:n===6?{c:6,l:0}:{c:4,l:0};
 const PL=n=>{const p=plan(n);return{reg:p.c===6?'Blocks 1 to 7':'Blocks 1 to 8',seed:`Top ${p.c} play for the title${p.c===6?', seeds 1 and 2 get a bye':''}${p.l?'. Bottom '+p.l+' play the last place bracket':''}. Points break ties`,po:p.c===6?'Block 8 round one, Block 9 semis, Block 10 Last Stand':'Block 9 semis, Block 10 Last Stand'}};
-const FCOLS='id,full_name,nickname,announced_weight_class,current_rating,photo_url,wins,losses,finishes,avg_sig_strikes,avg_takedowns,avg_knockdowns,avg_control_seconds,avg_sub_attempts,avg_reversals,td_def_pct,is_champion,date_of_birth,nationality,team,stance,height_cm,reach_cm,pro_wins,pro_losses,pro_draws,pro_nc';
+const FCOLS='id,full_name,nickname,announced_weight_class,current_rating,photo_url,wins,losses,finishes,avg_sig_strikes,avg_takedowns,avg_knockdowns,avg_control_seconds,avg_sub_attempts,avg_reversals,td_def_pct,is_champion,date_of_birth,nationality,team,stance,height_cm,reach_cm,age_years,age_as_of,pro_wins,pro_losses,pro_draws,pro_nc';
 const fx=x=>{if(x&&x.pro_wins!=null){x.wins=x.pro_wins;x.losses=x.pro_losses||0}return x};
 const recS=f=>f&&f.wins!=null?f.wins+'-'+(f.losses||0)+(f.pro_draws?'-'+f.pro_draws:'')+(f.pro_nc?' ('+f.pro_nc+' NC)':''):null;
 const SCORING=[['Significant strike landed','0.1'],['Takedown landed','2'],['Knockdown','8'],['Control time (per minute)','1'],['Submission attempt','1'],['Reversal','6'],['Takedown defended','0.5']];
@@ -392,7 +392,7 @@ const DSH={"Heavyweight":"HW","Light Heavyweight":"LHW","Middleweight":"MW","Wel
 const fbg=f=>{const c=CCN[f.nationality]||'';return c&&FL[c]?`url(data:image/svg+xml;base64,${FL[c]})`:''};
 /* ---------- tale of the tape (a bout's two fighters side by side) ---------- */
 function tapeHtml(bid){const b=Z.bouts.find(x=>x.id===bid);if(!b)return '';const A=Z.fmap[b.fighter_a]||{},B=Z.fmap[b.fighter_b]||{},done=b.status==='completed';
-  const age=f=>f.date_of_birth?Math.floor((Date.now()-new Date(f.date_of_birth).getTime())/31557600000):null,inch=f=>f.reach_cm?Math.round(f.reach_cm/2.54):null,hin=f=>f.height_cm?Math.round(f.height_cm/2.54):null;
+  const age=f=>f.date_of_birth?Math.floor((Date.now()-new Date(f.date_of_birth).getTime())/31557600000):(f.age_years!=null?f.age_years:null),inch=f=>f.reach_cm?Math.round(f.reach_cm/2.54):null,hin=f=>f.height_cm?Math.round(f.height_cm/2.54):null;
   const pf=f=>recS(f),wp=f=>f.wins!=null&&(f.wins+(f.losses||0))?f.wins/(f.wins+(f.losses||0)):null,fr=f=>f.wins?Math.round((f.finishes||0)/f.wins*100):null;
   const n1=(v,d)=>v==null?null:Number(v).toFixed(d==null?1:d);
   // [label, a display, b display, a numeric, b numeric, higher is better?]
@@ -408,7 +408,7 @@ function tapeHtml(bid){const b=Z.bouts.find(x=>x.id===bid);if(!b)return '';const
 function weathered(flag,pos,sz){return `<div style="position:absolute;${pos};overflow:hidden;pointer-events:none">${flag?`<div style="position:absolute;inset:0;background:${flag} center/${sz||'cover'};filter:saturate(.6) brightness(.42) contrast(1.15) sepia(.18)"></div>`:'<div style="position:absolute;inset:0;background:linear-gradient(160deg,#24242a,#0d0d10)"></div>'}<div style="position:absolute;inset:0;background:repeating-linear-gradient(98deg,rgba(0,0,0,.34) 0,rgba(255,255,255,.07) 5%,rgba(0,0,0,.3) 11%,rgba(255,255,255,.04) 16%,rgba(0,0,0,.34) 22%);mix-blend-mode:multiply"></div><div style="position:absolute;inset:0;background:url(&quot;data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9 .35' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 1.1 -.2'/></filter><rect width='300' height='300' filter='url(%23n)'/></svg>&quot;);opacity:.55;mix-blend-mode:overlay"></div><div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 35%,rgba(0,0,0,0) 30%,rgba(0,0,0,.65) 100%)"></div></div>`}
 function fpHtml(id){const f=Z.fmap[id];if(!f)return '';const col=wcol(f.announced_weight_class),cc=CCN[f.nationality]||'',flag=cc&&FL[cc]?`url(data:image/svg+xml;base64,${FL[cc]})`:'';
   const box=(l,v,c)=>ob(`<div class="tiny" style="letter-spacing:1.5px;color:var(--gold2)">${esc(l)}</div><div class="h" style="font-size:22px;line-height:1.15">${esc(String(v))}</div>`,{cls:'sm',col:c||'#D4AF37',pad:'9px 12px'});
-  const age=f.date_of_birth?Math.floor((Date.now()-new Date(f.date_of_birth).getTime())/31557600000):'—';
+  const age=f.date_of_birth?Math.floor((Date.now()-new Date(f.date_of_birth).getTime())/31557600000):(f.age_years!=null?f.age_years:'—');
   const ht=f.height_cm?(()=>{const t=Math.round(f.height_cm/2.54);return Math.floor(t/12)+"'"+(t%12)+'"'})():'—',rch=f.reach_cm?Math.round(f.reach_cm/2.54)+'"':'—';
   const fr=f.wins?Math.round((f.finishes||0)/f.wins*100)+'%':'—',p=projFP(f);
   const mates=Object.values(Z.fmap).filter(x=>x.announced_weight_class===f.announced_weight_class).sort((a,b)=>(b.current_rating||0)-(a.current_rating||0)),dr=mates.findIndex(x=>x.id===id)+1;
