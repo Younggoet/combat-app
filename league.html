@@ -373,7 +373,7 @@ const ownTag=f=>{const t=ownerOf(f);return t?`<span class="tag" style="color:${c
 const SCOLS=[['SS','ss'],['TD','td'],['KD','kd'],['CTRL','ctrl'],['SUB','sub'],['REV','rev']];
 const mmss=sec=>{sec=Math.round(sec||0);return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0')};
 function boutStats(b,id){const f=Z.fmap[id]||{};const r=Z.bst&&Z.bst[b.id+'|'+id];if(r&&(b.status==='completed'||b.status==='live'))return{real:1,ss:r.ss,td:r.td,kd:r.kd,ctrl:r.ctrl,sub:r.sub,rev:r.rev,pts:r.pts};
-  if(f.avg_sig_strikes==null)return null;return{real:0,ss:Number(f.avg_sig_strikes)||0,td:Number(f.avg_takedowns)||0,kd:Number(f.avg_knockdowns)||0,ctrl:Number(f.avg_control_seconds)||0,sub:Number(f.avg_sub_attempts)||0,rev:Number(f.avg_reversals)||0,pts:projFP(f)}}
+  if(f.avg_sig_strikes==null)return{real:0,ss:0,td:0,kd:0,ctrl:0,sub:0,rev:0,pts:0};return{real:0,ss:Number(f.avg_sig_strikes)||0,td:Number(f.avg_takedowns)||0,kd:Number(f.avg_knockdowns)||0,ctrl:Number(f.avg_control_seconds)||0,sub:Number(f.avg_sub_attempts)||0,rev:Number(f.avg_reversals)||0,pts:projFP(f)}}
 function boutTbl(b){const A=boutStats(b,b.fighter_a),B=boutStats(b,b.fighter_b);if(!A&&!B)return '<div class="tiny dim" style="padding:8px 0">No stats on file yet.</div>';
   const real=(A&&A.real)||(B&&B.real),lab=b.status==='completed'?'FINAL STATS':b.status==='live'?'LIVE STATS':'PROJECTED STATS',dec=!real;
   const f=(v,k)=>k==='ctrl'?mmss(v):(dec?(+v).toFixed(1):Math.round(v));
