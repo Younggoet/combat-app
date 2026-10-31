@@ -788,7 +788,8 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)trFlush()})
 window.addEventListener('error',e=>track('error',{m:String(e.message||'error').slice(0,160)}));
 window.addEventListener('unhandledrejection',e=>track('error',{m:String((e.reason&&e.reason.message)||e.reason||'rejection').slice(0,160)}));
 setTimeout(()=>track('session',{w:innerWidth}),1500);
-function render(){const v=Z.v;
+function navSave(){try{if(Z.v==='league'&&Z.L){localStorage.setItem('cb_nav',JSON.stringify({lid:Z.L.id,tab:Z.tab,fs:Z.fs,ls:Z.ls,dt:Z.dt,card:Z.card,ps:Z.ps,sub:Z.sub,dv:Z.dv}))}else if(Z.v==='home'){localStorage.removeItem('cb_nav')}}catch(e){}}
+function render(){navSave();const v=Z.v;
   $('#app').innerHTML=v==='boot'?sBoot():v==='signin'?sSignin():v==='name'?sName():v==='home'?sHome():v==='create'?sCreate():v==='league'?sLeague():v==='lobby'?sLobby():v==='join'?sJoin():'';
   const n=$('#cln');if(n)n.addEventListener('input',()=>{Z.c.name=n.value});
   const u=$('#un');if(u)u.addEventListener('input',()=>{Z.dn=u.value});
@@ -798,7 +799,7 @@ function go(v){Z.v=v;Z.err='';Z.conf=null;render();scrollTo(0,0)}
 const fail=(e,fallback)=>{console.error(e);Z.err=(e&&e.message&&/full/i.test(e.message))?'That league is full.':fallback||'Something went wrong. Try again.';render()};
 
 /* ---------- actions ---------- */
-async function openLeague(id){try{await Promise.all([loadLeague(id),loadCards(),loadRanks()]);await loadMsgs();await loadRoom();await loadSeason();Z.tab='home';Z.ls='standings';Z.mu=0;Z.sub=Z.L.status==='setup'?'draft':'room';const h=[Z.L.commissioner_user_id];const {data:p}=await sb.from('profiles').select('id,display_name').in('id',h);(p||[]).forEach(x=>Z.hosts[x.id]=x.display_name);go('league')}catch(e){toast("Couldn't open that league");console.error(e)}}
+async function openLeague(id,sv){try{await Promise.all([loadLeague(id),loadCards(),loadRanks()]);await loadMsgs();await loadRoom();await loadSeason();Z.tab='home';Z.ls='standings';Z.mu=0;Z.sub=Z.L.status==='setup'?'draft':'room';const h=[Z.L.commissioner_user_id];const {data:p}=await sb.from('profiles').select('id,display_name').in('id',h);(p||[]).forEach(x=>Z.hosts[x.id]=x.display_name);if(sv){['tab','fs','ls','dt','card','ps','sub','dv'].forEach(k=>{if(sv[k]!=null)Z[k]=sv[k]})}go('league')}catch(e){toast("Couldn't open that league");console.error(e)}}
 async function createLeague(){
   if(Z.busy)return;Z.busy=true;Z.err='';render();
   const c=Z.c,[tm,fg]=SIZES[c.sz];
@@ -958,6 +959,7 @@ document.addEventListener('input',e=>{if(e.target.id==='rs'){Z.rq=e.target.value
     await loadMine();
     if(jc)return await lookupCode(jc);
     const oid=q.get('open');if(oid&&Z.leagues.some(l=>l.id===oid)){await openLeague(oid);history.replaceState(null,'','league.html');return}
+    try{const sv=JSON.parse(localStorage.getItem('cb_nav')||'null');if(sv&&sv.lid&&Z.leagues.some(l=>l.id===sv.lid)){await openLeague(sv.lid,sv);if(Z.v==='league')return}}catch(e){}
     go('home');
   }catch(e){console.error(e);$('#app').innerHTML=`<div class="pad" style="padding-top:30vh;text-align:center"><div class="h" style="font-size:22px">Couldn't load your leagues</div><div class="mut" style="margin:8px 0 16px">Check your connection and try again.</div><button class="btn g" onclick="location.reload()">RETRY</button></div>`}
 })();
