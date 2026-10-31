@@ -656,19 +656,19 @@ function pressCtx(){const cs=(Z.cur&&Z.cur.block_cards)||[],today=new Date().toI
   return {c,bs,t0,turns,teams,title:String(c.event_name||'').replace(/^Polymarket\s*/i,'').toUpperCase(),when:t0.toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'})}}
 function pvCur(x){return PV.mode==='live'?x.turns[PV.t]||null:null}
 function pvCanInt(x,tid){const cur=pvCur(x);if(PV.mode!=='live'||!PV.run||!cur||cur.open||cur.interrupt||PV.ints[tid]||cur.team===tid)return false;const b=x.bs[cur.bi];if(!b)return false;const opp=cur.fs[0]===b.fighter_a?b.fighter_b:b.fighter_a,o=ownerOf(opp);return !!(o&&o.id===tid)}
-function pvInt(tid){const x=pressCtx(),cur=pvCur(x);if(!x||!pvCanInt(x,tid))return;const b=x.bs[cur.bi],opp=cur.fs[0]===b.fighter_a?b.fighter_b:b.fighter_a;PV.ints[tid]=1;PV.inj[cur.base]={bi:cur.bi,team:tid,fs:[opp],s:7,interrupt:true,base:cur.base};PV.t++;PV.left=7;const y=pressCtx();const t=document.getElementById('prTables');if(t)t.innerHTML=prTables(y);pvPaint(y)}
+function pvInt(tid){track('press',{a:'interrupt'});const x=pressCtx(),cur=pvCur(x);if(!x||!pvCanInt(x,tid))return;const b=x.bs[cur.bi],opp=cur.fs[0]===b.fighter_a?b.fighter_b:b.fighter_a;PV.ints[tid]=1;PV.inj[cur.base]={bi:cur.bi,team:tid,fs:[opp],s:7,interrupt:true,base:cur.base};PV.t++;PV.left=7;const y=pressCtx();const t=document.getElementById('prTables');if(t)t.innerHTML=prTables(y);pvPaint(y)}
 function pvRepaint(){const x=pressCtx();if(!x)return;const t=document.getElementById('prTables');if(t)t.innerHTML=prTables(x);pvPaint(x)}
 function pvBubble(tid,text){PV.bub[tid]={text,until:Date.now()+8000};pvRepaint();setTimeout(()=>{const b=PV.bub[tid];if(b&&b.until<=Date.now()){delete PV.bub[tid];pvRepaint()}},8200)}
 function pvChan(){if(PV.ch||!Z.L||typeof sb==='undefined'||!sb.channel)return;try{PV.ch=sb.channel('press-'+Z.L.id).on('broadcast',{event:'say'},m=>{const p=m&&m.payload;const me=myTeam();if(p&&p.t&&p.tid&&(!me||p.tid!==me.id))pvBubble(p.tid,String(p.t).slice(0,140))}).subscribe()}catch(e){PV.ch=null}}
-function pvSend(){const el=document.getElementById('pvtxt'),me=myTeam();if(!el||!me)return;const t=el.value.trim().slice(0,140);if(!t)return;el.value='';pvBubble(me.id,t);try{if(PV.ch)PV.ch.send({type:'broadcast',event:'say',payload:{tid:me.id,t}})}catch(e){}}
-async function pvMic(){const b=document.getElementById('pvmic');
+function pvSend(){track('press',{a:'say'});const el=document.getElementById('pvtxt'),me=myTeam();if(!el||!me)return;const t=el.value.trim().slice(0,140);if(!t)return;el.value='';pvBubble(me.id,t);try{if(PV.ch)PV.ch.send({type:'broadcast',event:'say',payload:{tid:me.id,t}})}catch(e){}}
+async function pvMic(){track('press',{a:'mic'});const b=document.getElementById('pvmic');
   if(PV.mic){PV.mic.stream.getTracks().forEach(t=>t.stop());try{PV.mic.ctx.close()}catch(e){}cancelAnimationFrame(PV.mic.raf);PV.mic=null;render();return}
   try{const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});const ctx=new (window.AudioContext||window.webkitAudioContext)(),src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser();an.fftSize=512;src.connect(an);const buf=new Uint8Array(an.frequencyBinCount);PV.mic={stream,ctx,raf:0};
     const loop=()=>{if(!PV.mic)return;an.getByteTimeDomainData(buf);let m=0;for(let i=0;i<buf.length;i++){const v=Math.abs(buf[i]-128);if(v>m)m=v}const lv=Math.min(1,m/70);document.querySelectorAll('.pvlvl i').forEach((e,i,a)=>{e.style.opacity=lv*a.length>i?1:.18});PV.mic.raf=requestAnimationFrame(loop)};loop();render()}
   catch(e){toast(e&&e.name==='NotAllowedError'?'Allow microphone access in your browser to use the mic':"Couldn't open a microphone")}}
 function pvBubSeat(x,tid){const cur=pvCur(x);const mine=x.bs.map((b,i)=>[b,i]).filter(([b])=>[b.fighter_a,b.fighter_b].some(f=>{const o=ownerOf(f);return o&&o.id===tid}));if(!mine.length)return null;const pick=(cur&&mine.find(([b,i])=>i===cur.bi))||mine[0];const b=pick[0];return [b.fighter_a,b.fighter_b].find(f=>{const o=ownerOf(f);return o&&o.id===tid})}
 function pvTimer(){clearInterval(PV.iv);PV.iv=null;if(PV.mode==='live'&&PV.run)PV.iv=setInterval(pvTick,1000)}
-function pvSet(mode){PV.ints={};PV.inj={};const x=pressCtx();PV.mode=mode;PV.t=0;PV.run=true;PV.left=x&&x.turns[0]?x.turns[0].s:0;if(mode==='live'&&x&&!x.turns.length)PV.mode='after';pvTimer()}
+function pvSet(mode){if(mode==='live')track('press',{a:'open'});PV.ints={};PV.inj={};const x=pressCtx();PV.mode=mode;PV.t=0;PV.run=true;PV.left=x&&x.turns[0]?x.turns[0].s:0;if(mode==='live'&&x&&!x.turns.length)PV.mode='after';pvTimer()}
 function pvPaint(x){x=x||pressCtx();if(!x)return;const f=document.getElementById('prFloor');if(f)f.innerHTML=prFloor(x)}
 function pvStep(){const x=pressCtx();if(!x)return;PV.t++;if(PV.t>=x.turns.length){PV.mode='after';pvTimer();render();return}PV.left=x.turns[PV.t].s;const t=document.getElementById('prTables');if(t)t.innerHTML=prTables(x);pvPaint(x)}
 function pvTick(){if(!document.getElementById('prFloor')){clearInterval(PV.iv);PV.iv=null;return}PV.left--;if(PV.left<=0)pvStep();else pvPaint()}
@@ -777,10 +777,22 @@ function sJoin(){const L=Z.found;if(!L)return shell(back('go','home'),'League no
   const n=L.teams.length,full=n>=L.team_count;
   return shell(back('go','home'),'Join this league','You were invited to play.',ob(`<div class="row" style="gap:12px">${tavL(L.name,52)}<div class="grow"><div class="nm" style="font-size:20px">${esc(L.name)}</div><div class="small mut">Host ${esc(Z.hosts[L.commissioner_user_id]||'a player')}</div></div></div><div style="height:12px"></div>${[['Format','Card Redraft'],['Teams',`${n}/${L.team_count}`],['Fighters per team',L.fighters_per_team],['Draft type',esc(dtn(L.draft_type))],['Draft',L.draft_time?esc(fmtDT(L.draft_time)):'Not set'],['Your team',esc(teamName(Z.dn))]].map(([a,b],i)=>`<div class="row" style="padding:8px 0;justify-content:space-between;${i?'border-top:1px solid #26262C':''}"><span class="mut">${a}</span><b>${b}</b></div>`).join('')}${Z.err?note(Z.err):''}`,{cls:'md',col:'#D4AF37',pad:'14px'}),full?'<div class="mut" style="text-align:center">This league is full.</div>':btn('do_join',L.id,'JOIN LEAGUE',Z.busy))}
 
+// ---- Usage tracking (anonymous counts for the admin panel; no text or personal data) ----
+const TR={q:[],sid:(()=>{try{let v=sessionStorage.getItem('cb_sid');if(!v){v=Math.random().toString(36).slice(2)+Date.now().toString(36);sessionStorage.setItem('cb_sid',v)}return v}catch(e){return 's'+Math.random().toString(36).slice(2)}})(),last:'',busy:false};
+function trScreen(){try{if(Z.v!=='league')return String(Z.v||'');return isDesk()?('desk:'+(Z.dt||'my')+(Z.dt==='league'?':'+(Z.ls||''):'')):('phone:'+(Z.tab||'home')+(Z.tab==='league'?':'+(Z.ls||''):'')+(Z.tab==='fight'?':'+(Z.fs||''):''))}catch(e){return ''}}
+function track(ev,props){try{if(TR.q.length>60)TR.q.shift();TR.q.push({user_id:(Z&&Z.uid)||null,session_id:TR.sid,event:ev,screen:trScreen(),props:props||null,device:matchMedia('(min-width:900px)').matches?'desktop':'phone'})}catch(e){}}
+async function trFlush(){if(TR.busy||!TR.q.length||typeof sb==='undefined')return;TR.busy=true;const b=TR.q.splice(0,TR.q.length);try{const {error}=await sb.from('app_events').insert(b);if(error)throw error}catch(e){/* drop silently: tracking must never affect the app */}TR.busy=false}
+function trView(){const s=trScreen();if(s&&s!==TR.last){TR.last=s;track('view')}}
+setInterval(trFlush,8000);setInterval(()=>{if(!document.hidden)track('beat')},60000);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)trFlush()});
+window.addEventListener('error',e=>track('error',{m:String(e.message||'error').slice(0,160)}));
+window.addEventListener('unhandledrejection',e=>track('error',{m:String((e.reason&&e.reason.message)||e.reason||'rejection').slice(0,160)}));
+setTimeout(()=>track('session',{w:innerWidth}),1500);
 function render(){const v=Z.v;
   $('#app').innerHTML=v==='boot'?sBoot():v==='signin'?sSignin():v==='name'?sName():v==='home'?sHome():v==='create'?sCreate():v==='league'?sLeague():v==='lobby'?sLobby():v==='join'?sJoin():'';
   const n=$('#cln');if(n)n.addEventListener('input',()=>{Z.c.name=n.value});
   const u=$('#un');if(u)u.addEventListener('input',()=>{Z.dn=u.value});
+  trView();
 }
 function go(v){Z.v=v;Z.err='';Z.conf=null;render();scrollTo(0,0)}
 const fail=(e,fallback)=>{console.error(e);Z.err=(e&&e.message&&/full/i.test(e.message))?'That league is full.':fallback||'Something went wrong. Try again.';render()};
@@ -826,7 +838,7 @@ document.addEventListener('change',e=>{const t=e.target;if(!t||t.id!=='tmfile'||
 document.addEventListener('input',e=>{const t=e.target;if(t&&t.id==='tmcustom'&&Z.tm){tmName();Z.tm.color=t.value;const b=$('#tmbox');if(b){const pv=b.querySelector('.tav');if(pv)pv.style.setProperty('--tc',t.value);const h=b.querySelector('.h');if(h)h.style.color=t.value}}});
 document.addEventListener('change',e=>{const t=e.target;if(t&&t.id==='tmcustom'&&Z.tm){tmName();Z.tm.color=t.value;tmPaint()}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='pvtxt'){e.preventDefault();pvSend()}});
-document.addEventListener('click',async e=>{let el=e.target.closest('[data-a]');if(el&&el.dataset.a==='fprof'&&el.closest('#sheet'))el=el.parentElement.closest('[data-a]');if(!el)return;const a=el.dataset.a,v=el.dataset.v,c=Z.c,flow=['name','start','type','size','draft'];
+document.addEventListener('click',async e=>{let el=e.target.closest('[data-a]');if(el&&el.dataset.a==='fprof'&&el.closest('#sheet'))el=el.parentElement.closest('[data-a]');if(!el)return;const a=el.dataset.a,v=el.dataset.v,c=Z.c,flow=['name','start','type','size','draft'];track('tap',{a:a});
   try{
   if(a==='go'){if(v==='home'){await loadMine();}go(v)}
   else if(a==='start'){Z.c={name:'',start:'new',sz:2,dt:'snake'};Z.step='name';go('create')}
