@@ -302,7 +302,7 @@ async function loadSeason(){
   const [{data:cl},{data:tr}]=await Promise.all([sb.from('cr_claims').select('*').eq('league_id',Z.L.id).order('created_at',{ascending:false}),sb.from('cr_trades').select('*').eq('league_id',Z.L.id).order('created_at',{ascending:false})]);
   Z.claims=cl||[];Z.trades=tr||[];
   const names=[...new Set((Z.cur.block_cards||[]).map(c=>c.event_name))];
-  const {data:b}=await sb.from('bouts').select('id,event_name,bout_date,status,fighter_a,fighter_b,winner_id,method,is_title_fight,scheduled_rounds').in('event_name',names);
+  const {data:b}=await sb.from('bouts').select('id,event_name,bout_date,status,fighter_a,fighter_b,winner_id,method,is_title_fight,scheduled_rounds,bout_order').in('event_name',names);
   const dates=new Set((Z.cur.block_cards||[]).map(c=>c.date));
   Z.bouts=(b||[]).filter(x=>dates.has(x.bout_date));
   Z.perf={};
@@ -319,7 +319,7 @@ function ordBouts(){const seen=new Set();let bs=Z.bouts.filter(b=>{const k=[b.fi
     let v=((A.current_rating||1500)+(B.current_rating||1500))/2000;
     if(sa&&sb2&&ti.includes(sa)&&ti.includes(sb2))v+=1000;
     if(b.is_title_fight)v+=200;if(Number(b.scheduled_rounds)>=5)v+=500;return v};
-  bs.sort((a,b)=>a.bout_date<b.bout_date?-1:a.bout_date>b.bout_date?1:sc(b)-sc(a));Z.bouts=bs}
+  bs.sort((a,b)=>a.bout_date<b.bout_date?-1:a.bout_date>b.bout_date?1:((a.bout_order==null?999:a.bout_order)-(b.bout_order==null?999:b.bout_order))||sc(b)-sc(a));Z.bouts=bs}
 const cb=()=>Z.cur?Z.cur.block_no:1;
 const fnm=id=>(Z.fmap[id]||{}).full_name||'Fighter';
 const WCO=['Heavyweight','Light Heavyweight','Middleweight','Welterweight','Lightweight','Featherweight','Bantamweight','Flyweight'];
@@ -605,7 +605,7 @@ function fightDesk(){const cs=(Z.cur&&Z.cur.block_cards)||[],today=new Date().to
   const mineIn=bs=>bs.reduce((n,b)=>n+[b.fighter_a,b.fighter_b].filter(i=>{const o=ownerOf(i);return o&&mt&&o.id===mt.id}).length,0);
   const legend=`<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:12px;color:#B8B5AE"><span class="h" style="${pillS};background:rgba(212,175,55,.2);color:#E8C93A;box-shadow:inset 0 0 0 1px #D4AF37">YOUR FIGHTER</span><span class="h" style="${pillS};background:rgba(226,40,60,.18);color:#FF6A78;box-shadow:inset 0 0 0 1px #E2283C">YOUR OPPONENT THIS BLOCK</span><span class="h" style="${pillS};background:#26262B">OTHER TEAM</span><span style="${pillS};border:1px dashed #33333A;color:#55555D">No owner: nobody drafted this fighter</span></div>
   <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:12px;color:#B8B5AE"><span style="display:flex;align-items:center;gap:8px"><span class="oc" style="width:22px;height:22px;display:inline-block;background:linear-gradient(135deg,#F6DE8C,#D4AF37 55%,#6A5412)"></span>Champion: gold octagon</span><span style="display:flex;align-items:center;gap:8px"><span class="oc" style="width:22px;height:22px;display:inline-block;background:#E2283C"></span>Challenger: normal division color</span></div>`;
-  const panels=cs.map((c,ci)=>{const bs=Z.bouts.filter(b=>b.bout_date===c.date&&b.event_name===c.event_name).sort((x,y)=>(y.is_title_fight?1:0)-(x.is_title_fight?1:0)||((Z.fmap[y.fighter_a]||{}).current_rating||0)+((Z.fmap[y.fighter_b]||{}).current_rating||0)-((Z.fmap[x.fighter_a]||{}).current_rating||0)-((Z.fmap[x.fighter_b]||{}).current_rating||0));
+  const panels=cs.map((c,ci)=>{const bs=Z.bouts.filter(b=>b.bout_date===c.date&&b.event_name===c.event_name);
     const title=String(c.event_name||'').replace(/^UFC Fight Night:\s*/i,'').replace(/^Polymarket\s*/i,'').toUpperCase();
     const rows=bs.map(b=>{const fa=Z.fmap[b.fighter_a]||{},fb=Z.fmap[b.fighter_b]||{},ca=wcol(fa.announced_weight_class),cb2=wcol(fb.announced_weight_class);const mine=mineIn([b])>0;
       return `<div style="border-top:1px solid #202024"><div style="display:flex;align-items:center;gap:14px;padding:14px 20px;${mine?'box-shadow:inset 0 0 0 1px rgba(212,175,55,.45)':''}"><div style="width:6px;align-self:stretch;background:${ca};border-radius:3px"></div>${fdSide(b.fighter_a,0)}<div style="width:110px;text-align:center"><div class="h" style="font-size:18px;color:#8C8982;letter-spacing:2px">VS</div><div style="margin:4px 0">${tapeBtn(b.fighter_a)}</div><div style="font-size:11px;color:#B8B5AE">${esc(fa.announced_weight_class||'')}</div>${b.status==='completed'?`<div style="font-size:11px;color:#E8C93A">${esc(b.method||'FINAL')}</div>`:b.is_title_fight?'<div style="font-size:11px;color:#E8C93A">TITLE FIGHT</div>':''}</div>${fdSide(b.fighter_b,1)}<div style="width:6px;align-self:stretch;background:${cb2};border-radius:3px"></div></div>${deskTbl(b)}</div>`}).join('');
