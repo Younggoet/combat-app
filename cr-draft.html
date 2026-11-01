@@ -296,6 +296,10 @@
   .side-card{background:var(--panel);border:var(--edge);border-radius:var(--r-md);overflow:hidden;margin-top:18px;box-shadow:var(--shadow-lg);}
   .side-card-head{padding:16px 22px;border-bottom:1px solid var(--border-2);display:flex;align-items:center;gap:8px;}
   .side-card-body{padding:6px 22px;}
+  .qbtn{all:unset;cursor:pointer;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;color:#9A9AA2;font-size:14px;border:var(--edge);background:var(--panel-2);}
+  .qbtn:hover:not(:disabled){color:var(--gold);}
+  .qbtn:disabled{opacity:.3;cursor:default;}
+  .qbtn:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
   .feed-item{padding:11px 0;border-bottom:1px solid var(--border-2);display:flex;align-items:baseline;gap:10px;font-size:13px;}
   .news-item{padding:12px 0;border-bottom:1px solid var(--border-2);display:flex;align-items:flex-start;gap:10px;}
   .news-item a{font-size:12px;color:#C9C6BD;line-height:1.4;}
@@ -811,6 +815,56 @@ let selectedFighterId = null;
 let lastSig = "";
 let modal = null;      // pick trade sheet state
 let fighterPoolError = null;
+let myQueue = [], autoDraft = false, chatMsgs = [], chatDraft = "";
+
+/* ---------------- Queue, auto-draft & chat ---------------- */
+async function loadMine(){
+  try {
+    const [q, p, c] = await Promise.all([
+      userTeamId ? sb.from("cr_queue").select("fighter_id,pos").eq("team_id", userTeamId).order("pos") : Promise.resolve({ data: [] }),
+      userTeamId ? sb.from("cr_team_prefs").select("auto_draft").eq("team_id", userTeamId).maybeSingle() : Promise.resolve({ data: null }),
+      sb.from("cr_chat").select("id,team_id,body,created_at").eq("league_id", LEAGUE_ID).order("id", { ascending: false }).limit(60)
+    ]);
+    if (q.data) myQueue = q.data.map((r) => r.fighter_id);
+    autoDraft = !!(p.data && p.data.auto_draft);
+    if (c.data) chatMsgs = c.data.slice().reverse();
+  } catch (e) { console.error(e); }
+}
+async function saveQueueOrder(){
+  if (!userTeamId) return;
+  const rows = myQueue.map((id, i) => ({ team_id: userTeamId, fighter_id: id, pos: i }));
+  if (rows.length) await sb.from("cr_queue").upsert(rows, { onConflict: "team_id,fighter_id" });
+}
+async function toggleQueue(fid){
+  if (!userTeamId) return;
+  if (myQueue.includes(fid)) {
+    myQueue = myQueue.filter((x) => x !== fid); render();
+    await sb.from("cr_queue").delete().eq("team_id", userTeamId).eq("fighter_id", fid);
+  } else {
+    myQueue.push(fid); render();
+    await saveQueueOrder();
+  }
+}
+async function moveQueue(fid, dir){
+  const i = myQueue.indexOf(fid), j = i + dir;
+  if (i < 0 || j < 0 || j >= myQueue.length) return;
+  [myQueue[i], myQueue[j]] = [myQueue[j], myQueue[i]]; render();
+  await saveQueueOrder();
+}
+async function setAutoDraft(on){
+  if (!userTeamId) return;
+  autoDraft = on; render();
+  await sb.from("cr_team_prefs").upsert({ team_id: userTeamId, auto_draft: on, updated_at: new Date().toISOString() }, { onConflict: "team_id" });
+  if (on && room && room.status === "live") { try { await sb.rpc("cr_tick", { p_room: room.id }); } catch (e) {} await refresh(true); }
+}
+async function sendChat(){
+  const el = document.getElementById("chatInput"); if (!el) return;
+  const body = el.value.trim(); if (!body || !userTeamId) return;
+  el.value = ""; chatDraft = "";
+  const { error } = await sb.from("cr_chat").insert({ league_id: LEAGUE_ID, team_id: userTeamId, body });
+  if (error) { console.error(error); chatDraft = body; }
+  await loadMine(); lastSig = ""; render();
+}
 
 /* ---------- octagon box (same construction as the league screens) ---------- */
 const ob = (html, o = {}) => `<div class="ob ${o.cls || "md"}" style="--ol:${o.ol || "#D4AF37aa"};${o.st || ""}"><div class="i" style="--pad:${o.pad || "18px"};--fill:${o.fill || "linear-gradient(155deg,rgba(212,175,55,.12),rgba(0,0,0,0) 60%),#131317"}">${html}</div></div>`;
@@ -931,7 +985,10 @@ function renderDraft(){
   picks.forEach((p) => { draftedIds[p.fighter_id] = true; });
   const available = availableFighters();
   const manualTarget = (isMyTurn && selectedFighterId && !draftedIds[selectedFighterId]) ? fightersById[selectedFighterId] : null;
-  const spotlight = isMyTurn ? (manualTarget || available[0]) : null;
+  const availSet = new Set(available.map((f) => f.id));
+  const queueAvail = myQueue.map((id) => fightersById[id]).filter((f) => f && availSet.has(f.id));
+  const defaultTarget = queueAvail[0] || available[0];
+  const spotlight = isMyTurn ? (manualTarget || defaultTarget) : null;
   const isManualPick = !!manualTarget;
   const remain = room.current_pick_deadline ? Math.max(0, Math.ceil((new Date(room.current_pick_deadline) - Date.now()) / 1000)) : 0;
 
@@ -1076,6 +1133,18 @@ function renderDraft(){
   }).join("") || `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">No picks yet.</div>`;
   const feedCard = ob(`<div class="side-card-head"><div class="live-dot" style="width:7px;height:7px;border-radius:50%;background:var(--red);"></div><div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">LIVE DRAFT FEED</div></div><div class="side-card-body">${feedHtml}</div>`, { cls: "lg", pad: "0", st: "margin-top:18px;" });
 
+  /* ---- my queue + auto-draft ---- */
+  const qRows = queueAvail.map((f, i) => `<div class="feed-item" style="align-items:center;gap:8px;"><div class="h-font" style="font-size:11px;color:#5A5A62;flex:0 0 auto;">${i + 1}</div><div class="h-font" data-profile="${f.id}" style="font-size:13px;color:${i === 0 ? "var(--gold)" : "#C9C6BD"};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;">${esc(f.full_name)} <span style="color:#6A6A72;">(${esc(DIV_SHORT[f.announced_weight_class] || "")})</span></div>
+    <button class="qbtn" data-qmove="${f.id}" data-dir="-1" ${i === 0 ? "disabled" : ""} aria-label="Move up">&uarr;</button><button class="qbtn" data-qmove="${f.id}" data-dir="1" ${i === queueAvail.length - 1 ? "disabled" : ""} aria-label="Move down">&darr;</button><button class="qbtn" data-qrm="${f.id}" aria-label="Remove">&times;</button></div>`).join("")
+    || `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">Tap the ★ on any fighter to line them up. When your clock runs out, or auto-draft is on, the top fighter in your queue is picked for you.</div>`;
+  const autoBtn = userTeamId ? `<button class="board-link h-font" id="autoDraftBtn" style="font-size:10px;letter-spacing:1.5px;margin-left:auto;${autoDraft ? "color:var(--gold);" : ""}">AUTO-DRAFT: ${autoDraft ? "ON" : "OFF"}</button>` : "";
+  const queueCard = userTeamId && !complete ? ob(`<div class="side-card-head"><div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">YOUR QUEUE</div>${autoBtn}</div><div class="side-card-body">${qRows}</div>${autoDraft ? `<div style="font-size:11px;color:#6A6A72;padding:0 16px 12px;">Auto-draft is on: you'll be picked for as soon as you're on the clock, from your queue first, then best available.</div>` : ""}`, { cls: "lg", pad: "0", st: "margin-top:18px;" }) : "";
+
+  /* ---- draft chat ---- */
+  const teamNm = (tid) => { const t = teams.find((x) => x.id === tid); return t ? t.name : "Commish"; };
+  const chatHtml = chatMsgs.map((m) => `<div class="feed-item" style="display:block;"><span class="h-font" style="font-size:12px;color:${m.team_id === userTeamId ? "var(--gold)" : "#9A9AA2"};">${esc(teamNm(m.team_id))}</span> <span style="font-size:13px;color:#C9C6BD;word-break:break-word;">${esc(m.body)}</span></div>`).join("") || `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">No messages yet.</div>`;
+  const chatCard = ob(`<div class="side-card-head"><div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">DRAFT CHAT</div></div><div class="side-card-body" id="chatList" style="max-height:220px;overflow-y:auto;">${chatHtml}</div>${userTeamId ? `<div style="display:flex;gap:8px;padding:10px 16px 14px;"><input class="search" id="chatInput" maxlength="500" placeholder="Message the league…" value="${esc(chatDraft)}" style="flex:1;min-width:0;"><button class="board-link h-font" id="chatSend" style="font-size:11px;letter-spacing:2px;">SEND</button></div>` : ""}`, { cls: "lg", pad: "0", st: "margin-top:18px;" });
+
   /* ---- news ---- */
   const mmaNews = newsItems.filter((it) => (it.sport || "").toLowerCase() === "mma");
   const newsFighterIds = new Set();
@@ -1096,6 +1165,7 @@ function renderDraft(){
   const divisionStripHtml = DIVISION_LIST.map((d) => { const active = d === activeFilter; const dc = DIVISION_COLOR[d];
     return `<button class="division-chip" data-filter="${esc(d)}" style="${active ? `background:${dc}33;border-color:${dc};color:${dc};font-weight:700;` : `background:${dc}14;color:#9A9AA2;`}">${esc(DIV_SHORT[d] || d)}</button>`; }).join("");
   const poolHeading = isDivisionFilter(activeFilter) ? `${activeFilter.toUpperCase()} · RANKED BY OVERALL RANK` : "ALL FIGHTERS · RANKED BY OVERALL RANK";
+  const chatWasFocused = document.activeElement && document.activeElement.id === "chatInput";
   const existingSearchInput = document.getElementById("fighterSearch");
   const filterVal = existingSearchInput ? existingSearchInput.value : "";
   const searchWasFocused = !!existingSearchInput && document.activeElement === existingSearchInput;
@@ -1119,11 +1189,11 @@ function renderDraft(){
       <div style="${hl}" class="pool-cell cell-fpy" data-label="FIGHTS/YR">${fmtFightsPerYear(f)}</div>
       <div style="${hl}" class="pool-cell cell-projfp" data-label="PROJ FP">${fmtNum(projectedFPById[f.id], 1)}</div>
       <div style="${hl}" class="pool-cell cell-rank"><span class="h-font" style="font-size:17px;font-weight:700;color:var(--gold);">${esc(fmtRank(overallRankById[f.id]))}</span></div>
-      <div style="${hl}" class="pool-cell cell-star"><svg width="16" height="16" viewBox="0 0 24 24" fill="${isSpot ? "var(--gold)" : "none"}" stroke="${isSpot ? "var(--gold)" : "#4A4A52"}" stroke-width="1.5"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21.1 7 14.2l-5-4.9 6.9-1L12 2z"></path></svg></div>
+      <div style="${hl}" class="pool-cell cell-star" data-q="${f.id}" title="${myQueue.includes(f.id) ? "Remove from queue" : "Add to queue"}"><svg width="16" height="16" viewBox="0 0 24 24" fill="${myQueue.includes(f.id) ? "var(--gold)" : "none"}" stroke="${myQueue.includes(f.id) || isSpot ? "var(--gold)" : "#4A4A52"}" stroke-width="1.5"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21.1 7 14.2l-5-4.9 6.9-1L12 2z"></path></svg></div>
     </button>`;
   }).join("");
   const poolTable = ob(`<div class="pool-table-scroll"><div class="pool-grid">
-      <div class="pool-head">FIGHTER</div><div class="pool-head">DIV</div><div class="pool-head">RECORD</div><div class="pool-head">SIG STR</div><div class="pool-head">TD</div><div class="pool-head">KD</div><div class="pool-head">CTRL</div><div class="pool-head">SUB ATT</div><div class="pool-head">REV</div><div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div><div class="pool-head">FIGHTS/YR</div><div class="pool-head">PROJ FP</div><div class="pool-head" style="color:var(--gold);">OVERALL RANK</div><div class="pool-head">★</div>
+      <div class="pool-head">FIGHTER</div><div class="pool-head">DIV</div><div class="pool-head">RECORD</div><div class="pool-head">SIG STR</div><div class="pool-head">TD</div><div class="pool-head">KD</div><div class="pool-head">CTRL</div><div class="pool-head">SUB ATT</div><div class="pool-head">REV</div><div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div><div class="pool-head">FIGHTS/YR</div><div class="pool-head">PROJ FP</div><div class="pool-head" style="color:var(--gold);">OVERALL RANK</div><div class="pool-head">QUEUE</div>
       ${poolRows || `<div style="grid-column:1/-1;padding:24px;color:#6A6A72;font-size:13px;">${paused ? "Every announced fighter is drafted. New fights will show up here." : "No fighters match."}</div>`}</div></div>${searched.length > poolLimit ? `<button id="moreBtn" class="more-btn h-font">SHOW MORE FIGHTERS (${searched.length - poolLimit} LEFT)</button>` : ""}`, { cls: "lg", pad: "0" });
 
   /* ---- header ---- */
@@ -1157,7 +1227,7 @@ function renderDraft(){
     <div class="tracker">${trackerHtml}</div>
     <div class="stage">
       <div class="stage-main">${offerStrip}${stageMainHtml}${newBox}</div>
-      <div class="stage-side">${slipPanel}${feedCard}${newsCard}</div>
+      <div class="stage-side">${slipPanel}${queueCard}${feedCard}${chatCard}${newsCard}</div>
     </div>
     <div>
       <div class="queue-row"><div class="h-font" style="font-size:11px;letter-spacing:2px;color:#7A7A82;">RANKED NEXT</div>${queueHtml}</div>
@@ -1166,7 +1236,7 @@ function renderDraft(){
       <div class="division-strip">${divisionStripHtml}</div>
       <div class="h-font" style="font-size:12px;letter-spacing:2px;color:#7A7A82;margin-bottom:12px;">AVAILABLE &mdash; ${esc(poolHeading)}</div>
       ${poolTable}
-      <div class="footnote">STATS SHOWN ARE PER-FIGHT CAREER AVERAGES FROM SYNCED FIGHT DATA &middot; SIG STR = SIGNIFICANT STRIKES LANDED &middot; TD = TAKEDOWNS LANDED &middot; KD = KNOCKDOWNS &middot; CTRL = CONTROL TIME &middot; FINISHES = CAREER KO/TKO + SUBMISSION WINS &middot; ★ = CURRENTLY SPOTLIGHTED</div>
+      <div class="footnote">STATS SHOWN ARE PER-FIGHT CAREER AVERAGES FROM SYNCED FIGHT DATA &middot; SIG STR = SIGNIFICANT STRIKES LANDED &middot; TD = TAKEDOWNS LANDED &middot; KD = KNOCKDOWNS &middot; CTRL = CONTROL TIME &middot; FINISHES = CAREER KO/TKO + SUBMISSION WINS &middot; ★ = ADD TO / REMOVE FROM YOUR QUEUE</div>
     </div>`;
 
   document.getElementById("boardLinkBtn").addEventListener("click", () => { screen = "board"; lastSig = ""; render(); });
@@ -1176,6 +1246,7 @@ function renderDraft(){
   if (clearBtn) clearBtn.addEventListener("click", () => { selectedFighterId = null; render(); });
   document.querySelectorAll(".pool-row-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
+      const qb = e.target.closest("[data-q]"); if (qb) { toggleQueue(qb.dataset.q); return; }
       if (e.target.closest("[data-profile]") || !isMyTurn) { openProfile(btn.dataset.fighterId); return; }
       selectedFighterId = btn.dataset.fighterId; render();
     });
@@ -1184,6 +1255,17 @@ function renderDraft(){
     if (el.closest(".pool-row-btn")) return;
     el.addEventListener("click", () => openProfile(el.dataset.profile));
   });
+  document.querySelectorAll("[data-qrm]").forEach((b) => b.addEventListener("click", () => toggleQueue(b.dataset.qrm)));
+  document.querySelectorAll("[data-qmove]").forEach((b) => b.addEventListener("click", () => moveQueue(b.dataset.qmove, +b.dataset.dir)));
+  const adb = document.getElementById("autoDraftBtn"); if (adb) adb.addEventListener("click", () => setAutoDraft(!autoDraft));
+  const chatInput = document.getElementById("chatInput");
+  if (chatInput) {
+    chatInput.addEventListener("input", () => { chatDraft = chatInput.value; });
+    chatInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); sendChat(); } });
+    if (chatWasFocused) { chatInput.focus(); chatInput.setSelectionRange(chatInput.value.length, chatInput.value.length); }
+  }
+  const chatSendBtn = document.getElementById("chatSend"); if (chatSendBtn) chatSendBtn.addEventListener("click", sendChat);
+  const chatListEl = document.getElementById("chatList"); if (chatListEl) chatListEl.scrollTop = chatListEl.scrollHeight;
   const moreBtn = document.getElementById("moreBtn");
   if (moreBtn) moreBtn.addEventListener("click", () => { poolLimit += 40; render(); });
   const searchInput = document.getElementById("fighterSearch");
@@ -1198,7 +1280,7 @@ function renderDraft(){
   if (lockBtn) {
     lockBtn.addEventListener("click", async () => {
       const errBox = document.getElementById("pickError");
-      const target = manualTarget || available[0];
+      const target = manualTarget || defaultTarget;
       if (!target) return;
       lockBtn.disabled = true;
       const { error } = await sb.rpc("cr_make_pick", { p_room: room.id, p_fighter: target.id });
@@ -1384,10 +1466,10 @@ document.getElementById("modalRoot").addEventListener("click", async (e) => {
 /* ---------------- loop ---------------- */
 function signature(){
   if (!room) return "none";
-  return [room.status, room.current_pick_number, picks.length, (room.pool || []).length, (room.pool_new || []).length, JSON.stringify(po), pt.map((t) => t.id).join(","), screen].join("|");
+  return [room.status, room.current_pick_number, picks.length, (room.pool || []).length, (room.pool_new || []).length, JSON.stringify(po), pt.map((t) => t.id).join(","), screen, chatMsgs.length ? chatMsgs[chatMsgs.length - 1].id : 0, myQueue.join(","), autoDraft].join("|");
 }
 async function refresh(force){
-  await loadRoomState();
+  await Promise.all([loadRoomState(), loadMine()]);
   if (room && room.pool) { const miss = room.pool.filter((id) => !fightersById[id]); if (miss.length) { const { data } = await sb.from("fighters").select(STAT_COLS).in("id", miss); (data || []).forEach((f) => { fighters.push(f); fightersById[f.id] = f; projectedFPById[f.id] = projectedFantasyPoints(f); }); } }
   const sig = signature();
   if (force || sig !== lastSig) { lastSig = sig; render(); if (modal) renderModal(); }
@@ -1399,7 +1481,8 @@ setInterval(async () => {
   try {
     if (room.status === "live") {
       const dl = room.current_pick_deadline ? new Date(room.current_pick_deadline).getTime() : 0;
-      if (dl && Date.now() > dl + 600) await sb.rpc("cr_tick", { p_room: room.id });
+      const mineOnClock = autoDraft && userTeamId && room.current_pick_number <= room.team_order.length * room.rounds && pickTid(room.current_pick_number) === userTeamId;
+      if ((dl && Date.now() > dl + 600) || mineOnClock) await sb.rpc("cr_tick", { p_room: room.id });
     } else if (room.status === "paused") {
       pz = (pz + 1) % 4; if (!pz) await sb.rpc("cr_tick", { p_room: room.id });
     }
@@ -1422,6 +1505,7 @@ setInterval(() => {
     const { data: lg } = await sb.from("leagues").select("*").eq("id", LEAGUE_ID).maybeSingle();
     L = lg;
     await Promise.all([loadTeams(), loadRoomState()]);
+    await loadMine();
     await loadFighterPool();
     loadNews();
     render();
