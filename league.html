@@ -181,7 +181,7 @@ async function loadMsgs(){
 }
 
 
-const WCC={Heavyweight:'#8C8982','Light Heavyweight':'#B57BFF',Middleweight:'#3A7BFF',Welterweight:'#F4F4F2',Lightweight:'#B5452B',Featherweight:'#1FB5A3',Bantamweight:'#FF7A2F',Flyweight:'#E8742A'};
+const WCC={Heavyweight:'#E2283C','Light Heavyweight':'#B57BFF',Middleweight:'#3A7BFF',Welterweight:'#F4F4F2',Lightweight:'#B5452B',Featherweight:'#1FB5A3',Bantamweight:'#9ACD32',Flyweight:'#E8742A'};
 const wcol=w=>WCC[w]||(String(w||'').includes("Women")?'#E58CB0':'#D4AF37');
 async function loadRoom(){
   const {data:r}=await sb.from('draft_rooms').select('*').eq('league_id',Z.L.id).eq('format','card_redraft').order('block_no',{ascending:false}).limit(1).maybeSingle();
