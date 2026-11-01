@@ -354,6 +354,49 @@
     .pool-cell[data-label]::before{content:attr(data-label) " ";color:var(--text-faint-2);font-size:10px;letter-spacing:0.5px;margin-right:4px;}
   }
 
+  /* ---------- Phone layout: one panel at a time ---------- */
+  .mtabs, .more-toggle{display:none;}
+  @media (max-width:700px){
+    .dr-header{padding:10px 0;gap:8px;}
+    .dr-header .vrule{display:none;}
+    .hd-right{gap:8px !important;flex:1;justify-content:flex-end;flex-wrap:nowrap !important;}
+    .hd-right .board-link{padding:7px 9px;font-size:10px !important;letter-spacing:1px !important;}
+    .hd-round{zoom:.62;}
+    .hd-oct{zoom:.58;}
+    .tracker{padding:10px 14px;gap:8px;}
+    .tslot{width:70px;gap:4px;}
+    .tslot .oct{width:34px;height:34px;}
+    .tslot .info{font-size:10px;}
+    .mtabs{display:flex;gap:6px;overflow-x:auto;position:sticky;top:0;z-index:30;padding:8px 0;margin:0 -14px;padding-left:14px;padding-right:14px;background:rgba(5,5,6,0.94);backdrop-filter:blur(8px);border-bottom:1px solid #1C1C20;scrollbar-width:none;}
+    .mtabs::-webkit-scrollbar{display:none;}
+    .mtab{flex:0 0 auto;background:#141417;color:#9A9AA2;border:1px solid #26262B;border-radius:18px;padding:8px 14px;font-size:12px;letter-spacing:1.2px;cursor:pointer;}
+    .mtab.on{background:rgba(212,175,55,0.16);border-color:var(--gold);color:var(--gold);font-weight:700;}
+    .mtab.hot{border-color:var(--red);color:#FF6A78;}
+    .mtab.hot.on{background:rgba(226,40,60,0.18);}
+    .mp-root [data-mp]{display:none;}
+    .mp-root[data-tab="pick"] [data-mp="pick"]{display:flex;}
+    .mp-root[data-tab="pool"] [data-mp="pool"], .mp-root[data-tab="queue"] [data-mp="queue"], .mp-root[data-tab="roster"] [data-mp="roster"], .mp-root[data-tab="feed"] [data-mp="feed"], .mp-root[data-tab="chat"] [data-mp="chat"], .mp-root[data-tab="news"] [data-mp="news"]{display:block;}
+    .stage{padding:12px 0 0;gap:0;}
+    .stage-main{gap:12px;}
+    [data-mp] > div{margin-top:0 !important;}
+    .hero-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;}
+    .hero-stats .hs-v{font-size:19px;} .hero-stats .hs-l{font-size:10px;margin-top:3px;}
+    .more-toggle{display:block;background:#141417;color:var(--gold);border:1px solid #2A2A30;border-radius:var(--r-sm);padding:10px;font-size:12px;letter-spacing:1.5px;cursor:pointer;}
+    .hero-extra{display:none;flex-direction:column;gap:12px;}
+    .hero-extra.open{display:flex;}
+    .lock-pick-btn{position:sticky;bottom:12px;z-index:25;padding:16px 12px;font-size:14px;box-shadow:0 8px 28px rgba(0,0,0,0.7),0 0 0 1px rgba(226,40,60,0.6);}
+    .queue-row{margin:12px 0 10px;gap:8px;overflow-x:auto;flex-wrap:nowrap;}
+    .queue-row .queue-card{flex:0 0 auto;}
+    .search-row{margin:0 0 8px;} .filter-tabs{margin-bottom:6px;} .division-strip{margin-bottom:10px;}
+    button.pool-row-btn{padding:8px 10px !important;margin-bottom:5px !important;gap:4px 8px !important;}
+    .fname-cell{flex:1 1 auto !important;min-width:0;order:1;}
+    .fname-cell > :first-child{zoom:.8;}
+    .cell-div{order:2;} .cell-rank{order:3;margin-left:0 !important;min-width:34px;justify-content:flex-end;} .cell-star{order:4;}
+    .cell-record, .cell-finishes, .cell-fpy, .cell-projfp{order:5;font-size:11.5px !important;color:#9A9AA2 !important;}
+    .cell-fpy{display:none !important;}
+    .footnote{display:none;}
+  }
+
   /* ---------- Full Draft Board ---------- */
   .board-wrap{overflow-x:auto;padding:12px 0;-webkit-overflow-scrolling:touch;}
   .board-min{min-width:1280px;}
@@ -951,6 +994,13 @@ async function loadFighterPool(){
     byFP.forEach((f, idx) => { overallRankById[f.id] = idx + 1; });
   } catch (err) { fighterPoolError = err.message || "Couldn't load fighters."; }
 }
+let divRankById = {};
+function recomputeRanks(){
+  const ids = room && room.pool && room.pool.length ? new Set(room.pool) : null;
+  const list = fighters.filter((f) => !ids || ids.has(f.id)).sort((a, b) => (projectedFPById[b.id] || 0) - (projectedFPById[a.id] || 0) || a.full_name.localeCompare(b.full_name));
+  overallRankById = {}; divRankById = {}; const cnt = {};
+  list.forEach((f, i) => { overallRankById[f.id] = i + 1; const d = f.announced_weight_class || "?"; cnt[d] = (cnt[d] || 0) + 1; divRankById[f.id] = cnt[d]; });
+}
 function rankValue(f){ const r = overallRankById[f.id]; return (r === null || r === undefined) ? -Infinity : -r; }
 function isDivisionFilter(v){ return DIVISION_LIST.includes(v); }
 function availableFighters(){
@@ -974,12 +1024,19 @@ function renderNoRoom(){
       <a href="league.html?open=${esc(LEAGUE_ID)}"><button class="start-draft oct-btn h-font" style="font-size:14px;letter-spacing:2px;padding:14px 32px;">BACK TO LEAGUE</button></a></div>`, { cls: "lg", pad: "34px", ol: "rgba(212,175,55,0.5)" })}</div>`;
 }
 
+let mobTab = null, heroMore = false, prevMyTurn = false;
+const isMob = () => window.matchMedia("(max-width:700px)").matches;
 function renderDraft(){
+  recomputeRanks();
   const n = room.team_order.length, total = n * room.rounds;
   const complete = room.status === "complete", paused = room.status === "paused", live = room.status === "live";
   const pickNum = Math.min(room.current_pick_number, total);
   const onClockTeam = complete ? null : pickTid(pickNum);
   const isMyTurn = live && onClockTeam === userTeamId;
+  if (isMyTurn && !prevMyTurn) { mobTab = null; heroMore = false; }
+  prevMyTurn = isMyTurn;
+  const MOB = isMob();
+  const curTab = mobTab || (isMyTurn ? "pick" : "pool");
   const roundNumber = Math.floor((pickNum - 1) / n) + 1;
   const draftedIds = {};
   picks.forEach((p) => { draftedIds[p.fighter_id] = true; });
@@ -1079,17 +1136,19 @@ function renderDraft(){
         <div class="h-font" style="font-size:13px;letter-spacing:3px;color:var(--red);">ON THE CLOCK &mdash; YOUR PICK</div>
         ${isManualPick ? `<button id="clearSelectedBtn" class="h-font" style="margin-left:auto;font-size:9px;letter-spacing:1.5px;color:var(--red);background:rgba(226,40,60,0.12);border:0;padding:5px 10px;cursor:pointer;--c:6px;clip-path:var(--P);">YOUR PICK &times;</button>` : ""}
       </div>
-      ${ob(`<div style="display:flex;align-items:center;gap:30px;flex-wrap:wrap;">
-        ${octagonRingAvatar(spotlight, sdc, 210)}
+      ${ob(`<div style="display:flex;align-items:center;gap:${MOB ? 14 : 30}px;${MOB ? "" : "flex-wrap:wrap;"}">
+        ${octagonRingAvatar(spotlight, sdc, MOB ? 84 : 210)}
         <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:6px;">
           <div style="font-size:14px;font-weight:600;color:${sdc};">${esc(spotlight.announced_weight_class || "")} &middot; ${fmtRecord(spotlight)} &middot; ${spotlight.finishes ?? 0} finishes${sChamp ? ` &middot; <span style="font-weight:700;letter-spacing:1px;">CHAMPION</span>` : ""}</div>
           <div class="h-font" style="font-size:clamp(30px,5vw,50px);font-weight:700;line-height:1.02;">${esc(spotlight.full_name.toUpperCase())}</div>
           <div style="font-size:14px;color:#D8D5CC;">${nextFightHtml}</div>
-          <div style="display:flex;gap:34px;margin-top:10px;flex-wrap:wrap;">
-            <div><div class="h-font" style="font-size:64px;font-weight:700;line-height:1;">${fmtNum(projectedFPById[spotlight.id], 1)}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Projected points</div></div>
-            <div><div class="h-font" style="font-size:64px;font-weight:700;line-height:1;">${fmtRank(overallRankById[spotlight.id])}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Overall rank</div></div>
-          </div></div></div>`, { cls: "lg", pad: "30px 34px", ol: sdc + "59", fill: `linear-gradient(120deg,${sdc}57 0%,${sdc}1F 55%,${sdc}08 100%),#121214`, st: "" })}
-      <div class="hero-stats">${bigStats.map((c) => ob(`<div class="v hs-v">${esc(c.v)}</div><div class="l hs-l">${esc(c.l)}</div>`, { cls: "md", pad: "18px" })).join("")}</div>
+          <div style="display:flex;gap:${MOB ? 22 : 34}px;margin-top:${MOB ? 4 : 10}px;flex-wrap:wrap;">
+            <div><div class="h-font" style="font-size:${MOB ? 34 : 64}px;font-weight:700;line-height:1;">${fmtNum(projectedFPById[spotlight.id], 1)}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Projected points</div></div>
+            <div><div class="h-font" style="font-size:${MOB ? 34 : 64}px;font-weight:700;line-height:1;">${fmtRank(overallRankById[spotlight.id])}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Block rank</div></div>
+          </div></div></div>`, { cls: "lg", pad: MOB ? "14px 14px" : "30px 34px", ol: sdc + "59", fill: `linear-gradient(120deg,${sdc}57 0%,${sdc}1F 55%,${sdc}08 100%),#121214`, st: "" })}
+      <div class="hero-stats">${bigStats.map((c) => ob(`<div class="v hs-v">${esc(c.v)}</div><div class="l hs-l">${esc(c.l)}</div>`, { cls: "md", pad: MOB ? "10px 6px" : "18px" })).join("")}</div>
+      <button type="button" id="heroMoreBtn" class="more-toggle h-font">${heroMore ? "HIDE DETAILS \u25B4" : "MORE DETAILS \u25BE"}</button>
+      <div class="hero-extra${heroMore ? " open" : ""}">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
         ${ob(`<div class="h-font" style="font-size:20px;letter-spacing:1px;margin-bottom:12px;">LAST 5 FIGHTS</div><div style="display:flex;gap:10px;flex-wrap:wrap;">${formHtml}</div>`, { cls: "md", pad: "20px 22px" })}
         ${ob(`<div style="display:flex;flex-direction:column;gap:10px;"><div class="h-font" style="font-size:20px;letter-spacing:1px;">FINISH RATE</div><div class="h-font" style="font-size:40px;font-weight:700;line-height:1;">${finishRate}</div><div style="font-size:13px;color:#B8B5AE;">${spotlight.finishes ?? 0} finishes in ${spotlight.wins ?? 0} wins</div><div style="font-size:13px;color:${myDivCount >= 3 ? "#E8C93A" : "#B8B5AE"};border-top:1px solid var(--border-2);padding-top:10px;">${divFitText}</div></div>`, { cls: "md", pad: "20px 22px" })}
@@ -1101,6 +1160,7 @@ function renderDraft(){
         ${tapeRows.map((r) => `<div class="tape-row"><div class="a">${esc(r.a)}</div><div class="lbl">${esc(r.label)}</div><div class="b">${esc(r.b)}</div></div>`).join("")}`, { cls: "md", pad: "20px 22px" })}
       ${upNext.length ? ob(`<div class="h-font" style="font-size:14px;letter-spacing:2px;color:#9A9AA2;margin-bottom:10px;">BEST AVAILABLE AFTER THIS PICK</div>
         <div style="display:flex;gap:18px;flex-wrap:wrap;">${upNext.map((f) => `<div data-profile="${f.id}" style="display:flex;align-items:center;gap:10px;cursor:pointer;">${octagonRingAvatar(f, fighterDc(f), 38)}<div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div><div style="font-size:11px;color:#B8B5AE;">${esc(DIV_SHORT[f.announced_weight_class] || "")} · ${fmtRank(overallRankById[f.id])}</div></div></div>`).join("")}</div>`, { cls: "md", pad: "16px 22px" }) : ""}
+      </div>
       <button id="lockBtn" class="lock-pick-btn oct-btn" style="background:var(--red);color:#F5F2EA;cursor:pointer;">LOCK PICK — ${esc(spotlight.full_name.toUpperCase())}</button>
       <div class="error" id="pickError" style="display:none;"></div>`;
   } else {
@@ -1164,7 +1224,7 @@ function renderDraft(){
     return `<button class="filter-tab" data-filter="${r}" style="${active ? `background:${rc}22;border-color:${rc};color:${rc};font-weight:700;` : "color:#9A9AA2;"}">${esc(r)}</button>`; }).join("");
   const divisionStripHtml = DIVISION_LIST.map((d) => { const active = d === activeFilter; const dc = DIVISION_COLOR[d];
     return `<button class="division-chip" data-filter="${esc(d)}" style="${active ? `background:${dc}33;border-color:${dc};color:${dc};font-weight:700;` : `background:${dc}14;color:#9A9AA2;`}">${esc(DIV_SHORT[d] || d)}</button>`; }).join("");
-  const poolHeading = isDivisionFilter(activeFilter) ? `${activeFilter.toUpperCase()} · RANKED BY OVERALL RANK` : "ALL FIGHTERS · RANKED BY OVERALL RANK";
+  const poolHeading = isDivisionFilter(activeFilter) ? `${activeFilter.toUpperCase()} · RANKED BY BLOCK RANK` : "ALL FIGHTERS · RANKED BY BLOCK RANK";
   const chatWasFocused = document.activeElement && document.activeElement.id === "chatInput";
   const existingSearchInput = document.getElementById("fighterSearch");
   const filterVal = existingSearchInput ? existingSearchInput.value : "";
@@ -1193,7 +1253,7 @@ function renderDraft(){
     </button>`;
   }).join("");
   const poolTable = ob(`<div class="pool-table-scroll"><div class="pool-grid">
-      <div class="pool-head">FIGHTER</div><div class="pool-head">DIV</div><div class="pool-head">RECORD</div><div class="pool-head">SIG STR</div><div class="pool-head">TD</div><div class="pool-head">KD</div><div class="pool-head">CTRL</div><div class="pool-head">SUB ATT</div><div class="pool-head">REV</div><div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div><div class="pool-head">FIGHTS/YR</div><div class="pool-head">PROJ FP</div><div class="pool-head" style="color:var(--gold);">OVERALL RANK</div><div class="pool-head">QUEUE</div>
+      <div class="pool-head">FIGHTER</div><div class="pool-head">DIV</div><div class="pool-head">RECORD</div><div class="pool-head">SIG STR</div><div class="pool-head">TD</div><div class="pool-head">KD</div><div class="pool-head">CTRL</div><div class="pool-head">SUB ATT</div><div class="pool-head">REV</div><div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div><div class="pool-head">FIGHTS/YR</div><div class="pool-head">PROJ FP</div><div class="pool-head" style="color:var(--gold);">BLOCK RANK</div><div class="pool-head">QUEUE</div>
       ${poolRows || `<div style="grid-column:1/-1;padding:24px;color:#6A6A72;font-size:13px;">${paused ? "Every announced fighter is drafted. New fights will show up here." : "No fighters match."}</div>`}</div></div>${searched.length > poolLimit ? `<button id="moreBtn" class="more-btn h-font">SHOW MORE FIGHTERS (${searched.length - poolLimit} LEFT)</button>` : ""}`, { cls: "lg", pad: "0" });
 
   /* ---- header ---- */
@@ -1204,32 +1264,33 @@ function renderDraft(){
     : `<div class="h-font" style="font-size:28px;font-weight:700;line-height:1;color:var(--gold);">${esc(teamInitials(onClockTeam))}</div><div class="pick-clock-val" style="font-size:12px;color:#C9C6BD;margin-top:2px;">${fmtClock(remain)}</div>`;
   const octBg = isMyTurn ? "linear-gradient(135deg,#FF8A96,#E2283C 55%,#7A1620)" : "linear-gradient(135deg,#F6DE8C,#D4AF37 55%,#6A5412)";
 
-  content.innerHTML = `
+  content.innerHTML = `<div class="mp-root" data-tab="${curTab}">
     <div class="dr-bg" style="--spot-a:${spotlight ? fighterDc(spotlight) + "42" : "#D4AF3729"};"></div>
     <div class="dr-header">
       <div class="dr-header-left">${backBtn()}
         <div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:1px;color:var(--gold);">COMBAT</div><div class="vrule"></div>
         <div class="h-font dr-header-subtitle" style="font-size:15px;letter-spacing:2px;color:#9A9AA2;">CARD REDRAFT &middot; BLOCK ${room.block_no}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+      <div class="hd-right" style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
         ${hasTrades ? `<button class="board-link h-font" id="tradesBtn" style="font-size:11px;letter-spacing:2px;">TRADE PICKS${incoming.length ? ` <span class="badge">${incoming.length}</span>` : ""}</button>` : ""}
         <button class="board-link h-font" id="boardLinkBtn" style="font-size:11px;letter-spacing:2px;">FULL DRAFT BOARD</button>
         <div class="vrule"></div>
-        <div class="status-right"><div class="lbl">ROUND</div>
+        <div class="status-right hd-round"><div class="lbl">ROUND</div>
           <div class="h-font" style="font-size:44px;font-weight:700;line-height:1;">${roundNumber}<span style="color:#8C8982;font-size:26px;"> / ${room.rounds}</span></div>
           <div class="h-font" style="font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-top:2px;">${complete ? "DRAFT COMPLETE" : isMyTurn ? "YOUR PICK" : "PICK " + pickNum + " OF " + total}</div></div>
-        <div class="oct-wrap${isMyTurn ? " pulse" : ""}" style="width:104px;height:104px;">
+        <div class="oct-wrap hd-oct${isMyTurn ? " pulse" : ""}" style="width:104px;height:104px;">
           <div style="width:104px;height:104px;clip-path:${OCT_CLIP};display:flex;align-items:center;justify-content:center;background:${octBg};">
             <div style="width:92px;height:92px;clip-path:${OCT_CLIP};background:${isMyTurn ? "#1A0A0D" : "#14120A"};display:flex;flex-direction:column;align-items:center;justify-content:center;">${clockInner}</div>
           </div></div>
       </div>
     </div>
     <div class="tracker">${trackerHtml}</div>
+    <div class="mtabs">${[["pick", isMyTurn ? "YOUR PICK" : "ON CLOCK"], ["pool", "FIGHTERS"], ["queue", "QUEUE" + (myQueue.length ? " " + myQueue.length : "")], ["roster", "ROSTER"], ["feed", "FEED"], ["chat", "CHAT"], ["news", "NEWS"]].map(([k, l]) => `<button type="button" class="mtab h-font${curTab === k ? " on" : ""}${k === "pick" && isMyTurn ? " hot" : ""}" data-mtab="${k}">${l}</button>`).join("")}</div>
     <div class="stage">
-      <div class="stage-main">${offerStrip}${stageMainHtml}${newBox}</div>
-      <div class="stage-side">${slipPanel}${queueCard}${feedCard}${chatCard}${newsCard}</div>
+      <div class="stage-main" data-mp="pick">${offerStrip}${stageMainHtml}${newBox}</div>
+      <div class="stage-side"><div data-mp="roster">${slipPanel}</div><div data-mp="queue">${queueCard}</div><div data-mp="feed">${feedCard}</div><div data-mp="chat">${chatCard}</div><div data-mp="news">${newsCard}</div></div>
     </div>
-    <div>
+    <div data-mp="pool">
       <div class="queue-row"><div class="h-font" style="font-size:11px;letter-spacing:2px;color:#7A7A82;">RANKED NEXT</div>${queueHtml}</div>
       <div class="search-row"><input class="search" id="fighterSearch" placeholder="Search fighters…" value="${esc(filterVal)}"></div>
       <div class="filter-tabs">${filterTabsHtml}</div>
@@ -1237,7 +1298,7 @@ function renderDraft(){
       <div class="h-font" style="font-size:12px;letter-spacing:2px;color:#7A7A82;margin-bottom:12px;">AVAILABLE &mdash; ${esc(poolHeading)}</div>
       ${poolTable}
       <div class="footnote">STATS SHOWN ARE PER-FIGHT CAREER AVERAGES FROM SYNCED FIGHT DATA &middot; SIG STR = SIGNIFICANT STRIKES LANDED &middot; TD = TAKEDOWNS LANDED &middot; KD = KNOCKDOWNS &middot; CTRL = CONTROL TIME &middot; FINISHES = CAREER KO/TKO + SUBMISSION WINS &middot; ★ = ADD TO / REMOVE FROM YOUR QUEUE</div>
-    </div>`;
+    </div></div>`;
 
   document.getElementById("boardLinkBtn").addEventListener("click", () => { screen = "board"; lastSig = ""; render(); });
   const tb = document.getElementById("tradesBtn"); if (tb) tb.addEventListener("click", () => openTrades());
@@ -1276,6 +1337,8 @@ function renderDraft(){
   document.querySelectorAll(".filter-tab, .division-chip").forEach((btn) => {
     btn.addEventListener("click", () => { activeFilter = btn.dataset.filter; render(); });
   });
+  document.querySelectorAll("[data-mtab]").forEach((b) => b.addEventListener("click", () => { mobTab = b.dataset.mtab; render(); window.scrollTo(0, 0); }));
+  const hmb = document.getElementById("heroMoreBtn"); if (hmb) hmb.addEventListener("click", () => { heroMore = !heroMore; render(); });
   const lockBtn = document.getElementById("lockBtn");
   if (lockBtn) {
     lockBtn.addEventListener("click", async () => {
@@ -1372,8 +1435,8 @@ function renderProfile(){
   const reach = f.reach_cm ? Math.round(f.reach_cm / 2.54) + '"' : "—";
   const lbs = LBS[f.announced_weight_class] ? LBS[f.announced_weight_class] + " lbs" : "—";
   const pk = picks.find((p) => p.fighter_id === f.id);
-  const divMates = fighters.filter((x) => x.announced_weight_class === f.announced_weight_class).sort((x, y) => (y.current_rating || 0) - (x.current_rating || 0));
-  const divRank = divMates.findIndex((x) => x.id === f.id) + 1;
+  recomputeRanks();
+  const divRank = divRankById[f.id] || 0;
   const finishRate = f.wins ? Math.round(((f.finishes || 0) / f.wins) * 100) + "%" : "—";
   const cs = [["SIG STR / FIGHT", fmtNum(f.avg_sig_strikes)], ["TAKEDOWNS / FIGHT", fmtNum(f.avg_takedowns)], ["KNOCKDOWNS / FIGHT", fmtNum(f.avg_knockdowns, 2)], ["CONTROL / FIGHT", fmtCtrl(f.avg_control_seconds)],
     ["SUB ATT / FIGHT", fmtNum(f.avg_sub_attempts)], ["REVERSALS / FIGHT", fmtNum(f.avg_reversals, 2)], ["TD DEFENSE", fmtPct(f.td_def_pct)], ["FINISH RATE", finishRate],
@@ -1399,7 +1462,7 @@ function renderProfile(){
     <div class="small mut" style="margin-top:12px">${nb ? `Next fight: <b>${esc(fmtShortDate(nb.date))}</b> vs ${esc(opp ? opp.full_name : "TBA")}${nb.title ? " · title fight" : ""}` : "No fight booked yet"}</div>
     ${canPick ? `<div class="row" style="margin-top:12px;gap:10px"><button class="btn g grow" data-pact="select">SELECT FOR MY PICK</button></div>` : ""}</div></div>
   <div class="pad col" style="gap:10px;margin-top:12px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${box("AGE", age ?? "—")}${box("HEIGHT", ht)}${box("WEIGHT", lbs)}${box("REACH", reach)}${box("STANCE", f.stance || "—")}${box("RECORD", fmtRecord(f))}${box("COUNTRY", f.nationality || "—")}${box("TEAM", f.team || "—")}</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${box((f.announced_weight_class || "DIVISION").toUpperCase() + " RANK", divRank ? "#" + divRank : "—", dc)}${box("OVERALL", fmtRank(overallRankById[f.id]), dc)}${box("PROJ FP", fmtNum(projectedFPById[f.id], 1), dc)}${box("STATUS", pk ? "Pick " + pk.pick_number : "Available", dc)}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${box((f.announced_weight_class || "DIVISION").toUpperCase() + " BLOCK RANK", divRank ? "#" + divRank : "—", dc)}${box("OVERALL BLOCK RANK", fmtRank(overallRankById[f.id]), dc)}${box("PROJ FP", fmtNum(projectedFPById[f.id], 1), dc)}${box("STATUS", pk ? "Pick " + pk.pick_number : "Available", dc)}</div>
   <div class="sh"><span class="h" style="font-size:18px;color:var(--fg)">CAREER STATS</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${cs.map((c) => box(c[0], c[1], dc)).join("")}</div>
   <div class="sh"><span class="h" style="font-size:18px;color:var(--fg)">FIGHT LOG</span><span>Fantasy points per fight</span></div>${ob(`<div class="scroll"><table class="tbl"><tr><th>DATE</th><th style="text-align:left">OPPONENT</th><th>RES</th><th>METHOD</th><th>FPTS</th></tr>${logRows || `<tr><td colspan="5" class="dim" style="text-align:center">${perf === null ? "Loading fights…" : "No fight history on file."}</td></tr>`}</table></div>`, { cls: "md", pad: "8px 12px", ol: dc + "aa", fill: `linear-gradient(155deg,${dc}38,${dc}10 60%,rgba(0,0,0,0)),#131317` })}
   </div></div>`;
