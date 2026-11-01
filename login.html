@@ -118,6 +118,10 @@ const submitBtn = document.getElementById("submitBtn");
 const errorBox = document.getElementById("errorBox");
 const successBox = document.getElementById("successBox");
 
+// Phone sign-in needs a paid text-message provider (Twilio) connected in Supabase.
+// Flip to true once that is set up and the Phone tab appears.
+const PHONE_LOGIN = false;
+if (!PHONE_LOGIN) document.getElementById("methodTabs").style.display = "none";
 let mode = "signin";
 let method = "email";      // email | phone
 let codeSent = false;      // phone flow: waiting for the text-message code
