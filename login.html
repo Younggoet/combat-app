@@ -57,23 +57,48 @@
       <div class="tab" id="tabSignUp">Sign Up</div>
     </div>
 
+    <div class="tabs" id="methodTabs" style="margin-top:-6px">
+      <div class="tab active" id="methodEmail">Email</div>
+      <div class="tab" id="methodPhone">Phone</div>
+    </div>
+
     <form id="form">
       <div id="displayNameField" style="display:none;">
         <label for="displayName">Display name</label>
         <input id="displayName" type="text" maxlength="40" placeholder="How your league sees you">
       </div>
-      <label for="email">Email</label>
-      <input id="email" type="email" required autocomplete="email">
-      <label for="password">Password</label>
-      <input id="password" type="password" required autocomplete="current-password" minlength="6">
+      <div id="emailFields">
+        <label for="email">Email</label>
+        <input id="email" type="email" required autocomplete="email">
+        <label for="password">Password</label>
+        <input id="password" type="password" required autocomplete="current-password" minlength="6">
+        <a href="#" id="forgotLink" style="display:block;text-align:right;margin-top:8px;font-size:12.5px;color:var(--gold,#D4AF37);font-weight:600;text-decoration:none;">Forgot password?</a>
+      </div>
+      <div id="phoneFields" style="display:none;">
+        <label for="phone">Mobile number</label>
+        <input id="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="(555) 123-4567">
+        <div style="margin-top:8px;font-size:12px;color:var(--text-dim);">No password needed. We text you a new code each time. Lost access to your old password? Just sign in with a code.</div>
+        <div id="codeField" style="display:none;">
+          <label for="code">6-digit code</label>
+          <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456">
+        </div>
+      </div>
       <button class="primary" id="submitBtn" type="submit">Sign In</button>
+    </form>
+
+    <form id="resetForm" style="display:none;">
+      <label for="newPassword">New password</label>
+      <input id="newPassword" type="password" autocomplete="new-password" minlength="6" required>
+      <label for="newPassword2">Confirm new password</label>
+      <input id="newPassword2" type="password" autocomplete="new-password" minlength="6" required>
+      <button class="primary" id="resetBtn" type="submit">Save New Password</button>
     </form>
 
     <div class="error" id="errorBox" style="display:none;"></div>
     <div class="success" id="successBox" style="display:none;"></div>
   </div>
   <div style="text-align:center;margin-top:14px;font-size:11.5px;color:var(--text-faint);">
-    By continuing you agree to Combat's <a href="terms.html" style="color:var(--text-faint);">Terms</a> and <a href="privacy.html" style="color:var(--text-faint);">Privacy Policy</a>.
+    By continuing you agree to Combat's <a href="terms.html" style="color:var(--text-dim);font-weight:700;">Terms and Conditions</a> and <a href="privacy.html" style="color:var(--text-dim);font-weight:700;">Privacy Policy</a>.
   </div>
   <a href="index.html" class="back">← Back to Combat</a>
 </div>
@@ -94,6 +119,42 @@ const errorBox = document.getElementById("errorBox");
 const successBox = document.getElementById("successBox");
 
 let mode = "signin";
+let method = "email";      // email | phone
+let codeSent = false;      // phone flow: waiting for the text-message code
+const methodEmail = document.getElementById("methodEmail");
+const methodPhone = document.getElementById("methodPhone");
+const emailFields = document.getElementById("emailFields");
+const phoneFields = document.getElementById("phoneFields");
+const codeField = document.getElementById("codeField");
+const phoneInput = document.getElementById("phone");
+const codeInput = document.getElementById("code");
+
+function submitLabel() {
+  if (method === "phone") return codeSent ? "Verify Code" : "Text Me a Code";
+  return mode === "signup" ? "Create Account" : "Sign In";
+}
+function setMethod(next) {
+  method = next; codeSent = false;
+  methodEmail.classList.toggle("active", method === "email");
+  methodPhone.classList.toggle("active", method === "phone");
+  emailFields.style.display = method === "email" ? "block" : "none";
+  phoneFields.style.display = method === "phone" ? "block" : "none";
+  codeField.style.display = "none";
+  emailInput.required = method === "email"; passwordInput.required = method === "email";
+  phoneInput.required = method === "phone"; codeInput.required = false;
+  submitBtn.textContent = submitLabel();
+  errorBox.style.display = "none"; successBox.style.display = "none";
+}
+methodEmail.addEventListener("click", () => setMethod("email"));
+methodPhone.addEventListener("click", () => setMethod("phone"));
+// US numbers can be typed any way; everything else must start with + and the country code.
+function toE164(raw) {
+  const t = String(raw || "").trim(); const d = t.replace(/\D/g, "");
+  if (t.startsWith("+")) return "+" + d;
+  if (d.length === 10) return "+1" + d;
+  if (d.length === 11 && d[0] === "1") return "+" + d;
+  return null;
+}
 
 function setMode(next) {
   mode = next;
@@ -102,7 +163,8 @@ function setMode(next) {
   displayNameField.style.display = mode === "signup" ? "block" : "none";
   displayNameInput.required = mode === "signup";
   passwordInput.autocomplete = mode === "signup" ? "new-password" : "current-password";
-  submitBtn.textContent = mode === "signup" ? "Create Account" : "Sign In";
+  codeSent = false; codeField.style.display = "none";
+  submitBtn.textContent = submitLabel();
   errorBox.style.display = "none";
   successBox.style.display = "none";
 }
@@ -116,8 +178,9 @@ tabSignUp.addEventListener("click", () => setMode("signup"));
 const redirectTarget = new URLSearchParams(location.search).get("redirect") || "team.html";
 
 // Already signed in? Bounce straight back rather than showing the form.
+const isRecovery = /type=recovery/.test(location.hash);
 CombatAuth.getUser().then((user) => {
-  if (user) {
+  if (user && !isRecovery) {
     successBox.textContent = "You're already signed in.";
     successBox.style.display = "block";
     setTimeout(() => { window.location.href = redirectTarget; }, 500);
@@ -134,7 +197,34 @@ form.addEventListener("submit", async (e) => {
   const password = passwordInput.value;
 
   try {
-    if (mode === "signup") {
+    if (method === "phone") {
+      const phone = toE164(phoneInput.value);
+      if (!phone) throw new Error("Enter a full mobile number, with the country code if it's outside the US (like +44 7700 900123).");
+      if (!codeSent) {
+        const displayName = displayNameInput.value.trim();
+        if (mode === "signup" && !displayName) throw new Error("Pick a display name.");
+        if (mode === "signup") { try { localStorage.setItem("combat-pending-display-name", displayName); } catch (e) {} }
+        const { error } = await client.auth.signInWithOtp({ phone, options: { shouldCreateUser: mode === "signup" } });
+        if (error) throw error;
+        codeSent = true; codeField.style.display = "block"; codeInput.required = true; codeInput.focus();
+        submitBtn.textContent = submitLabel();
+        successBox.textContent = "Code sent. It can take a few seconds to arrive.";
+        successBox.style.display = "block";
+      } else {
+        const token = codeInput.value.replace(/\D/g, "");
+        if (token.length !== 6) throw new Error("Enter the 6-digit code from the text.");
+        const { data, error } = await client.auth.verifyOtp({ phone, token, type: "sms" });
+        if (error) throw error;
+        let pendingName = null;
+        try { pendingName = localStorage.getItem("combat-pending-display-name"); } catch (e) {}
+        if (pendingName && data.user) {
+          await CombatAuth.ensureProfile(data.user.id, pendingName);
+          try { localStorage.removeItem("combat-pending-display-name"); } catch (e) {}
+        }
+        window.location.href = redirectTarget;
+        return;
+      }
+    } else if (mode === "signup") {
       const displayName = displayNameInput.value.trim();
       if (!displayName) throw new Error("Pick a display name.");
 
@@ -174,7 +264,36 @@ form.addEventListener("submit", async (e) => {
     errorBox.style.display = "block";
   } finally {
     submitBtn.disabled = false;
+    submitBtn.textContent = submitLabel();
   }
+});
+// ---- Forgot password ----
+const forgotLink = document.getElementById("forgotLink");
+const resetForm = document.getElementById("resetForm");
+function showReset() {
+  form.style.display = "none"; document.getElementById("tabSignIn").parentElement.style.display = "none"; document.getElementById("methodTabs").style.display = "none";
+  resetForm.style.display = "block";
+  successBox.textContent = "Choose a new password."; successBox.style.display = "block"; errorBox.style.display = "none";
+}
+forgotLink.addEventListener("click", async (e) => {
+  e.preventDefault(); errorBox.style.display = "none"; successBox.style.display = "none";
+  const email = emailInput.value.trim();
+  if (!email) { errorBox.textContent = "Type your email above first, then tap Forgot password."; errorBox.style.display = "block"; emailInput.focus(); return; }
+  const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  if (error) { errorBox.textContent = error.message || "Couldn't send the reset email."; errorBox.style.display = "block"; return; }
+  successBox.textContent = "If that email has an account, a reset link is on its way. Open it on this device.";
+  successBox.style.display = "block";
+});
+client.auth.onAuthStateChange((ev) => { if (ev === "PASSWORD_RECOVERY") showReset(); });
+if (isRecovery) setTimeout(showReset, 600);
+resetForm.addEventListener("submit", async (e) => {
+  e.preventDefault(); errorBox.style.display = "none";
+  const a = document.getElementById("newPassword").value, b2 = document.getElementById("newPassword2").value;
+  if (a !== b2) { errorBox.textContent = "Those passwords don't match."; errorBox.style.display = "block"; return; }
+  const { error } = await client.auth.updateUser({ password: a });
+  if (error) { errorBox.textContent = error.message || "Couldn't save the new password."; errorBox.style.display = "block"; return; }
+  successBox.textContent = "Password updated. Taking you in…"; successBox.style.display = "block";
+  setTimeout(() => { window.location.href = redirectTarget; }, 900);
 });
 </script>
 </body>
