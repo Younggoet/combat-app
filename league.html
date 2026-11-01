@@ -146,7 +146,7 @@ const myTeam=()=>Z.teams.find(t=>t.owner_user_id===Z.uid);
 async function loadMine(){
   const {data,error}=await sb.from('teams').select('id,name,league_id,leagues!inner(*)').eq('owner_user_id',Z.uid);
   if(error)throw error;
-  Z.leagues=(data||[]).map(r=>r.leagues).filter(l=>l.team_count).sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  Z.leagues=(data||[]).map(r=>r.leagues).filter(l=>l.team_count&&!l.archived).sort((a,b)=>b.created_at.localeCompare(a.created_at));
   const ids=Z.leagues.map(l=>l.id);Z.counts={};
   if(ids.length){const {data:t}=await sb.from('teams').select('league_id').in('league_id',ids);(t||[]).forEach(x=>Z.counts[x.league_id]=(Z.counts[x.league_id]||0)+1)}
 }
@@ -168,7 +168,7 @@ async function loadCards(){
 /* A block never uses the card that is about to happen: it starts with the second upcoming card and needs 4 cards. */
 const blockCards=()=>(Z.cards||[]).slice(1,5);
 async function loadPublic(){
-  const {data,error}=await sb.from('leagues').select('*,teams(id)').eq('is_public',true).eq('status','setup').not('team_count','is',null).order('created_at',{ascending:false}).limit(60);
+  const {data,error}=await sb.from('leagues').select('*,teams(id)').eq('is_public',true).eq('archived',false).eq('status','setup').not('team_count','is',null).order('created_at',{ascending:false}).limit(60);
   if(error)throw error;
   Z.pub=data||[];
   const ids=[...new Set(Z.pub.map(l=>l.commissioner_user_id).filter(Boolean))];
