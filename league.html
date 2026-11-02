@@ -1,15 +1,15 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Combat Leagues</title>
-<meta name="theme-color" content="#0B0B0D">
+<meta name="theme-color" content="#0A1124">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;500;600&display=swap">
 <style>
 /* Mobile league app: one column, sticky header, five bottom tabs, sub-tabs inside each. */
-:root{--bg:#0B0B0D;--surf:#131317;--surf2:#1B1B20;--fg:#F2EFE6;--mut:#B8B5AE;--dim:#8C8982;--gold:#D4AF37;--gold2:#E8C93A;--red:#E2283C;--redl:#FF6A78;--teal:#3FD8C5;--green:#4CD08A;--ol:#D4AF37aa;
+:root{--bg:#0A1124;--surf:#131317;--surf2:#1B1B20;--fg:#F2EFE6;--mut:#B8B5AE;--dim:#8C8982;--gold:#D4AF37;--gold2:#E8C93A;--red:#E2283C;--redl:#FF6A78;--teal:#3FD8C5;--green:#4CD08A;--ol:#D4AF37aa;
 --tc-cage:#D4AF37;--tc-iron:#FF5468;--tc-sub:#1FB5A3;--tc-td:#4C8BFF;--tc-ko:#B57BFF;--tc-gp:#FF7A2F;color-scheme:dark;}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,system-ui,sans-serif;font-size:14px}
-body{min-height:100vh;background:linear-gradient(90deg,rgba(212,175,55,.2) 0,rgba(212,175,55,.06) 14%,rgba(212,175,55,0) 30%,rgba(212,175,55,0) 70%,rgba(212,175,55,.06) 86%,rgba(212,175,55,.2) 100%),linear-gradient(#0B0B0D,#0B0B0D),var(--bg);background-attachment:fixed}
+body{min-height:100vh;background:linear-gradient(90deg,rgba(212,175,55,.2) 0,rgba(212,175,55,.06) 14%,rgba(212,175,55,0) 30%,rgba(212,175,55,0) 70%,rgba(212,175,55,.06) 86%,rgba(212,175,55,.2) 100%),linear-gradient(#0A1124,#0A1124),var(--bg);background-attachment:fixed}
 .h{font-family:Oswald,Impact,sans-serif;letter-spacing:.5px}
 #app{max-width:560px;margin:0 auto;padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 .pad{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -364,7 +364,7 @@ const pjF=id=>{const b=boutOf(id);if(!b)return 0;const a=Z.perf[id]||0,p=projFP(
 const pjT=ids=>ids.reduce((s,id)=>s+pjF(id),0),remN=ids=>ids.reduce((n,id)=>{const b=boutOf(id);return b?(b.status==='completed'?n:b.status==='live'?n+(1-elapsed(b)):n+1):n},0);
 const erf=x=>{const t=1/(1+.3275911*Math.abs(x)),y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-.284496736)*t+.254829592)*t*Math.exp(-x*x);return x<0?-y:y};
 const winP=(ra,rb)=>{const n=remN(ra)+remN(rb),d=pjT(ra)-pjT(rb);if(!n)return d>0?1:d<0?0:.5;return .5*(1+erf(d/(9.07*Math.sqrt(n))/Math.SQRT2))};
-const wpBar=(A,B,ra,rb,w)=>{const p=winP(ra,rb),pa=Math.round(p*100),pb=100-pa,ca=colorOf(A),cb2=colorOf(B);return `<div style="width:${w||'100%'};margin-top:10px"><div class="tiny" style="letter-spacing:2px;color:var(--gold2);text-align:center;margin-bottom:5px">WIN PROBABILITY</div><div class="row" style="justify-content:space-between;align-items:baseline"><span class="h" style="font-size:20px;color:${ca}">${pa}%</span><span class="h" style="font-size:20px;color:${cb2}">${pb}%</span></div><div class="oc" style="height:14px;display:flex;background:#26262C;padding:2px"><div style="width:${pa}%;background:${ca};transition:width .5s"></div><div style="width:2px;background:#0B0B0D;flex:none"></div><div style="width:${pb}%;background:${cb2};transition:width .5s"></div></div><div class="tiny dim" style="text-align:center;margin-top:4px">Based on projected points and fights left. Updates live.</div></div>`};
+const wpBar=(A,B,ra,rb,w)=>{const p=winP(ra,rb),pa=Math.round(p*100),pb=100-pa,ca=colorOf(A),cb2=colorOf(B);return `<div style="width:${w||'100%'};margin-top:10px"><div class="tiny" style="letter-spacing:2px;color:var(--gold2);text-align:center;margin-bottom:5px">WIN PROBABILITY</div><div class="row" style="justify-content:space-between;align-items:baseline"><span class="h" style="font-size:20px;color:${ca}">${pa}%</span><span class="h" style="font-size:20px;color:${cb2}">${pb}%</span></div><div class="oc" style="height:14px;display:flex;background:#26262C;padding:2px"><div style="width:${pa}%;background:${ca};transition:width .5s"></div><div style="width:2px;background:#0A1124;flex:none"></div><div style="width:${pb}%;background:${cb2};transition:width .5s"></div></div><div class="tiny dim" style="text-align:center;margin-top:4px">Based on projected points and fights left. Updates live.</div></div>`};
 const fpOrProj=id=>{const a=fpts(id);return a!=null?{v:a,proj:false}:{v:projFP(Z.fmap[id]),proj:true}};
 const ptsTxt=v=>v==null?'—':v.toFixed(1);
 const projTxt=fid=>{const p=projFP(Z.fmap[fid]);return p==null?'DEBUT':p.toFixed(1)};
