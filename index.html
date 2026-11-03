@@ -1777,6 +1777,7 @@ async function crLoadCards(){
       .select("event_name, bout_date, status, weight_class, is_title_fight, fighter_a, fighter_b")
       .gte("bout_date", today)
       .neq("status", "completed")
+      .neq("status", "cancelled")
       .order("bout_date", { ascending: true });
     if (error) throw error;
     const byEvent = new Map();
@@ -2535,7 +2536,7 @@ async function loadFighterPool(){
       const today = new Date().toISOString().slice(0, 10);
       const { data: ub } = await CombatAuth.client.from("bouts")
         .select("event_name, bout_date, is_title_fight, fighter_a, fighter_b, fighter_a_moneyline, fighter_b_moneyline")
-        .gte("bout_date", today).neq("status", "completed").order("bout_date", { ascending: true }).limit(300);
+        .gte("bout_date", today).neq("status", "completed").neq("status", "cancelled").order("bout_date", { ascending: true }).limit(300);
       nextBoutById = {};
       (ub || []).forEach((b) => {
         if (!nextBoutById[b.fighter_a]) nextBoutById[b.fighter_a] = { date: b.bout_date, event: b.event_name, oppId: b.fighter_b, title: b.is_title_fight, ml: b.fighter_a_moneyline };

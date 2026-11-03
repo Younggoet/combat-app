@@ -183,7 +183,7 @@ async function loadCards(){
   if(Z.cards)return;
   try{
     const today=new Date().toISOString().slice(0,10);
-    const {data,error}=await sb.from('bouts').select('event_name,bout_date,status,fighter_a,fighter_b').gte('bout_date',today).neq('status','completed').order('bout_date',{ascending:true});
+    const {data,error}=await sb.from('bouts').select('event_name,bout_date,status,fighter_a,fighter_b').gte('bout_date',today).neq('status','completed').neq('status','cancelled').order('bout_date',{ascending:true});
     if(error)throw error;
     const m=new Map(),seen=new Set();
     (data||[]).forEach(b=>{const p=[b.fighter_a,b.fighter_b].sort().join('|');if(seen.has(b.bout_date+p))return;seen.add(b.bout_date+p);const k=b.bout_date+'|'+b.event_name;if(!m.has(k))m.set(k,{eventName:b.event_name,date:b.bout_date,n:0});m.get(k).n++});
@@ -335,7 +335,7 @@ async function loadSeason(){
   const [{data:cl},{data:tr}]=await Promise.all([sb.from('cr_claims').select('*').eq('league_id',Z.L.id).order('created_at',{ascending:false}),sb.from('cr_trades').select('*').eq('league_id',Z.L.id).order('created_at',{ascending:false})]);
   Z.claims=cl||[];Z.trades=tr||[];
   const names=[...new Set((Z.cur.block_cards||[]).map(c=>c.event_name))];
-  const {data:b}=await sb.from('bouts').select('id,event_name,bout_date,status,fighter_a,fighter_b,winner_id,method,is_title_fight,scheduled_rounds,bout_order').in('event_name',names);
+  const {data:b}=await sb.from('bouts').select('id,event_name,bout_date,status,fighter_a,fighter_b,winner_id,method,is_title_fight,scheduled_rounds,bout_order').in('event_name',names).neq('status','cancelled');
   const dates=new Set((Z.cur.block_cards||[]).map(c=>c.date));
   Z.bouts=(b||[]).filter(x=>dates.has(x.bout_date));
   Z.perf={};
