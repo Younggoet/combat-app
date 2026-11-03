@@ -2492,10 +2492,12 @@ function rankDisplay(f, filterValue){
 }
 function isDivisionFilter(v){ return DIVISION_LIST.includes(v); }
 
+let noBoutIds = new Set();
 function rankedAvailable(filterValue, draftedIds){
   const divisionFilter = isDivisionFilter(filterValue);
   return fighters
     .filter((f) => !draftedIds[f.id])
+    .filter((f) => !noBoutIds.has(f.id))
     .filter((f) => !(leagueMode === "cardRedraft" && crPoolIds) || crPoolIds.has(f.id))
     .filter((f) => !divisionFilter || f.announced_weight_class === filterValue)
     .slice()
@@ -2542,6 +2544,12 @@ async function loadFighterPool(){
         if (!nextBoutById[b.fighter_a]) nextBoutById[b.fighter_a] = { date: b.bout_date, event: b.event_name, oppId: b.fighter_b, title: b.is_title_fight, ml: b.fighter_a_moneyline };
         if (!nextBoutById[b.fighter_b]) nextBoutById[b.fighter_b] = { date: b.bout_date, event: b.event_name, oppId: b.fighter_a, title: b.is_title_fight, ml: b.fighter_b_moneyline };
       });
+      // Fighters whose only bout was cancelled aren't draftable.
+      try {
+        const { data: cb } = await CombatAuth.client.from("bouts").select("fighter_a, fighter_b").eq("status", "cancelled").limit(500);
+        noBoutIds = new Set();
+        (cb || []).forEach((b) => { [b.fighter_a, b.fighter_b].forEach((id) => { if (!nextBoutById[id]) noBoutIds.add(id); }); });
+      } catch (e) { noBoutIds = new Set(); }
     } catch (e) { nextBoutById = {}; }
 
     // Overall Rank is a literal ranking, not a score: sort everyone by
