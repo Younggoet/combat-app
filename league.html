@@ -98,6 +98,10 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold2);out
 @media (min-width:900px) and (max-width:1199px){.dgrid{grid-template-columns:repeat(2,1fr)}.dcol:nth-child(3){grid-column:1/-1}}
 
 .dkwrap{padding:0 32px 60px;max-width:1360px;margin:0 auto}
+.dkgrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:start}
+.cside{position:sticky;top:12px}
+.cfeed{max-height:calc(100vh - 230px);min-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-right:4px}
+@media (max-width:1199px){.dkgrid{grid-template-columns:minmax(0,1fr)}.cside{display:none}}
 .dkcard{--c:16px;clip-path:var(--P);background:rgba(212,175,55,.67);position:relative;isolation:isolate}
 .dkcard::after{content:'';position:absolute;inset:1.5px;--c:15px;clip-path:var(--P);background:#16161A;z-index:-1}
 .dkbar{padding:12px 16px;background:rgba(255,255,255,.03)}
@@ -203,6 +207,7 @@ async function loadMsgs(){
   if(!Z.L)return;
   const {data}=await sb.from('chat_messages').select('*').eq('league_id',Z.L.id).order('created_at',{ascending:true}).limit(200);
   Z.msgs=data||[];
+  try{const {data:mv}=await sb.from('cr_moves').select('*').eq('league_id',Z.L.id).order('created_at',{ascending:true}).limit(100);Z.moves=mv||[]}catch(_){Z.moves=Z.moves||[]}
 }
 
 
@@ -270,6 +275,21 @@ function dtab(ro){const L=Z.L,tm=L.team_count,fg=L.fighters_per_team,comm=isComm
   return `<div class="dgrid"><div class="dcol">${sd+inv+cards+db}</div><div class="dcol">${pos+wvc}</div><div class="dcol">${ls+ss}</div></div>`}
 function chatTab(){
   return secH('LEAGUE CHAT',`<span>${esc(Z.L.name)} · ${Z.teams.length} teams</span>`)+ob(`<div class="col" style="gap:14px;min-height:260px" id="msgs">${Z.msgs.length?Z.msgs.map(m=>{const t=Z.teams.find(x=>x.name===m.display_name||x.name==='Team '+m.display_name);return `<div class="msg">${t?tavT(t,32):tavL(m.display_name,32,'#8C8982')}<div style="min-width:0"><div class="small"><b style="color:${t?colorOf(t):'var(--mut)'}">${esc(m.display_name)}</b> <span class="dim">${esc(new Date(m.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}))}</span></div><div style="line-height:1.4;word-break:break-word">${esc(m.body)}</div></div></div>`}).join(''):'<div class="mut">Be the first to say hi.</div>'}</div>`,{cls:'md',pad:'14px'})+`<form id="cf" class="row" style="gap:8px"><input class="fi grow" id="ci" placeholder="Message the league" autocomplete="off" maxlength="500"><button class="btn g" type="submit">SEND</button></form>`}
+
+function chatSide(){
+  const items=[...(Z.msgs||[]).map(m=>({t:+new Date(m.created_at),k:'m',m})),...(Z.moves||[]).map(m=>({t:+new Date(m.created_at),k:'v',m}))].sort((a,b)=>a.t-b.t).slice(-80);
+  const tm=x=>new Date(x).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  const tn=id=>{const t=Z.teams.find(x=>x.id===id);return t?esc(t.name):'A team'};
+  const fr=(id,sign)=>{const f=Z.fmap[id];if(!f)return '';return `<div class="row" style="gap:10px;margin-top:8px"><b style="width:14px;text-align:center;color:${sign==='+'?'#3DDC84':'#FF6A78'}">${sign==='+'?'+':'\u2212'}</b>${fgv(f,30)}<div style="min-width:0"><div class="small" style="line-height:1.2">${esc(f.full_name)}</div><div class="tiny dim">${esc(f.announced_weight_class||'')}</div></div></div>`};
+  const mv=m=>{const me=m.meta||{};let b='';
+    if(m.kind==='claim')b=`<div class="small"><b>${tn(me.team)}</b> made a free agent move</div>${fr(me.add,'+')}${fr(me.drop,'-')}`;
+    else if(m.kind==='trade')b=`<div class="small"><b>${tn(me.from)}</b> and <b>${tn(me.to)}</b> made a trade</div>${(me.get||[]).map(i=>fr(i,'+')).join('')}${(me.send||[]).map(i=>fr(i,'-')).join('')}<div class="tiny dim" style="margin-top:6px">${esc(m.body)}</div>`;
+    else b=`<div class="small">${esc(m.body)}</div>`;
+    return `<div style="border-left:2px solid #2f3a63;padding-left:10px"><div class="tiny dim">${tm(m.created_at)}</div>${b}</div>`};
+  const ms=m=>{const t=Z.teams.find(x=>x.name===m.display_name||x.name==='Team '+m.display_name);return `<div class="msg">${t?tavT(t,30):tavL(m.display_name,30,'#8C8982')}<div style="min-width:0"><div class="small"><b style="color:${t?colorOf(t):'var(--mut)'}">${esc(m.display_name)}</b> <span class="dim">${tm(m.created_at)}</span></div><div style="line-height:1.4;word-break:break-word">${esc(m.body)}</div></div></div>`};
+  const ann=winMsg();
+  return ob(`<div class="row" style="align-items:baseline;margin-bottom:10px"><b class="h" style="font-size:18px;letter-spacing:1px">LEAGUE CHAT</b><span class="grow"></span><span class="tiny dim">${Z.teams.length} teams</span></div>${ann?`<div class="tiny" style="margin-bottom:10px;padding:8px 10px;border:1px solid ${Z.win&&Z.win.reason==='open'?'#2f5a45':'#5a3a3a'};background:#10172b;color:#d7dbe8;line-height:1.4">${ann}</div>`:''}<div class="cfeed" id="cfeed">${items.length?items.map(x=>x.k==='m'?ms(x.m):mv(x.m)).join(''):'<div class="mut small">Roster moves, trades and messages show up here.</div>'}</div><form id="cf2" class="row" style="gap:8px;margin-top:12px"><input class="fi grow" id="ci2" placeholder="Message the league" autocomplete="off" maxlength="500"><button class="btn g" type="submit">SEND</button></form>`,{cls:'md',pad:'14px'})}
+function refreshSide(){const a=document.getElementById('chatside');if(!a)return false;const f=a.querySelector('#cfeed'),near=!f||f.scrollHeight-f.scrollTop-f.clientHeight<80,v=(a.querySelector('#ci2')||{}).value||'';a.innerHTML=chatSide();const i=a.querySelector('#ci2');if(i)i.value=v;const nf=a.querySelector('#cfeed');if(nf&&near)nf.scrollTop=nf.scrollHeight;return true}
 const ccol=f=>f&&f.is_champion?'#D4AF37':wcol(f&&f.announced_weight_class);
 const fgv=(f,sz)=>`<div class="oc fav" style="--s:${sz}px;--dc:${f&&f.is_champion?'#D4AF37':wcol(f&&f.announced_weight_class)};cursor:${f&&f.id?'pointer':'default'}"${f&&f.id?` data-a="fprof" data-v="${f.id}"`:''}><i class="oc" style="${f&&f.photo_url?`background:#0F0F12 url('${esc(f.photo_url)}') center/cover`:''}"></i></div>`;
 const teamOf=id=>Z.teams.find(t=>t.id===id);
@@ -566,7 +586,8 @@ function poolTab(){const tk=taken(),pool=((Z.cur&&Z.cur.pool)||[]).filter(i=>!tk
   const rows=pool.filter(i=>Z.dv==='ALL'||Z.fmap[i].announced_weight_class===Z.dv).sort((a,b)=>(blkAll(a)||9999)-(blkAll(b)||9999));
   return `<div class="seg">${wcs.map(d=>`<button class="chip sm ${Z.dv===d?'on':''}" data-a="dv" data-v="${esc(d)}">${esc(d)}</button>`).join('')}</div><div class="tiny dim">Undrafted fighters on Block ${cb()} cards · ${rows.length} shown. Your roster is full, so every add needs a drop.</div>`+ob(rows.length?rows.map((i,k)=>{const b=boutOf(i),lk=lockedF(i);return `<div class="row" style="padding:9px 0;${k?'border-top:1px solid #26262C':''}">${lk?'<div style="width:36px;flex:none"></div>':`<button class="ibtn" style="background:rgba(212,175,55,.18);color:var(--gold2);width:36px;height:36px" data-a="addp" data-v="${i}" aria-label="Add">+</button>`}${fgv(Z.fmap[i],42)}<div class="grow"><div class="nm" style="font-size:16px">${esc(fnm(i))}${isNewF(i)?newTag:''}</div><div class="tiny mut">${esc(Z.fmap[i].announced_weight_class||'')}${b?' · '+esc(fmtD(b.bout_date)):''}${lk?' · locked':''}</div></div><div style="text-align:right;max-width:104px"><div class="pts" style="font-size:20px">${blkDiv(i)?'#'+blkDiv(i):'—'}</div><div class="tiny dim" style="text-align:right;line-height:1.2">${esc(Z.fmap[i].announced_weight_class||'')} block rank</div></div></div>`}).join(''):'<div class="mut small" style="padding:10px 0">Everyone on these cards has been drafted.</div>',{cls:'md',pad:'4px 12px'})}
 const wTime=t=>new Date(t).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'});
-function winBar(){const w=Z.win;if(!w||w.reason==='draft')return '';const m=w.reason==='open'?`Roster moves are open · trades, claims and drops close ${wTime(w.closes_at)}, when the first fight of ${esc(w.card||'the card')} starts`:w.reason==='frozen'?`Roster moves are closed · waivers process and moves reopen ${wTime(w.opens_at)}`:'No cards left in this block · roster moves are closed';return `<div class="tiny" style="margin:0 0 10px;padding:9px 12px;border:1px solid ${w.reason==='open'?'#2f5a45':'#5a3a3a'};background:#10172b;color:#d7dbe8;line-height:1.4">${m}</div>`}
+function winMsg(){const w=Z.win;if(!w||w.reason==='draft')return '';return w.reason==='open'?`Roster moves are open · trades, claims and drops close ${wTime(w.closes_at)}, when the first fight of ${esc(w.card||'the card')} starts`:w.reason==='frozen'?`Roster moves are closed · waivers process and moves reopen ${wTime(w.opens_at)}`:'No cards left in this block · roster moves are closed'}
+function winBar(){const w=Z.win,m=winMsg();if(!m)return '';return `<div class="tiny" style="margin:0 0 10px;padding:9px 12px;border:1px solid ${w.reason==='open'?'#2f5a45':'#5a3a3a'};background:#10172b;color:#d7dbe8;line-height:1.4">${m}</div>`}
 function playersS(){return `<div class="sec pad">${winBar()}${isDesk()?'':`<div class="seg">${[['pool','POOL'],['trades','TRADES']].map(([k,l])=>`<button class="chip ${Z.ps===k?'on':''}" data-a="ps" data-v="${k}">${l}</button>`).join('')}</div>`}${Z.ps==='pool'?poolTab():tradesTab()}</div>`}
 function comingS(t,d){return `<div class="sec pad">${ob(`<div class="h" style="font-size:20px">${t}</div><div class="mut" style="margin-top:6px">${d}</div>`,{cls:'md',pad:'18px'})}</div>`}
 function bracketTree(rounds,col){
@@ -796,7 +817,7 @@ function sSeasonDesk(){const L=Z.L,me=myTeam(),t=Z.dt;
   else if(t==='trades')body=tradesDesk()
   else if(t==='history')body=`<div class="sec">${historyTab()}</div>`;
   else body=leagueS();
-  return `<div class="dkwrap"><div class="row" style="gap:14px;align-items:baseline;padding:22px 0 14px"><span class="h gold" style="font-size:34px;letter-spacing:2px">COMBAT</span><span class="small" style="letter-spacing:2px;color:var(--gold2)">UFC CARD REDRAFT · ${esc(L.name.toUpperCase())}</span><span class="grow"></span>${myTeam()?`<a class="small" style="text-decoration:none;color:var(--gold2);margin-right:22px;letter-spacing:1px" href="#" data-a="tm_edit">EDIT TEAM</a>`:''}<a class="small mut" style="text-decoration:none" href="#" data-a="go" data-v="home">ALL LEAGUES</a></div><div class="seg" style="flex-wrap:wrap;overflow:visible">${tabs.map(([k,l])=>`<button class="chip ${t===k?'on':''}" data-a="dk" data-v="${k}">${l}</button>`).join('')}</div><div style="margin-top:18px" class="dkbody">${body}</div></div>`}
+  return `<div class="dkwrap"><div class="row" style="gap:14px;align-items:baseline;padding:22px 0 14px"><span class="h gold" style="font-size:34px;letter-spacing:2px">COMBAT</span><span class="small" style="letter-spacing:2px;color:var(--gold2)">UFC CARD REDRAFT · ${esc(L.name.toUpperCase())}</span><span class="grow"></span>${myTeam()?`<a class="small" style="text-decoration:none;color:var(--gold2);margin-right:22px;letter-spacing:1px" href="#" data-a="tm_edit">EDIT TEAM</a>`:''}<a class="small mut" style="text-decoration:none" href="#" data-a="go" data-v="home">ALL LEAGUES</a></div><div class="seg" style="flex-wrap:wrap;overflow:visible">${tabs.map(([k,l])=>`<button class="chip ${t===k?'on':''}" data-a="dk" data-v="${k}">${l}</button>`).join('')}</div><div class="dkgrid" style="margin-top:18px"><div class="dkbody">${body}</div><aside class="cside" id="chatside">${chatSide()}</aside></div></div>`}
 matchMedia('(min-width:900px)').addEventListener('change',()=>{if(Z.v==='league')render()});
 function sSeason(){if(isDesk())return sSeasonDesk();const L=Z.L,me=myTeam(),t=Z.tab;
   const TT={home:[me?me.name:L.name,L.name+' · Block '+cb()+' of 10'],fight:['Fight Night','Block '+cb()+' cards'],match:['Matchup','Block '+cb()],players:['Fighters','Pool and trades'],league:['League',L.name+' · Card Redraft']};
@@ -828,7 +849,7 @@ window.addEventListener('unhandledrejection',e=>track('error',{m:String((e.reaso
 setTimeout(()=>track('session',{w:innerWidth}),1500);
 function navSave(){try{if(Z.v==='league'&&Z.L){localStorage.setItem('cb_nav',JSON.stringify({lid:Z.L.id,tab:Z.tab,fs:Z.fs,ls:Z.ls,dt:Z.dt,card:Z.card,ps:Z.ps,sub:Z.sub,dv:Z.dv}))}else if(Z.v==='home'){localStorage.removeItem('cb_nav')}}catch(e){}}
 function render(){navSave();const v=Z.v;
-  $('#app').innerHTML=v==='boot'?sBoot():v==='signin'?sSignin():v==='name'?sName():v==='home'?sHome():v==='create'?sCreate():v==='league'?sLeague():v==='lobby'?sLobby():v==='join'?sJoin():'';
+  {$('#app').innerHTML=v==='boot'?sBoot():v==='signin'?sSignin():v==='name'?sName():v==='home'?sHome():v==='create'?sCreate():v==='league'?sLeague():v==='lobby'?sLobby():v==='join'?sJoin():'';const cf=$('#cfeed');if(cf)cf.scrollTop=cf.scrollHeight}
   const n=$('#cln');if(n)n.addEventListener('input',()=>{Z.c.name=n.value});
   const u=$('#un');if(u)u.addEventListener('input',()=>{Z.dn=u.value});
   trView();
@@ -957,13 +978,14 @@ document.addEventListener('click',async e=>{let el=e.target.closest('[data-a]');
   else if(a==='do_delete'){await sb.from('teams').delete().eq('league_id',Z.L.id);const {error}=await sb.from('leagues').delete().eq('id',Z.L.id);if(error){toast("Couldn't delete the league");await loadLeague(Z.L.id);render();return}await loadMine();toast('League deleted');go('home')}
   }catch(err){console.error(err);toast('Something went wrong. Try again.')}
 });
-document.addEventListener('submit',async e=>{if(e.target.id!=='cf')return;e.preventDefault();const i=$('#ci'),b=(i.value||'').trim();if(!b)return;i.value='';
-  const {error}=await sb.from('chat_messages').insert({league_id:Z.L.id,display_name:teamName(Z.dn),body:b});if(error){toast("Couldn't send");return}await loadMsgs();render();setTimeout(()=>{const x=$('#ci');x&&x.focus()},0)});
+document.addEventListener('submit',async e=>{if(e.target.id!=='cf'&&e.target.id!=='cf2')return;e.preventDefault();const side=e.target.id==='cf2',i=side?$('#ci2'):$('#ci'),b=(i.value||'').trim();if(!b)return;i.value='';
+  const {error}=await sb.from('chat_messages').insert({league_id:Z.L.id,display_name:teamName(Z.dn),body:b});if(error){toast("Couldn't send");return}await loadMsgs();if(side&&refreshSide()){const f=$('#cfeed');if(f)f.scrollTop=f.scrollHeight;setTimeout(()=>{const x=$('#ci2');x&&x.focus()},0);return}render();setTimeout(()=>{const x=$('#ci');x&&x.focus()},0)});
 // Live scoring: during a card, reload scores every 45s so Matchup, My Corner, Fight Night and the pool update on their own.
 setInterval(async()=>{if(Z.v!=='league'||!Z.L||document.hidden||Z.liveBusy)return;const el=document.activeElement;if(el&&el.matches&&el.matches('input,textarea'))return;if($('#sheet')&&$('#sheet').classList.contains('on'))return;if(PV&&PV.mode==='live')return;
   const today=new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'}),yest=new Date(Date.now()-864e5).toLocaleDateString('en-CA',{timeZone:'America/New_York'});
   if(!(Z.bouts||[]).some(b=>(b.bout_date===today||b.bout_date===yest)&&b.status!=='completed'&&b.status!=='cancelled'))return;
   Z.liveBusy=true;try{await loadSeason();render()}catch(e){}Z.liveBusy=false},45000);
+setInterval(async()=>{if(Z.v==='league'&&isDesk()&&document.getElementById('chatside')&&!document.hidden&&!document.activeElement?.matches('input')){const n=(Z.msgs||[]).length+(Z.moves||[]).length;await loadMsgs();if((Z.msgs||[]).length+(Z.moves||[]).length!==n)refreshSide()}},8000);
 setInterval(async()=>{if(Z.v==='league'&&Z.sub==='chat'&&!document.hidden&&!document.activeElement?.matches('input')){const n=Z.msgs.length;await loadMsgs();if(Z.msgs.length!==n)render()}},6000);
 
 async function refreshRoom(force){
