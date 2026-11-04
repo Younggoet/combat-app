@@ -329,6 +329,7 @@ function manageTab(){const L=Z.L,comm=isComm(),conf=Z.conf;let h=teamBlock()+sec
 async function loadSeason(){
   if(!Z.cur||Z.cur.status!=='complete')return;
   try{await sb.rpc('cr_refresh_scores',{p_league:Z.L.id});await sb.rpc('cr_process_waivers',{p_league:Z.L.id})}catch(_){}
+  try{const {data:wd}=await sb.rpc('cr_window',{p_league:Z.L.id});Z.win=(wd&&wd[0])||null}catch(_){}
   const ids=Z.teams.map(t=>t.id);
   const [{data:m},{data:ro}]=await Promise.all([sb.from('cr_matchups').select('*').eq('league_id',Z.L.id).order('block_no').order('slot'),sb.from('cr_rosters').select('*').in('team_id',ids)]);
   Z.mus=m||[];Z.ros=ro||[];
@@ -564,7 +565,9 @@ function tradesTab(){const me=myTeam(),now=Date.now();
 function poolTab(){const tk=taken(),pool=((Z.cur&&Z.cur.pool)||[]).filter(i=>!tk.has(i)&&Z.fmap[i]&&(!Z.bouts.length||boutOf(i))),wcs=['ALL',...new Set(pool.map(i=>Z.fmap[i].announced_weight_class).filter(Boolean))];
   const rows=pool.filter(i=>Z.dv==='ALL'||Z.fmap[i].announced_weight_class===Z.dv).sort((a,b)=>(blkAll(a)||9999)-(blkAll(b)||9999));
   return `<div class="seg">${wcs.map(d=>`<button class="chip sm ${Z.dv===d?'on':''}" data-a="dv" data-v="${esc(d)}">${esc(d)}</button>`).join('')}</div><div class="tiny dim">Undrafted fighters on Block ${cb()} cards · ${rows.length} shown. Your roster is full, so every add needs a drop.</div>`+ob(rows.length?rows.map((i,k)=>{const b=boutOf(i),lk=lockedF(i);return `<div class="row" style="padding:9px 0;${k?'border-top:1px solid #26262C':''}">${lk?'<div style="width:36px;flex:none"></div>':`<button class="ibtn" style="background:rgba(212,175,55,.18);color:var(--gold2);width:36px;height:36px" data-a="addp" data-v="${i}" aria-label="Add">+</button>`}${fgv(Z.fmap[i],42)}<div class="grow"><div class="nm" style="font-size:16px">${esc(fnm(i))}${isNewF(i)?newTag:''}</div><div class="tiny mut">${esc(Z.fmap[i].announced_weight_class||'')}${b?' · '+esc(fmtD(b.bout_date)):''}${lk?' · locked':''}</div></div><div style="text-align:right;max-width:104px"><div class="pts" style="font-size:20px">${blkDiv(i)?'#'+blkDiv(i):'—'}</div><div class="tiny dim" style="text-align:right;line-height:1.2">${esc(Z.fmap[i].announced_weight_class||'')} block rank</div></div></div>`}).join(''):'<div class="mut small" style="padding:10px 0">Everyone on these cards has been drafted.</div>',{cls:'md',pad:'4px 12px'})}
-function playersS(){return `<div class="sec pad">${isDesk()?'':`<div class="seg">${[['pool','POOL'],['trades','TRADES']].map(([k,l])=>`<button class="chip ${Z.ps===k?'on':''}" data-a="ps" data-v="${k}">${l}</button>`).join('')}</div>`}${Z.ps==='pool'?poolTab():tradesTab()}</div>`}
+const wTime=t=>new Date(t).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'});
+function winBar(){const w=Z.win;if(!w||w.reason==='draft')return '';const m=w.reason==='open'?`Roster moves are open · trades, claims and drops close ${wTime(w.closes_at)}, when the first fight of ${esc(w.card||'the card')} starts`:w.reason==='frozen'?`Roster moves are closed · waivers process and moves reopen ${wTime(w.opens_at)}`:'No cards left in this block · roster moves are closed';return `<div class="tiny" style="margin:0 0 10px;padding:9px 12px;border:1px solid ${w.reason==='open'?'#2f5a45':'#5a3a3a'};background:#10172b;color:#d7dbe8;line-height:1.4">${m}</div>`}
+function playersS(){return `<div class="sec pad">${winBar()}${isDesk()?'':`<div class="seg">${[['pool','POOL'],['trades','TRADES']].map(([k,l])=>`<button class="chip ${Z.ps===k?'on':''}" data-a="ps" data-v="${k}">${l}</button>`).join('')}</div>`}${Z.ps==='pool'?poolTab():tradesTab()}</div>`}
 function comingS(t,d){return `<div class="sec pad">${ob(`<div class="h" style="font-size:20px">${t}</div><div class="mut" style="margin-top:6px">${d}</div>`,{cls:'md',pad:'18px'})}</div>`}
 function bracketTree(rounds,col){
   /* rounds: [{label,sub,ms:[{a,b,feed:[idx..]}]}]. a/b: {seed,t,bye} or {txt}. Cards are laid out by feeder position. */
@@ -874,7 +877,7 @@ document.addEventListener('change',e=>{const t=e.target;if(!t||t.id!=='tmfile'||
 document.addEventListener('input',e=>{const t=e.target;if(t&&t.id==='tmcustom'&&Z.tm){tmName();Z.tm.color=t.value;const b=$('#tmbox');if(b){const pv=b.querySelector('.tav');if(pv)pv.style.setProperty('--tc',t.value);const h=b.querySelector('.h');if(h)h.style.color=t.value}}});
 document.addEventListener('change',e=>{const t=e.target;if(t&&t.id==='tmcustom'&&Z.tm){tmName();Z.tm.color=t.value;tmPaint()}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='pvtxt'){e.preventDefault();pvSend()}});
-document.addEventListener('click',async e=>{let el=e.target.closest('[data-a]');if(el&&el.dataset.a==='fprof'&&el.closest('#sheet'))el=el.parentElement.closest('[data-a]');if(!el)return;const a=el.dataset.a,v=el.dataset.v,c=Z.c,flow=['name','start','type','size','draft'];track('tap',{a:a});
+document.addEventListener('click',async e=>{let el=e.target.closest('[data-a]');if(el&&el.dataset.a==='fprof'&&el.closest('#sheet'))el=el.parentElement.closest('[data-a]');if(!el)return;const a=el.dataset.a,v=el.dataset.v,c=Z.c,flow=['name','start','type','size','draft'];track('tap',{a:a});if((['doadd','tr_new','tr_send_offer','tr_acc_go'].includes(a)||(a==='tr_act'&&v==='accept'))&&Z.win&&Z.win.reason==='frozen'){toast('Roster moves are closed until Tuesday');return}
   try{
   if(a==='go'){if(v==='home'){await loadMine();}go(v)}
   else if(a==='start'){Z.c={name:'',start:'new',sz:2,dt:'snake'};Z.step='name';go('create')}
