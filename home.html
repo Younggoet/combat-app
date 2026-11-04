@@ -177,7 +177,7 @@ footer a{color:var(--faint);margin:0 8px}
 <script>
 const sb = window.CombatAuth ? window.CombatAuth.client : null;
 const NEWS_ENDPOINT = "https://combat-sync.netlify.app/.netlify/functions/get-news";
-const DC = {"Heavyweight":"#E2283C","Light Heavyweight":"#B57BFF","Middleweight":"#3A7BFF","Welterweight":"#F4F4F2","Lightweight":"#B5452B","Featherweight":"#1FB5A3","Bantamweight":"#9ACD32","Flyweight":"#fbec50","Women's Strawweight":"#E58CB0","Women's Flyweight":"#E0239A","Women's Bantamweight":"#6EC6F0"};
+const DC = {"Heavyweight":"#E2283C","Light Heavyweight":"#B57BFF","Middleweight":"#3A7BFF","Welterweight":"#F4F4F2","Lightweight":"#B5452B","Featherweight":"#1FB5A3","Bantamweight":"#9ACD32","Flyweight":"#e4c7b7","Women's Strawweight":"#E58CB0","Women's Flyweight":"#E0239A","Women's Bantamweight":"#6EC6F0"};
 const SHORT = {"Heavyweight":"HW","Light Heavyweight":"LHW","Middleweight":"MW","Welterweight":"WW","Lightweight":"LW","Featherweight":"FW","Bantamweight":"BW","Flyweight":"FLW","Women's Strawweight":"WSW","Women's Flyweight":"WFLW","Women's Bantamweight":"WBW"};
 const W = { sig: 0.1, td: 2, kd: 8, ctrl: 1, sub: 1, rev: 6, tdDef: 0.5 }, OPP_TD = 3;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
