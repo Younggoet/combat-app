@@ -693,17 +693,18 @@ function fmtNum(x, d){
   return Number(x).toFixed(d === undefined ? 1 : d);
 }
 function fmtRecord(f){
+  if (f.pro_wins !== null && f.pro_wins !== undefined && f.pro_losses !== null && f.pro_losses !== undefined) return `${f.pro_wins}-${f.pro_losses}-${f.pro_draws || 0}`;
   if (f.wins === null || f.wins === undefined || f.losses === null || f.losses === undefined) return "—";
   return `${f.wins}-${f.losses}-${f.draws || 0}`;
 }
 // Tale-of-the-tape height: stored as decimal inches (UFC.com's own bio
-// format, e.g. 70 for 5'10") -> "5'10&Prime;".
+// format, e.g. 70 for 5'10") -> "5'10\"".
 function fmtHeight(totalInches){
   if (totalInches === null || totalInches === undefined) return "—";
   const whole = Math.round(totalInches);
   const ft = Math.floor(whole / 12);
   const inch = whole % 12;
-  return `${ft}&#39;${inch}&Prime;`;
+  return `${ft}'${inch}"`;
 }
 function fmtClock(totalSeconds){
   const s = Math.max(0, Math.round(totalSeconds));
@@ -736,16 +737,15 @@ function fmtFightsPerYear(f){
 const TAPE_LBS = { "Heavyweight":265, "Light Heavyweight":205, "Middleweight":185, "Welterweight":170, "Lightweight":155, "Featherweight":145, "Bantamweight":135, "Flyweight":125, "Women's Bantamweight":135, "Women's Flyweight":125, "Women's Strawweight":115 };
 function tapeCell(v, l, hi){
   const ol = hi ? "#D4AF37" : "rgba(255,255,255,.28)";
-  const cut = (n) => `polygon(${n}px 0,calc(100% - ${n}px) 0,100% ${n}px,100% calc(100% - ${n}px),calc(100% - ${n}px) 100%,${n}px 100%,0 calc(100% - ${n}px),0 ${n}px)`;
   const fill = hi ? "linear-gradient(155deg,rgba(212,175,55,.3),rgba(212,175,55,.1)),#131317" : "#22232a";
-  return `<span style="display:inline-block;vertical-align:top;padding:1.5px;background:${ol};clip-path:${cut(10)};"><span style="display:block;clip-path:${cut(9)};background:${fill};padding:5px 10px 4px;min-width:48px;text-align:center;"><b class="h-font" style="display:block;font-size:${hi ? 20 : 17}px;font-weight:700;line-height:1.05;color:${hi ? "#E8C93A" : "#F5F2EA"};">${esc(String(v))}</b><span class="h-font" style="display:block;font-size:10px;letter-spacing:1.2px;color:${hi ? "#D4AF37" : "#B8B5AE"};margin-top:2px;">${l}</span></span></span>`;
+  return `<span class="ob" style="--c:10px;--ol:${ol};display:inline-block;vertical-align:top;"><span class="i" style="display:block;--c:9px;--fill:${fill};--pad:5px 11px 4px;text-align:center;min-width:48px;"><b class="h-font" style="display:block;font-size:${hi ? 20 : 17}px;font-weight:700;line-height:1.05;color:${hi ? "#E8C93A" : "#F5F2EA"};">${esc(String(v))}</b><span class="h-font" style="display:block;font-size:9px;letter-spacing:1.2px;color:${hi ? "#D4AF37" : "#9A9AA2"};margin-top:2px;">${esc(String(l))}</span></span></span>`;
 }
 function tapeFighter(f, right){
   if (!f) return `<div></div>`;
   const c = [];
   c.push(tapeCell(fmtRecord(f), "RECORD", true));
   if (f.height_cm) c.push(tapeCell(fmtHeight(f.height_cm / 2.54), "HEIGHT"));
-  if (f.reach_cm) c.push(tapeCell(Math.round(f.reach_cm / 2.54) + "&Prime;", "REACH"));
+  if (f.reach_cm) c.push(tapeCell(Math.round(f.reach_cm / 2.54) + '"', "REACH"));
   if (TAPE_LBS[f.announced_weight_class]) c.push(tapeCell(TAPE_LBS[f.announced_weight_class], "LBS"));
   if (f.avg_sig_strikes !== null && f.avg_sig_strikes !== undefined) c.push(tapeCell(Number(f.avg_sig_strikes).toFixed(1), "SIG STR"));
   if (f.avg_takedowns !== null && f.avg_takedowns !== undefined) c.push(tapeCell(Number(f.avg_takedowns).toFixed(1), "TD"));
@@ -981,7 +981,7 @@ async function loadTeams(){
   const me = teams.find((t) => t.owner_user_id === userId);
   userTeamId = me ? me.id : null; userTeamName = me ? me.name : "";
 }
-const STAT_COLS = "id, full_name, nickname, announced_weight_class, photo_url, current_rating, wins, losses, finishes, avg_sig_strikes, avg_takedowns, avg_knockdowns, avg_control_seconds, avg_sub_attempts, avg_reversals, td_def_pct, is_champion, date_of_birth, nationality, team, stance, height_cm, reach_cm";
+const STAT_COLS = "pro_wins, pro_losses, pro_draws, id, full_name, nickname, announced_weight_class, photo_url, current_rating, wins, losses, finishes, avg_sig_strikes, avg_takedowns, avg_knockdowns, avg_control_seconds, avg_sub_attempts, avg_reversals, td_def_pct, is_champion, date_of_birth, nationality, team, stance, height_cm, reach_cm";
 async function loadFighterPool(){
   if (fighters.length || fighterPoolError) return;
   try {
