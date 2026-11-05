@@ -322,6 +322,8 @@
   .pool-table-scroll{overflow-x:auto;}
   .pool-grid{display:grid;grid-template-columns:1.8fr 0.9fr 0.8fr 0.8fr 0.6fr 0.6fr 0.8fr 0.8fr 0.6fr 0.8fr 0.8fr 0.8fr 0.9fr 1fr 0.5fr;min-width:1140px;}
   .pool-head{padding:12px 16px;background:var(--panel-3);border-bottom:1px solid var(--border-2);font-size:10px;letter-spacing:1px;color:#6A6A72;}
+  .draft-plus{flex:0 0 auto;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;background:var(--gold);cursor:pointer;clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%);}
+  .draft-plus:hover{filter:brightness(1.15);}
   button.pool-row-btn{all:unset;display:contents;cursor:pointer;}
   .pool-cell{padding:13px 16px;border-bottom:1px solid var(--border-2);font-size:13.5px;color:#C4C1B8;display:flex;align-items:center;}
   .pool-row-btn:hover .pool-cell{background:rgba(255,255,255,0.02);}
@@ -1191,7 +1193,6 @@ function renderDraft(){
       ${upNext.length ? ob(`<div class="h-font" style="font-size:14px;letter-spacing:2px;color:#9A9AA2;margin-bottom:10px;">BEST AVAILABLE AFTER THIS PICK</div>
         <div style="display:flex;gap:18px;flex-wrap:wrap;">${upNext.map((f) => `<div data-profile="${f.id}" style="display:flex;align-items:center;gap:10px;cursor:pointer;">${octagonRingAvatar(f, fighterDc(f), 38)}<div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div><div style="font-size:11px;color:#B8B5AE;">${esc(DIV_SHORT[f.announced_weight_class] || "")} · ${fmtRank(overallRankById[f.id])}</div></div></div>`).join("")}</div>`, { cls: "md", pad: "16px 22px" }) : ""}
       </div>
-      <button id="lockBtn" class="lock-pick-btn oct-btn" style="background:var(--red);color:#F5F2EA;cursor:pointer;">LOCK PICK — ${esc(spotlight.full_name.toUpperCase())}</button>
       <div class="error" id="pickError" style="display:none;"></div>`;
   } else {
     stageMainHtml = ob(`<div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;text-align:center;">Waiting on ${esc(teamName(onClockTeam))}…</div>`, { cls: "lg", pad: "30px" });
@@ -1265,7 +1266,7 @@ function renderDraft(){
   const poolRows = searched.slice(0, poolLimit).map((f) => {
     const dc = fighterDc(f), isSpot = !!spotlight && f.id === spotlight.id, hl = isSpot ? "background:rgba(212,175,55,0.06);" : "";
     return `<button class="pool-row-btn" data-fighter-id="${f.id}">
-      <div style="${hl}box-shadow:inset 6px 0 0 ${dc};padding-left:14px;" class="pool-cell fname-cell" data-profile="${f.id}">${octagonRingAvatar(f, dc, 42)}<span class="h-font" style="font-size:14px;font-weight:600;color:${isSpot ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span>${isNewF(f.id) ? `<span class="newtag">NEW</span>` : ""}</div>
+      <div style="${hl}box-shadow:inset 6px 0 0 ${dc};padding-left:14px;" class="pool-cell fname-cell" data-profile="${f.id}">${isMyTurn ? `<span class="draft-plus" data-draft="${f.id}" role="button" aria-label="Draft ${esc(f.full_name)}" title="Draft ${esc(f.full_name)}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#101012" stroke-width="3.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>` : ""}${octagonRingAvatar(f, dc, 42)}<span class="h-font" style="font-size:14px;font-weight:600;color:${isSpot ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span>${isNewF(f.id) ? `<span class="newtag">NEW</span>` : ""}</div>
       <div style="${hl}" class="pool-cell cell-div"><div class="divtag2" style="background:${dc}2A;color:${txc(dc)};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div></div>
       <div style="${hl}" class="pool-cell cell-record" data-label="REC">${esc(fmtRecord(f))}</div>
       <div style="${hl}" class="pool-cell cell-sigstr">${esc(fmtNum(f.avg_sig_strikes))}</div>
@@ -1338,6 +1339,7 @@ function renderDraft(){
   document.querySelectorAll(".pool-row-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const qb = e.target.closest("[data-q]"); if (qb) { toggleQueue(qb.dataset.q); return; }
+      const dp = e.target.closest("[data-draft]"); if (dp) { e.stopPropagation(); draftNow(dp.dataset.draft); return; }
       if (e.target.closest("[data-profile]") || !isMyTurn) { openProfile(btn.dataset.fighterId); return; }
       selectedFighterId = btn.dataset.fighterId; render();
     });
@@ -1369,19 +1371,18 @@ function renderDraft(){
   });
   document.querySelectorAll("[data-mtab]").forEach((b) => b.addEventListener("click", () => { mobTab = b.dataset.mtab; render(); window.scrollTo(0, 0); }));
   const hmb = document.getElementById("heroMoreBtn"); if (hmb) hmb.addEventListener("click", () => { heroMore = !heroMore; render(); });
-  const lockBtn = document.getElementById("lockBtn");
-  if (lockBtn) {
-    lockBtn.addEventListener("click", async () => {
-      const errBox = document.getElementById("pickError");
-      const target = manualTarget || defaultTarget;
-      if (!target) return;
-      lockBtn.disabled = true;
-      const { error } = await sb.rpc("cr_make_pick", { p_room: room.id, p_fighter: target.id });
-      if (error) { errBox.textContent = error.message || "That pick isn't legal."; errBox.style.display = "block"; lockBtn.disabled = false; await refresh(false); return; }
-      selectedFighterId = null;
-      await refresh(true);
-    });
-  }
+}
+
+let drafting = false;
+async function draftNow(id) {
+  const f = fightersById[id]; if (!f || drafting || !room) return;
+  if (!window.confirm("Draft " + f.full_name + "?")) return;
+  drafting = true;
+  const { error } = await sb.rpc("cr_make_pick", { p_room: room.id, p_fighter: id });
+  drafting = false;
+  if (error) { window.alert(error.message || "That pick isn't legal."); await refresh(false); return; }
+  selectedFighterId = null;
+  await refresh(true);
 }
 
 /* ---------------- Full Draft Board ---------------- */
