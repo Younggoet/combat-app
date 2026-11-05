@@ -1450,8 +1450,12 @@ const perfById = {};
 function ensurePerf(id){
   if (perfById[id] !== undefined) return;
   perfById[id] = null;
-  sb.from("performances").select("bout_date,result,method,fantasy_points,end_round").eq("fighter_id", id).order("bout_date", { ascending: false }).limit(5)
-    .then(({ data, error }) => { perfById[id] = error ? [] : (data || []); }, () => { perfById[id] = []; });
+  sb.from("performances").select("bout_date,result,method,fantasy_points,end_round").eq("fighter_id", id).order("bout_date", { ascending: false }).limit(60)
+    .then(({ data, error }) => {
+      const seen = new Set(), out = [];
+      (error ? [] : (data || [])).forEach((p) => { if (seen.has(p.bout_date)) return; seen.add(p.bout_date); out.push(p); });
+      perfById[id] = out.slice(0, 5);
+    }, () => { perfById[id] = []; });
 }
 function renderProfile(){
   const root = document.getElementById("profRoot");
@@ -1476,8 +1480,8 @@ function renderProfile(){
   const form = formById[f.id] || [], perf = perfById[f.id];
   const logRows = (perf && perf.length ? perf : []).map((p) => {
     const fm = form.find((x) => x.bout_date === p.bout_date), o = fm && fightersById[fm.opponent_id];
-    const w = p.result === "W";
-    return `<tr><td class="dim">${esc(fmtShortDate(p.bout_date))}</td><td style="font-weight:600;text-align:left">${esc(o ? o.full_name : "—")}</td><td style="color:${w ? "var(--green)" : p.result === "L" ? "var(--redl)" : "var(--dim)"};font-weight:700">${esc(p.result || "—")}</td><td>${esc(fmtMethod(p.method))}</td><td class="h gold" style="font-size:16px">${p.fantasy_points == null ? "—" : fmtNum(p.fantasy_points, 1)}</td></tr>`;
+    const rl = String(p.result || "").charAt(0).toUpperCase(), w = rl === "W";
+    return `<tr><td class="dim">${esc(fmtShortDate(p.bout_date))}</td><td style="font-weight:600;text-align:left">${esc(o ? o.full_name : "—")}</td><td style="color:${w ? "var(--green)" : rl === "L" ? "var(--redl)" : "var(--dim)"};font-weight:700">${esc(rl || "—")}</td><td>${esc(fmtMethod(p.method))}</td><td class="h gold" style="font-size:16px">${p.fantasy_points == null ? "—" : fmtNum(p.fantasy_points, 1)}</td></tr>`;
   }).join("");
   const owner = pk ? `<span class="tag" style="color:var(--gold2)">${esc(teamName(pk.team_id).toUpperCase())}</span>` : `<span class="tag ph">No owner</span>`;
   const canPick = isMyTurnNow() && !pk;
