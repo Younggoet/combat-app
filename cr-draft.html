@@ -1376,7 +1376,6 @@ function renderDraft(){
 let drafting = false;
 async function draftNow(id) {
   const f = fightersById[id]; if (!f || drafting || !room) return;
-  if (!window.confirm("Draft " + f.full_name + "?")) return;
   drafting = true;
   const { error } = await sb.rpc("cr_make_pick", { p_room: room.id, p_fighter: id });
   drafting = false;
