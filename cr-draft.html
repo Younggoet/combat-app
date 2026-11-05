@@ -1174,7 +1174,7 @@ function renderDraft(){
           <div style="display:flex;gap:${MOB ? 22 : 34}px;margin-top:${MOB ? 4 : 10}px;flex-wrap:wrap;">
             <div><div class="h-font" style="font-size:${MOB ? 34 : 64}px;font-weight:700;line-height:1;">${fmtNum(projectedFPById[spotlight.id], 1)}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Projected points</div></div>
             <div><div class="h-font" style="font-size:${MOB ? 34 : 64}px;font-weight:700;line-height:1;">${fmtRank(overallRankById[spotlight.id])}</div><div style="font-size:13px;font-weight:600;color:#B8B5AE;">Block rank</div></div>
-          </div></div></div>`, { cls: "lg", pad: MOB ? "14px 14px" : "30px 34px", ol: sdc + "59", fill: `linear-gradient(120deg,${sdc}57 0%,${sdc}1F 55%,${sdc}08 100%),#121214`, st: "" })}
+          </div></div></div>`, { cls: "lg", pad: MOB ? "14px 14px" : "30px 34px", ol: sdc + "59", fill: (() => { const cc = CC_BY_NAME[spotlight.nationality] || ""; return cc && FL[cc] ? `linear-gradient(100deg,rgba(10,10,14,.78) 0%,rgba(10,10,14,.5) 60%,rgba(10,10,14,.35) 100%),url(${FD(cc)}) center/cover,#121214` : `linear-gradient(120deg,${sdc}57 0%,${sdc}1F 55%,${sdc}08 100%),#121214`; })(), st: "" })}
       <div class="hero-stats">${bigStats.map((c) => ob(`<div class="v hs-v">${esc(c.v)}</div><div class="l hs-l">${esc(c.l)}</div>`, { cls: "md", pad: MOB ? "10px 6px" : "18px" })).join("")}</div>
       <button type="button" id="heroMoreBtn" class="more-toggle h-font">${heroMore ? "HIDE DETAILS \u25B4" : "MORE DETAILS \u25BE"}</button>
       <div class="hero-extra${heroMore ? " open" : ""}">
