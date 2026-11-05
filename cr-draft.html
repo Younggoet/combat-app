@@ -712,6 +712,10 @@ function fmtTimerLabel(seconds){ return seconds < 60 ? `${seconds}s` : fmtClock(
 // Average UFC fights per year, from the fighter_fight_rate view: fights in the
 // last 3 years divided by the years of history (3-year window, 1-year floor).
 let championById = {};
+let bmfById = {};
+const BMF_COLOR = "#1A1A1D";
+function isBmf(f){ return !!(f && bmfById[f.id]); }
+function txc(c){ return c === BMF_COLOR ? "#D8D6CF" : c; }
 let nextBoutById = {};      // fighter id -> next scheduled bout {date, event, oppId, title, ml}
 let formById = {};          // fighter id -> last-5 results (lazy), null while loading
 // Odds stay OFF until the odds source's terms allow showing them in the app.
@@ -777,7 +781,7 @@ function ensureForm(id){
 }
 function fmtMoneyline(n){ return n === null || n === undefined ? "" : (n > 0 ? "+" + n : String(n)); }
 function isChamp(f){ return !!(f && championById[f.id]); }
-function fighterDc(f){ return isChamp(f) ? "#D4AF37" : ((f && DIVISION_COLOR[f.announced_weight_class]) || "#D4AF37"); }
+function fighterDc(f){ return isBmf(f) ? BMF_COLOR : isChamp(f) ? "#D4AF37" : ((f && DIVISION_COLOR[f.announced_weight_class]) || "#D4AF37"); }
 function octagonAvatar(f, strokeColor, size){
   if (f && f.photo_url) {
     return `<img src="${esc(f.photo_url)}" style="width:100%;height:100%;object-fit:cover;" alt="">`;
@@ -977,6 +981,10 @@ async function loadFighterPool(){
       championById = {}; (champs || []).forEach((r) => { championById[r.id] = true; });
     } catch (e) { championById = {}; }
     try {
+      const { data: bm } = await sb.from("fighters").select("id").eq("is_bmf", true).limit(50);
+      bmfById = {}; (bm || []).forEach((r) => { bmfById[r.id] = true; });
+    } catch (e) { bmfById = {}; }
+    try {
       const today = new Date().toISOString().slice(0, 10);
       const { data: ub } = await sb.from("bouts").select("event_name, bout_date, is_title_fight, fighter_a, fighter_b, fighter_a_moneyline, fighter_b_moneyline")
         .gte("bout_date", today).neq("status", "completed").neq("status", "cancelled").order("bout_date", { ascending: true }).limit(300);
@@ -1062,8 +1070,8 @@ function renderDraft(){
       const ef = fightersById[entry.fighter_id], dc = fighterDc(ef);
       trackerHtml += `<div class="tslot${k === pickNum - 1 ? " just" : ""}">${octagonRingAvatar(ef, dc, 52)}
         <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${esc(teamInitials(team))}</span></div>
-        <div class="info" style="color:${dc};font-weight:700;">${esc(ef ? ef.full_name : "?")}</div>
-        <div class="divtag" style="background:${dc}2A;"><span class="h-font" style="font-size:8px;letter-spacing:0.5px;color:${dc};">${esc(ef ? (DIV_SHORT[ef.announced_weight_class] || "") : "")}</span></div></div>`;
+        <div class="info" style="color:${txc(dc)};font-weight:700;">${esc(ef ? ef.full_name : "?")}</div>
+        <div class="divtag" style="background:${dc}2A;"><span class="h-font" style="font-size:8px;letter-spacing:0.5px;color:${txc(dc)};">${esc(ef ? (DIV_SHORT[ef.announced_weight_class] || "") : "")}</span></div></div>`;
     } else if (k === pickNum && !complete) {
       trackerHtml += `<div class="tslot">${octagonEmptyAvatar(52, paused ? "upcoming" : "clock")}
         <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${paused ? "var(--gold)" : "var(--red)"};font-weight:700;">&middot; ${esc(teamInitials(team))}</span></div>
@@ -1138,7 +1146,7 @@ function renderDraft(){
       ${ob(`<div style="display:flex;align-items:center;gap:${MOB ? 14 : 30}px;${MOB ? "" : "flex-wrap:wrap;"}">
         ${octagonRingAvatar(spotlight, sdc, MOB ? 84 : 210)}
         <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:6px;">
-          <div style="font-size:14px;font-weight:600;color:${sdc};">${esc(spotlight.announced_weight_class || "")} &middot; ${fmtRecord(spotlight)} &middot; ${spotlight.finishes ?? 0} finishes${sChamp ? ` &middot; <span style="font-weight:700;letter-spacing:1px;">CHAMPION</span>` : ""}</div>
+          <div style="font-size:14px;font-weight:600;color:${txc(sdc)};">${esc(spotlight.announced_weight_class || "")} &middot; ${fmtRecord(spotlight)} &middot; ${spotlight.finishes ?? 0} finishes${isBmf(spotlight) ? ` &middot; <span style="font-weight:700;letter-spacing:1px;">BMF</span>` : sChamp ? ` &middot; <span style="font-weight:700;letter-spacing:1px;">CHAMPION</span>` : ""}</div>
           <div class="h-font" style="font-size:clamp(30px,5vw,50px);font-weight:700;line-height:1.02;">${esc(spotlight.full_name.toUpperCase())}</div>
           <div style="font-size:14px;color:#D8D5CC;">${nextFightHtml}</div>
           <div style="display:flex;gap:${MOB ? 22 : 34}px;margin-top:${MOB ? 4 : 10}px;flex-wrap:wrap;">
@@ -1154,7 +1162,7 @@ function renderDraft(){
       </div>
       ${ob(`<div class="h-font" style="font-size:20px;letter-spacing:1px;margin-bottom:12px;">TALE OF THE TAPE</div>
         <div style="display:grid;grid-template-columns:1fr auto 1fr;padding-bottom:8px;border-bottom:1px solid var(--border-2);margin-bottom:6px;">
-          <div class="h-font" style="font-size:12px;letter-spacing:1px;color:${sdc};">${esc(spotlight.full_name.toUpperCase())}</div><div></div>
+          <div class="h-font" style="font-size:12px;letter-spacing:1px;color:${txc(sdc)};">${esc(spotlight.full_name.toUpperCase())}</div><div></div>
           <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#8C8982;text-align:right;">${lastOwnPick ? esc(lastOwnPick.full_name.toUpperCase()) + " (YOUR LAST PICK)" : "NO PRIOR PICK YET"}</div></div>
         ${tapeRows.map((r) => `<div class="tape-row"><div class="a">${esc(r.a)}</div><div class="lbl">${esc(r.label)}</div><div class="b">${esc(r.b)}</div></div>`).join("")}`, { cls: "md", pad: "20px 22px" })}
       ${upNext.length ? ob(`<div class="h-font" style="font-size:14px;letter-spacing:2px;color:#9A9AA2;margin-bottom:10px;">BEST AVAILABLE AFTER THIS PICK</div>
@@ -1222,7 +1230,7 @@ function renderDraft(){
   const filterTabsHtml = FILTER_TABS.map((r) => { const active = r === activeFilter; const rc = "var(--gold)";
     return `<button class="filter-tab" data-filter="${r}" style="${active ? `background:${rc}22;border-color:${rc};color:${rc};font-weight:700;` : "color:#9A9AA2;"}">${esc(r)}</button>`; }).join("");
   const divisionStripHtml = DIVISION_LIST.map((d) => { const active = d === activeFilter; const dc = DIVISION_COLOR[d];
-    return `<button class="division-chip" data-filter="${esc(d)}" style="${active ? `background:${dc}33;border-color:${dc};color:${dc};font-weight:700;` : `background:${dc}14;color:#9A9AA2;`}">${esc(DIV_SHORT[d] || d)}</button>`; }).join("");
+    return `<button class="division-chip" data-filter="${esc(d)}" style="${active ? `background:${dc}33;border-color:${txc(dc)};color:${txc(dc)};font-weight:700;` : `background:${dc}14;color:#9A9AA2;`}">${esc(DIV_SHORT[d] || d)}</button>`; }).join("");
   const poolHeading = isDivisionFilter(activeFilter) ? `${activeFilter.toUpperCase()} · RANKED BY BLOCK RANK` : "ALL FIGHTERS · RANKED BY BLOCK RANK";
   const chatWasFocused = document.activeElement && document.activeElement.id === "chatInput";
   const existingSearchInput = document.getElementById("fighterSearch");
@@ -1235,7 +1243,7 @@ function renderDraft(){
     const dc = fighterDc(f), isSpot = !!spotlight && f.id === spotlight.id, hl = isSpot ? "background:rgba(212,175,55,0.06);" : "";
     return `<button class="pool-row-btn" data-fighter-id="${f.id}">
       <div style="${hl}box-shadow:inset 6px 0 0 ${dc};padding-left:14px;" class="pool-cell fname-cell" data-profile="${f.id}">${octagonRingAvatar(f, dc, 42)}<span class="h-font" style="font-size:14px;font-weight:600;color:${isSpot ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span>${isNewF(f.id) ? `<span class="newtag">NEW</span>` : ""}</div>
-      <div style="${hl}" class="pool-cell cell-div"><div class="divtag2" style="background:${dc}2A;color:${dc};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div></div>
+      <div style="${hl}" class="pool-cell cell-div"><div class="divtag2" style="background:${dc}2A;color:${txc(dc)};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div></div>
       <div style="${hl}" class="pool-cell cell-record" data-label="REC">${esc(fmtRecord(f))}</div>
       <div style="${hl}" class="pool-cell cell-sigstr">${esc(fmtNum(f.avg_sig_strikes))}</div>
       <div style="${hl}" class="pool-cell cell-td">${esc(fmtNum(f.avg_takedowns))}</div>
@@ -1375,7 +1383,7 @@ function renderBoard(){
       const tag = traded ? `<div class="h-font" style="font-size:9px;letter-spacing:1px;color:var(--gold);">&rarr; ${esc(teamInitials(owner))}</div>` : "";
       if (p) {
         const f = fightersById[p.fighter_id], dc = (f && DIVISION_COLOR[f.announced_weight_class]) || "var(--gold)";
-        cellsHtml += `<div class="board-cell">${octagonRingAvatar(f, dc, 46)}<div class="nm">${esc(f ? f.full_name : "?")}</div><div class="tag" style="background:${dc}2A;color:${dc};">${esc(f ? (DIV_SHORT[f.announced_weight_class] || "") : "")}</div>${tag}</div>`;
+        cellsHtml += `<div class="board-cell">${octagonRingAvatar(f, dc, 46)}<div class="nm">${esc(f ? f.full_name : "?")}</div><div class="tag" style="background:${dc}2A;color:${txc(dc)};">${esc(f ? (DIV_SHORT[f.announced_weight_class] || "") : "")}</div>${tag}</div>`;
       } else if (k === current && !complete) {
         cellsHtml += `<div class="board-cell" style="background:rgba(226,40,60,0.08);border-color:var(--red);">${octagonEmptyAvatar(46, "clock", `<span class="h-font" style="font-size:16px;font-weight:700;color:var(--red);">?</span>`)}<div class="nm" style="color:var(--red);">${paused ? "On hold" : "On the clock"}</div>${tag}</div>`;
       } else {
@@ -1456,7 +1464,7 @@ function renderProfile(){
     <div style="position:relative"><div style="display:flex;justify-content:space-between;align-items:center"><span class="tag" style="background:rgba(12,12,16,.75);padding:5px 12px 5px 6px;display:inline-flex;align-items:center;gap:8px;font-family:Inter,sans-serif;font-size:12px;letter-spacing:0">${flag ? `<span style="width:24px;height:18px;background:${flag} center/cover;display:inline-block"></span>` : ""}${esc(f.nationality || "")}</span><button class="ibtn" data-pact="close" aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="row" style="margin-top:14px;gap:16px">${octagonRingAvatar(f, dc, 112)}
       <div class="grow"><div class="h" style="font-size:34px;font-weight:700;line-height:1.05;text-shadow:0 2px 12px rgba(0,0,0,.6)">${esc(f.full_name)}</div>
-      <div class="row small" style="margin-top:8px;gap:8px;flex-wrap:wrap"><span class="tag" style="background:${dc};color:#101012;font-size:13px">${esc(DIV_SHORT[f.announced_weight_class] || "")}</span><span class="mut">${esc(f.announced_weight_class || "")}${champ ? " · Champion" : ""}</span></div>
+      <div class="row small" style="margin-top:8px;gap:8px;flex-wrap:wrap"><span class="tag" style="background:${dc};color:${isBmf(f)?"#F5F2EA":"#101012"};font-size:13px">${esc(DIV_SHORT[f.announced_weight_class] || "")}</span><span class="mut">${esc(f.announced_weight_class || "")}${isBmf(f) ? " · BMF" : champ ? " · Champion" : ""}</span></div>
       <div style="margin-top:8px">${owner}</div></div></div>
     <div class="small mut" style="margin-top:12px">${nb ? `Next fight: <b>${esc(fmtShortDate(nb.date))}</b> vs ${esc(opp ? opp.full_name : "TBA")}${nb.title ? " · title fight" : ""}` : "No fight booked yet"}</div>
     ${canPick ? `<div class="row" style="margin-top:12px;gap:10px"><button class="btn g grow" data-pact="select">SELECT FOR MY PICK</button></div>` : ""}</div></div>

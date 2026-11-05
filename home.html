@@ -181,7 +181,7 @@ const DC = {"Heavyweight":"#E2283C","Light Heavyweight":"#B57BFF","Middleweight"
 const SHORT = {"Heavyweight":"HW","Light Heavyweight":"LHW","Middleweight":"MW","Welterweight":"WW","Lightweight":"LW","Featherweight":"FW","Bantamweight":"BW","Flyweight":"FLW","Women's Strawweight":"WSW","Women's Flyweight":"WFLW","Women's Bantamweight":"WBW"};
 const W = { sig: 0.1, td: 2, kd: 8, ctrl: 1, sub: 1, rev: 6, tdDef: 0.5 }, OPP_TD = 3;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const FCOLS = "id, full_name, announced_weight_class, photo_url, wins, losses, draws, is_champion, avg_sig_strikes, avg_takedowns, avg_knockdowns, avg_control_seconds, avg_sub_attempts, avg_reversals, td_def_pct";
+const FCOLS = "id, is_bmf, full_name, announced_weight_class, photo_url, wins, losses, draws, is_champion, avg_sig_strikes, avg_takedowns, avg_knockdowns, avg_control_seconds, avg_sub_attempts, avg_reversals, td_def_pct";
 
 function proj(f) {
   if (!f) return null;
@@ -236,13 +236,13 @@ async function load() {
 }
 
 function avatar(f) {
-  const dc = f.is_champion ? "#D4AF37" : (DC[f.announced_weight_class] || "#D4AF37");
+  const dc = f.is_bmf ? "#1A1A1D" : f.is_champion ? "#D4AF37" : (DC[f.announced_weight_class] || "#D4AF37");
   const ini = (f.full_name || "?").split(/\s+/).map((p) => p[0]).slice(0, 2).join("");
   return `<div class="av oc" style="--dc:${dc}"><div class="oc">${f.photo_url ? `<img src="${esc(f.photo_url)}" alt="" loading="lazy">` : `<span class="ph">${esc(ini)}</span>`}</div></div>`;
 }
 function fighterSide(f) {
   const p = proj(f);
-  return `<div class="side">${avatar(f)}<div class="nm">${esc(f.full_name)}</div><div class="rec">${esc(rec(f))}${f.is_champion ? " &middot; Champion" : ""}</div>
+  return `<div class="side">${avatar(f)}<div class="nm">${esc(f.full_name)}</div><div class="rec">${esc(rec(f))}${f.is_bmf ? " &middot; BMF" : f.is_champion ? " &middot; Champion" : ""}</div>
     <div class="fp"><b>${p == null ? "&mdash;" : p.toFixed(1)}</b><span>${p == null ? "No UFC stats yet" : "Projected points"}</span></div></div>`;
 }
 
