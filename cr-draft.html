@@ -821,7 +821,7 @@ const OCT_CLIP = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%
 function octagonRingAvatar(f, dc, outerSize){
   const pad = Math.max(2, Math.round(outerSize * 0.036));
   return `
-    <div style="width:${outerSize}px;height:${outerSize}px;padding:${pad}px;box-sizing:border-box;clip-path:${OCT_CLIP};background:radial-gradient(circle at 35% 28%, #fff 0%, ${dc} 55%, #000 130%);flex-shrink:0;">
+    <div ${f && f.id ? `data-profile="${f.id}"` : ""} style="width:${outerSize}px;height:${outerSize}px;padding:${pad}px;box-sizing:border-box;clip-path:${OCT_CLIP};background:radial-gradient(circle at 35% 28%, #fff 0%, ${dc} 55%, #000 130%);flex-shrink:0;${f && f.id ? "cursor:pointer;" : ""}">
       <div style="width:100%;height:100%;clip-path:${OCT_CLIP};background:#0F0F12;overflow:hidden;display:flex;align-items:center;justify-content:center;">
         ${octagonAvatar(f, dc, Math.round(outerSize * 0.4))}
       </div>
@@ -1344,10 +1344,6 @@ function renderDraft(){
       selectedFighterId = btn.dataset.fighterId; render();
     });
   });
-  document.querySelectorAll("[data-profile]").forEach((el) => {
-    if (el.closest(".pool-row-btn")) return;
-    el.addEventListener("click", () => openProfile(el.dataset.profile));
-  });
   document.querySelectorAll("[data-qrm]").forEach((b) => b.addEventListener("click", () => toggleQueue(b.dataset.qrm)));
   document.querySelectorAll("[data-qmove]").forEach((b) => b.addEventListener("click", () => moveQueue(b.dataset.qmove, +b.dataset.dir)));
   const adb = document.getElementById("autoDraftBtn"); if (adb) adb.addEventListener("click", () => setAutoDraft(!autoDraft));
@@ -1440,6 +1436,12 @@ function assetBox(f, pk, label, col){
 }
 function isMyTurnNow(){ if (!room || room.status !== "live") return false; const n = room.team_order.length, total = n * room.rounds; return pickTid(Math.min(room.current_pick_number, total)) === userTeamId; }
 let profId = null;
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-profile]");
+  if (!el || el.closest(".pool-row-btn") || e.target.closest("[data-q],[data-draft]")) return;
+  if (el.dataset.profile === profId) return;
+  openProfile(el.dataset.profile);
+});
 function openProfile(id){ profId = id; ensureForm(id); ensurePerf(id); renderProfile(); let n = 0; const t = setInterval(() => { n++; if (!profId || profId !== id || (formById[id] !== null && perfById[id] !== null && perfById[id] !== undefined) || n > 20) { clearInterval(t); if (profId === id) renderProfile(); } }, 300); }
 function closeProfile(){ profId = null; document.getElementById("profRoot").innerHTML = ""; if (!modal) document.body.style.overflow = ""; }
 const CC_BY_NAME = {"Afghanistan":"af","Aruba":"aw","Guinea":"gn","Iran":"ir","Moldova":"md","Myanmar":"mm","Kingdom of Denmark":"dk","Denmark":"dk","United States":"us","USA":"us","Brazil":"br","Russia":"ru","Australia":"au","France":"fr","Ireland":"ie","Poland":"pl","Georgia":"ge","Czechia":"cz","Czech Republic":"cz","Türkiye":"tr","Turkey":"tr","Jamaica":"jm","Cuba":"cu","Azerbaijan":"az","China":"cn","Belgium":"be","Canada":"ca","United Kingdom":"gb","England":"gb-eng","Scotland":"gb-sct","South Korea":"kr","Korea":"kr","Kyrgyzstan":"kg","Peru":"pe","Argentina":"ar","Germany":"de","Lithuania":"lt","Morocco":"ma","Iraq":"iq","Chile":"cl","Slovakia":"sk","Kazakhstan":"kz","Japan":"jp","Nigeria":"ng","Indonesia":"id","Tajikistan":"tj","New Zealand":"nz","Italy":"it","Venezuela":"ve","Cameroon":"cm","Sweden":"se","Armenia":"am","Netherlands":"nl","Austria":"at","Uzbekistan":"uz","Portugal":"pt","Bahrain":"bh","Albania":"al","Thailand":"th","Philippines":"ph","Ukraine":"ua","Belarus":"by","Bulgaria":"bg","Romania":"ro","Hungary":"hu","Denmark":"dk","Norway":"no","Finland":"fi","Iceland":"is","Colombia":"co","Uruguay":"uy","Costa Rica":"cr","Panama":"pa","Puerto Rico":"pr","South Africa":"za","Ghana":"gh","Kenya":"ke","Tunisia":"tn","Israel":"il","Jordan":"jo","United Arab Emirates":"ae","UAE":"ae","India":"in","Pakistan":"pk","Mongolia":"mn","Taiwan":"tw","Hong Kong":"hk","Singapore":"sg","Vietnam":"vn","Samoa":"ws","Tonga":"to","Greece":"gr","Switzerland":"ch","Slovenia":"si","Bosnia and Herzegovina":"ba","North Macedonia":"mk","Latvia":"lv","Estonia":"ee","Chechnya":"ru","Dagestan":"ru","Angola":"ao","Trinidad and Tobago":"tt","Guam":"gu","Lebanon":"lb","Kuwait":"kw","Cambodia":"kh","Malaysia":"my","Laos":"la","Honduras":"hn","Zimbabwe":"zw","Uganda":"ug","Ivory Coast":"ci","Senegal":"sn","Algeria":"dz","Libya":"ly","Sudan":"sd","Ethiopia":"et","Luxembourg":"lu","Cyprus":"cy","Mexico":"mx","Spain":"es","Serbia":"rs","Croatia":"hr","Dominican Republic":"do","Ecuador":"ec","Bolivia":"bo","Guatemala":"gt","El Salvador":"sv","Montenegro":"me","Belize":"bz"};
