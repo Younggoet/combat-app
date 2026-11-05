@@ -2509,11 +2509,13 @@ async function loadFighterPool(){
   try {
     const { data, error } = await CombatAuth.client
       .from("fighters")
-      .select("id, full_name, nickname, announced_weight_class, photo_url, current_rating, striker_score, grappler_score, finisher_score, wins, losses, finishes, avg_sig_strikes, avg_takedowns, avg_knockdowns, avg_control_seconds, avg_sub_attempts, avg_reversals, td_def_pct")
+      .select("id, full_name, nickname, announced_weight_class, photo_url, current_rating, striker_score, grappler_score, finisher_score, wins, losses, pro_wins, pro_losses, pro_draws, finishes, avg_sig_strikes, avg_takedowns, avg_knockdowns, avg_control_seconds, avg_sub_attempts, avg_reversals, td_def_pct")
       .order("current_rating", { ascending: false })
       .limit(1000);
     if (error) throw error;
     fighters = data || [];
+    // Show the real pro record; keep the wins counted from our own bout history for finish rate.
+    fighters.forEach((f) => { f.histWins = f.wins; if (f.pro_wins != null) { f.wins = f.pro_wins; f.losses = f.pro_losses || 0; f.draws = f.pro_draws || 0; } });
     fightersById = {};
     fighters.forEach((f) => { fightersById[f.id] = f; });
 
@@ -3342,7 +3344,7 @@ function renderDraft(){
           }).join("")
         : `<div style="font-size:13px;color:#8C8982;">No fight history on file.</div>`;
     const myDivCount = picks.filter((p) => p.team_id === userTeamId && (fightersById[p.fighter_id] || {}).announced_weight_class === spotlight.announced_weight_class).length;
-    const finishRate = spotlight.wins ? Math.round(((spotlight.finishes || 0) / spotlight.wins) * 100) + "%" : "—";
+    const finishRate = spotlight.histWins ? Math.round(((spotlight.finishes || 0) / spotlight.histWins) * 100) + "%" : "—";
     const divShort = DIV_SHORT[spotlight.announced_weight_class] || (spotlight.announced_weight_class || "");
     const divFitText = myDivCount === 0 ? `You have no ${esc(spotlight.announced_weight_class || "")} fighters yet`
       : myDivCount >= 3 ? `Heads up: you already own ${myDivCount} ${esc(spotlight.announced_weight_class || "")} fighters`
@@ -3387,7 +3389,7 @@ function renderDraft(){
         <div style="background:#16161A;border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;gap:10px;">
           <div class="h-font" style="font-size:20px;letter-spacing:1px;">FINISH RATE</div>
           <div class="h-font" style="font-size:40px;font-weight:700;line-height:1;">${finishRate}</div>
-          <div style="font-size:13px;color:#B8B5AE;">${spotlight.finishes ?? 0} finishes in ${spotlight.wins ?? 0} wins</div>
+          <div style="font-size:13px;color:#B8B5AE;">${spotlight.finishes ?? 0} finishes in ${spotlight.histWins ?? spotlight.wins ?? 0} wins</div>
           <div style="font-size:13px;color:${myDivCount >= 3 ? "#E8C93A" : "#B8B5AE"};border-top:1px solid var(--border-2);padding-top:10px;">${divFitText}</div>
         </div>
       </div>
