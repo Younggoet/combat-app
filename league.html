@@ -194,8 +194,8 @@ async function loadCards(){
     Z.cards=[...m.values()].sort((a,b)=>a.date.localeCompare(b.date));
   }catch(e){Z.cards=[];Z.cardsErr=1}
 }
-/* A block never uses the card that is about to happen: it starts with the second upcoming card and needs 4 cards. */
-const blockCards=()=>(Z.cards||[]).slice(1,5);
+/* The season block is the first 4 cards on or after Nov 14 (same rule as the draft). */
+const blockCards=()=>(Z.cards||[]).filter(c=>c.date>='2026-11-14').slice(0,4);
 async function loadPublic(){
   const {data,error}=await sb.from('leagues').select('*,teams(id)').eq('is_public',true).eq('archived',false).eq('status','setup').not('team_count','is',null).order('created_at',{ascending:false}).limit(60);
   if(error)throw error;
