@@ -983,11 +983,11 @@ document.addEventListener('click',async e=>{let el=e.target.closest('[data-a]');
 });
 document.addEventListener('submit',async e=>{if(e.target.id!=='cf'&&e.target.id!=='cf2')return;e.preventDefault();const side=e.target.id==='cf2',i=side?$('#ci2'):$('#ci'),b=(i.value||'').trim();if(!b)return;i.value='';
   const {error}=await sb.from('chat_messages').insert({league_id:Z.L.id,display_name:teamName(Z.dn),body:b});if(error){toast("Couldn't send");return}await loadMsgs();if(side&&refreshSide()){const f=$('#cfeed');if(f)f.scrollTop=f.scrollHeight;setTimeout(()=>{const x=$('#ci2');x&&x.focus()},0);return}render();setTimeout(()=>{const x=$('#ci');x&&x.focus()},0)});
-// Live scoring: during a card, reload scores every 45s so Matchup, My Corner, Fight Night and the pool update on their own.
+// Live scoring: during a card, reload scores every 15s so Matchup, My Corner, Fight Night and the pool update on their own.
 setInterval(async()=>{if(Z.v!=='league'||!Z.L||document.hidden||Z.liveBusy)return;const el=document.activeElement;if(el&&el.matches&&el.matches('input,textarea'))return;if($('#sheet')&&$('#sheet').classList.contains('on'))return;if(PV&&PV.mode==='live')return;
   const today=new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'}),yest=new Date(Date.now()-864e5).toLocaleDateString('en-CA',{timeZone:'America/New_York'});
   if(!(Z.bouts||[]).some(b=>(b.bout_date===today||b.bout_date===yest)&&b.status!=='completed'&&b.status!=='cancelled'))return;
-  Z.liveBusy=true;try{await loadSeason();render()}catch(e){}Z.liveBusy=false},45000);
+  Z.liveBusy=true;try{await loadSeason();render()}catch(e){}Z.liveBusy=false},15000);
 setInterval(async()=>{if(Z.v==='league'&&isDesk()&&document.getElementById('chatside')&&!document.hidden&&!document.activeElement?.matches('input')){const n=(Z.msgs||[]).length+(Z.moves||[]).length;await loadMsgs();if((Z.msgs||[]).length+(Z.moves||[]).length!==n)refreshSide()}},8000);
 setInterval(async()=>{if(Z.v==='league'&&Z.sub==='chat'&&!document.hidden&&!document.activeElement?.matches('input')){const n=Z.msgs.length;await loadMsgs();if(Z.msgs.length!==n)render()}},6000);
 
