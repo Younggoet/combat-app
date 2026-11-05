@@ -729,6 +729,28 @@ function fmtFightsPerYear(f){
   const v = fightsPerYear(f);
   return v === null ? "—" : v.toFixed(1);
 }
+
+/* League-style octagon stat cells + avatar for the Tale of the Tape (matches Fight Night in the league page) */
+const TAPE_LBS = { "Heavyweight":265, "Light Heavyweight":205, "Middleweight":185, "Welterweight":170, "Lightweight":155, "Featherweight":145, "Bantamweight":135, "Flyweight":125, "Women's Bantamweight":135, "Women's Flyweight":125, "Women's Strawweight":115 };
+function tapeCell(v, l, hi){
+  const ol = hi ? "#D4AF37" : "rgba(255,255,255,.28)";
+  const cut = (n) => `polygon(${n}px 0,calc(100% - ${n}px) 0,100% ${n}px,100% calc(100% - ${n}px),calc(100% - ${n}px) 100%,${n}px 100%,0 calc(100% - ${n}px),0 ${n}px)`;
+  const fill = hi ? "linear-gradient(155deg,rgba(212,175,55,.3),rgba(212,175,55,.1)),#131317" : "#22232a";
+  return `<span style="display:inline-block;vertical-align:top;padding:1.5px;background:${ol};clip-path:${cut(10)};"><span style="display:block;clip-path:${cut(9)};background:${fill};padding:5px 10px 4px;min-width:48px;text-align:center;"><b class="h-font" style="display:block;font-size:${hi ? 20 : 17}px;font-weight:700;line-height:1.05;color:${hi ? "#E8C93A" : "#F5F2EA"};">${esc(String(v))}</b><span class="h-font" style="display:block;font-size:10px;letter-spacing:1.2px;color:${hi ? "#D4AF37" : "#B8B5AE"};margin-top:2px;">${l}</span></span></span>`;
+}
+function tapeFighter(f, right){
+  if (!f) return `<div></div>`;
+  const c = [];
+  c.push(tapeCell(fmtRecord(f), "RECORD", true));
+  if (f.height_cm) c.push(tapeCell(fmtHeight(f.height_cm / 2.54), "HEIGHT"));
+  if (f.reach_cm) c.push(tapeCell(Math.round(f.reach_cm / 2.54) + "&Prime;", "REACH"));
+  if (TAPE_LBS[f.announced_weight_class]) c.push(tapeCell(TAPE_LBS[f.announced_weight_class], "LBS"));
+  if (f.avg_sig_strikes !== null && f.avg_sig_strikes !== undefined) c.push(tapeCell(Number(f.avg_sig_strikes).toFixed(1), "SIG STR"));
+  if (f.avg_takedowns !== null && f.avg_takedowns !== undefined) c.push(tapeCell(Number(f.avg_takedowns).toFixed(1), "TD"));
+  const w = f.histWins != null ? f.histWins : f.wins;
+  if (w) c.push(tapeCell(Math.round(((f.finishes || 0) / w) * 100) + "%", "FINISH"));
+  return `<div style="display:flex;flex-direction:column;gap:8px;align-items:${right ? "flex-end" : "flex-start"};">${octagonRingAvatar(f, fighterDc(f), 56)}<div style="display:flex;flex-wrap:wrap;gap:4px;line-height:1;justify-content:${right ? "flex-end" : "flex-start"};">${c.join("")}</div></div>`;
+}
 function fmtRank(rank){
   return (rank === null || rank === undefined) ? "—" : `#${rank}`;
 }
@@ -1164,6 +1186,7 @@ function renderDraft(){
         <div style="display:grid;grid-template-columns:1fr auto 1fr;padding-bottom:8px;border-bottom:1px solid var(--border-2);margin-bottom:6px;">
           <div class="h-font" style="font-size:12px;letter-spacing:1px;color:${txc(sdc)};">${esc(spotlight.full_name.toUpperCase())}</div><div></div>
           <div class="h-font" style="font-size:12px;letter-spacing:1px;color:#8C8982;text-align:right;">${lastOwnPick ? esc(lastOwnPick.full_name.toUpperCase()) + " (YOUR LAST PICK)" : "NO PRIOR PICK YET"}</div></div>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin:4px 0 12px;">${tapeFighter(spotlight)}<div class="h-font" style="font-size:16px;letter-spacing:2px;color:#8C8982;">VS</div>${tapeFighter(lastOwnPick, true)}</div>
         ${tapeRows.map((r) => `<div class="tape-row"><div class="a">${esc(r.a)}</div><div class="lbl">${esc(r.label)}</div><div class="b">${esc(r.b)}</div></div>`).join("")}`, { cls: "md", pad: "20px 22px" })}
       ${upNext.length ? ob(`<div class="h-font" style="font-size:14px;letter-spacing:2px;color:#9A9AA2;margin-bottom:10px;">BEST AVAILABLE AFTER THIS PICK</div>
         <div style="display:flex;gap:18px;flex-wrap:wrap;">${upNext.map((f) => `<div data-profile="${f.id}" style="display:flex;align-items:center;gap:10px;cursor:pointer;">${octagonRingAvatar(f, fighterDc(f), 38)}<div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div><div style="font-size:11px;color:#B8B5AE;">${esc(DIV_SHORT[f.announced_weight_class] || "")} · ${fmtRank(overallRankById[f.id])}</div></div></div>`).join("")}</div>`, { cls: "md", pad: "16px 22px" }) : ""}
