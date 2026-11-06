@@ -1125,7 +1125,7 @@ function renderDraft(){
   if (complete) {
     stageMainHtml = ob(`<div style="text-align:center;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT COMPLETE</div>
       <div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;margin-top:10px;">ALL ${total} PICKS HAVE BEEN MADE ACROSS ALL ${n} TEAMS</div>
-      <a href="league.html?open=${esc(LEAGUE_ID)}" style="display:inline-block;margin-top:20px;"><button class="start-draft oct-btn h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">GO TO LEAGUE</button></a></div>`, { cls: "lg", pad: "34px", ol: "rgba(212,175,55,0.6)" });
+      ${L && L.is_test ? `<div style="font-size:13px;color:#9A9AA2;margin-top:10px;">This was a test draft. Nothing from it counts.</div><button data-endtest="1" class="start-draft oct-btn h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;margin-top:20px;">FINISH TEST · BACK TO SETUP</button>` : `<a href="league.html?open=${esc(LEAGUE_ID)}" style="display:inline-block;margin-top:20px;"><button class="start-draft oct-btn h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">GO TO LEAGUE</button></a>`}</div>`, { cls: "lg", pad: "34px", ol: "rgba(212,175,55,0.6)" });
   } else if (paused) {
     const holdT = teamById(onClockTeam);
     stageMainHtml = ob(`<div style="display:flex;flex-direction:column;gap:12px;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT PAUSED</div>
@@ -1320,7 +1320,7 @@ function renderDraft(){
     <div class="tracker">${trackerHtml}</div>
     <div class="mtabs">${[["pick", isMyTurn ? "YOUR PICK" : "ON CLOCK"], ["pool", "FIGHTERS"], ["queue", "QUEUE" + (myQueue.length ? " " + myQueue.length : "")], ["roster", "ROSTER"], ["feed", "FEED"], ["chat", "CHAT"], ["news", "NEWS"]].map(([k, l]) => `<button type="button" class="mtab h-font${curTab === k ? " on" : ""}${k === "pick" && isMyTurn ? " hot" : ""}" data-mtab="${k}">${l}</button>`).join("")}</div>
     <div class="stage">
-      <div class="stage-main" data-mp="pick">${offerStrip}${stageMainHtml}${newBox}</div>
+      <div class="stage-main" data-mp="pick">${L && L.is_test && !complete ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border:1px solid rgba(212,175,55,0.5);"><span class="h-font" style="font-size:12px;letter-spacing:2px;color:var(--gold);">TEST DRAFT · NOTHING HERE COUNTS</span><button data-endtest="1" class="h-font" style="background:none;border:1px solid #6A6A72;color:#C9C6BD;font-size:11px;letter-spacing:1.5px;padding:6px 12px;cursor:pointer;">END TEST</button></div>` : ""}${offerStrip}${stageMainHtml}${newBox}</div>
       <div class="stage-side"><div data-mp="roster">${slipPanel}</div><div data-mp="queue">${queueCard}</div><div data-mp="feed">${feedCard}</div><div data-mp="chat">${chatCard}</div><div data-mp="news">${newsCard}</div></div>
     </div>
     <div data-mp="pool">
@@ -1367,6 +1367,12 @@ function renderDraft(){
     btn.addEventListener("click", () => { activeFilter = btn.dataset.filter; render(); });
   });
   document.querySelectorAll("[data-mtab]").forEach((b) => b.addEventListener("click", () => { mobTab = b.dataset.mtab; render(); window.scrollTo(0, 0); }));
+  document.querySelectorAll("[data-endtest]").forEach((b) => b.addEventListener("click", async () => {
+    if (b.disabled) return; b.disabled = true;
+    const { error } = await sb.rpc("cr_reset_test_draft", { p_league: LEAGUE_ID });
+    if (error) { b.disabled = false; window.alert(error.message || "Couldn't reset the test draft."); return; }
+    location.href = "league.html?open=" + encodeURIComponent(LEAGUE_ID);
+  }));
   const lockBtn = document.getElementById("lockBtn");
   if (lockBtn) {
     lockBtn.addEventListener("click", async () => {
