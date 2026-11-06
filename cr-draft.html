@@ -251,7 +251,7 @@
   }
 
   /* ---------- Main stage ---------- */
-  .stage{display:flex;gap:24px;padding:28px 0;align-items:flex-start;flex-wrap:wrap;}
+  .stage{display:flex;gap:24px;padding:28px 0 6px;align-items:flex-start;flex-wrap:wrap;}
   .stage-main{flex:2;min-width:320px;display:flex;flex-direction:column;gap:20px;}
   .stage-side{flex:0 0 360px;display:flex;flex-direction:column;min-width:300px;}
   @media (max-width:900px){
@@ -1324,7 +1324,6 @@ function renderDraft(){
       <div class="stage-side"><div data-mp="roster">${slipPanel}</div><div data-mp="queue">${queueCard}</div><div data-mp="feed">${feedCard}</div><div data-mp="chat">${chatCard}</div><div data-mp="news">${newsCard}</div></div>
     </div>
     <div data-mp="pool">
-      <div class="queue-row"><div class="h-font" style="font-size:11px;letter-spacing:2px;color:#7A7A82;">RANKED NEXT</div>${queueHtml}</div>
       <div class="search-row"><input class="search" id="fighterSearch" placeholder="Search fighters…" value="${esc(filterVal)}"></div>
       <div class="filter-tabs">${filterTabsHtml}</div>
       <div class="division-strip">${divisionStripHtml}</div>
