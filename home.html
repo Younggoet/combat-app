@@ -215,7 +215,7 @@ async function load() {
   try {
     const { data: bouts, error } = await sb.from("bouts")
       .select("id,event_name,bout_date,bout_order,is_title_fight,status,fighter_a,fighter_b")
-      .gte("bout_date", todayStr()).in("status", ["scheduled", "confirmed", "live"]).order("bout_date", { ascending: true }).limit(200);
+      .gte("bout_date", todayStr()).in("status", ["scheduled", "confirmed", "rumored", "live"]).order("bout_date", { ascending: true }).limit(200);
     if (error) throw error;
     const ids = [...new Set((bouts || []).flatMap((b) => [b.fighter_a, b.fighter_b]))];
     for (let i = 0; i < ids.length; i += 80) {

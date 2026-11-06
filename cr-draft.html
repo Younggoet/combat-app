@@ -324,6 +324,7 @@
   .pool-head{padding:12px 16px;background:var(--panel-3);border-bottom:1px solid var(--border-2);font-size:10px;letter-spacing:1px;color:#6A6A72;}
   .draft-plus{flex:0 0 auto;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;background:var(--gold);cursor:pointer;clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%);}
   .draft-plus:hover{filter:brightness(1.15);}
+  .rumtag{margin-left:6px;font-size:9px;font-weight:700;letter-spacing:.8px;color:#E8B04A;border:1px solid #E8B04A66;border-radius:3px;padding:1px 5px;white-space:nowrap}
   button.pool-row-btn{all:unset;display:contents;cursor:pointer;}
   .pool-cell{padding:13px 16px;border-bottom:1px solid var(--border-2);font-size:13.5px;color:#C4C1B8;display:flex;align-items:center;}
   .pool-row-btn:hover .pool-cell{background:rgba(255,255,255,0.02);}
@@ -1010,12 +1011,12 @@ async function loadFighterPool(){
     } catch (e) { bmfById = {}; }
     try {
       const today = new Date().toISOString().slice(0, 10);
-      const { data: ub } = await sb.from("bouts").select("event_name, bout_date, is_title_fight, fighter_a, fighter_b, fighter_a_moneyline, fighter_b_moneyline")
+      const { data: ub } = await sb.from("bouts").select("event_name, bout_date, status, is_title_fight, fighter_a, fighter_b, fighter_a_moneyline, fighter_b_moneyline")
         .gte("bout_date", today).neq("status", "completed").neq("status", "cancelled").order("bout_date", { ascending: true }).limit(300);
       nextBoutById = {};
       (ub || []).forEach((b) => {
-        if (!nextBoutById[b.fighter_a]) nextBoutById[b.fighter_a] = { date: b.bout_date, event: b.event_name, oppId: b.fighter_b, title: b.is_title_fight, ml: b.fighter_a_moneyline };
-        if (!nextBoutById[b.fighter_b]) nextBoutById[b.fighter_b] = { date: b.bout_date, event: b.event_name, oppId: b.fighter_a, title: b.is_title_fight, ml: b.fighter_b_moneyline };
+        if (!nextBoutById[b.fighter_a]) nextBoutById[b.fighter_a] = { date: b.bout_date, event: b.event_name, oppId: b.fighter_b, title: b.is_title_fight, ml: b.fighter_a_moneyline, rumored: b.status === "rumored" };
+        if (!nextBoutById[b.fighter_b]) nextBoutById[b.fighter_b] = { date: b.bout_date, event: b.event_name, oppId: b.fighter_a, title: b.is_title_fight, ml: b.fighter_b_moneyline, rumored: b.status === "rumored" };
       });
     } catch (e) { nextBoutById = {}; }
     projectedFPById = {};
@@ -1266,7 +1267,7 @@ function renderDraft(){
   const poolRows = searched.slice(0, poolLimit).map((f) => {
     const dc = fighterDc(f), isSpot = !!spotlight && f.id === spotlight.id, hl = isSpot ? "background:rgba(212,175,55,0.06);" : "";
     return `<button class="pool-row-btn" data-fighter-id="${f.id}">
-      <div style="${hl}box-shadow:inset 6px 0 0 ${dc};padding-left:14px;" class="pool-cell fname-cell" data-profile="${f.id}">${isMyTurn ? `<span class="draft-plus" data-draft="${f.id}" role="button" aria-label="Draft ${esc(f.full_name)}" title="Draft ${esc(f.full_name)}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#101012" stroke-width="3.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>` : ""}${octagonRingAvatar(f, dc, 42)}<span class="h-font" style="font-size:14px;font-weight:600;color:${isSpot ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span>${isNewF(f.id) ? `<span class="newtag">NEW</span>` : ""}</div>
+      <div style="${hl}box-shadow:inset 6px 0 0 ${dc};padding-left:14px;" class="pool-cell fname-cell" data-profile="${f.id}">${isMyTurn ? `<span class="draft-plus" data-draft="${f.id}" role="button" aria-label="Draft ${esc(f.full_name)}" title="Draft ${esc(f.full_name)}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#101012" stroke-width="3.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>` : ""}${octagonRingAvatar(f, dc, 42)}<span class="h-font" style="font-size:14px;font-weight:600;color:${isSpot ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span>${isNewF(f.id) ? `<span class="newtag">NEW</span>` : ""}${(nextBoutById[f.id] || {}).rumored ? `<span class="rumtag" title="This bout has been reported but the UFC has not announced it yet">RUMORED</span>` : ""}</div>
       <div style="${hl}" class="pool-cell cell-div"><div class="divtag2" style="background:${dc}2A;color:${txc(dc)};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div></div>
       <div style="${hl}" class="pool-cell cell-record" data-label="REC">${esc(fmtRecord(f))}</div>
       <div style="${hl}" class="pool-cell cell-sigstr">${esc(fmtNum(f.avg_sig_strikes))}</div>
@@ -1495,7 +1496,7 @@ function renderProfile(){
       <div class="grow"><div class="h" style="font-size:34px;font-weight:700;line-height:1.05;text-shadow:0 2px 12px rgba(0,0,0,.6)">${esc(f.full_name)}</div>
       <div class="row small" style="margin-top:8px;gap:8px;flex-wrap:wrap"><span class="tag" style="background:${dc};color:${isBmf(f)?"#F5F2EA":"#101012"};font-size:13px">${esc(DIV_SHORT[f.announced_weight_class] || "")}</span><span class="mut">${esc(f.announced_weight_class || "")}${isBmf(f) ? " · BMF" : champ ? " · Champion" : ""}</span></div>
       <div style="margin-top:8px">${owner}</div></div></div>
-    <div class="small mut" style="margin-top:12px">${nb ? `Next fight: <b>${esc(fmtShortDate(nb.date))}</b> vs ${esc(opp ? opp.full_name : "TBA")}${nb.title ? " · title fight" : ""}` : "No fight booked yet"}</div>
+    <div class="small mut" style="margin-top:12px">${nb ? `Next fight: <b>${esc(fmtShortDate(nb.date))}</b> vs ${esc(opp ? opp.full_name : "TBA")}${nb.title ? " · title fight" : ""}${nb.rumored ? ` <span class="rumtag">RUMORED</span>` : ""}` : "No fight booked yet"}</div>
     ${canPick ? `<div class="row" style="margin-top:12px;gap:10px"><button class="btn g grow" data-pact="select">SELECT FOR MY PICK</button></div>` : ""}</div></div>
   <div class="pad col" style="gap:10px;margin-top:12px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${box("AGE", age ?? "—")}${box("HEIGHT", ht)}${box("WEIGHT", lbs)}${box("REACH", reach)}${box("STANCE", f.stance || "—")}${box("RECORD", fmtRecord(f))}${box("COUNTRY", f.nationality || "—")}${box("TEAM", f.team || "—")}</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${box((f.announced_weight_class || "DIVISION").toUpperCase() + " BLOCK RANK", divRank ? "#" + divRank : "—", dc)}${box("OVERALL BLOCK RANK", fmtRank(overallRankById[f.id]), dc)}${box("PROJ FP", fmtNum(projectedFPById[f.id], 1), dc)}${box("STATUS", pk ? "Pick " + pk.pick_number : "Available", dc)}</div>
