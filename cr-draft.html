@@ -1194,6 +1194,7 @@ function renderDraft(){
       ${upNext.length ? ob(`<div class="h-font" style="font-size:14px;letter-spacing:2px;color:#9A9AA2;margin-bottom:10px;">BEST AVAILABLE AFTER THIS PICK</div>
         <div style="display:flex;gap:18px;flex-wrap:wrap;">${upNext.map((f) => `<div data-profile="${f.id}" style="display:flex;align-items:center;gap:10px;cursor:pointer;">${octagonRingAvatar(f, fighterDc(f), 38)}<div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div><div style="font-size:11px;color:#B8B5AE;">${esc(DIV_SHORT[f.announced_weight_class] || "")} · ${fmtRank(overallRankById[f.id])}</div></div></div>`).join("")}</div>`, { cls: "md", pad: "16px 22px" }) : ""}
       </div>
+      <button id="lockBtn" class="lock-pick-btn oct-btn" style="background:var(--red);color:#F5F2EA;cursor:pointer;">LOCK PICK — ${esc(spotlight.full_name.toUpperCase())}</button>
       <div class="error" id="pickError" style="display:none;"></div>`;
   } else {
     stageMainHtml = ob(`<div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;text-align:center;">Waiting on ${esc(teamName(onClockTeam))}…</div>`, { cls: "lg", pad: "30px" });
@@ -1367,6 +1368,19 @@ function renderDraft(){
     btn.addEventListener("click", () => { activeFilter = btn.dataset.filter; render(); });
   });
   document.querySelectorAll("[data-mtab]").forEach((b) => b.addEventListener("click", () => { mobTab = b.dataset.mtab; render(); window.scrollTo(0, 0); }));
+  const lockBtn = document.getElementById("lockBtn");
+  if (lockBtn) {
+    lockBtn.addEventListener("click", async () => {
+      const errBox = document.getElementById("pickError");
+      const target = manualTarget || defaultTarget;
+      if (!target) return;
+      lockBtn.disabled = true;
+      const { error } = await sb.rpc("cr_make_pick", { p_room: room.id, p_fighter: target.id });
+      if (error) { errBox.textContent = error.message || "That pick isn't legal."; errBox.style.display = "block"; lockBtn.disabled = false; await refresh(false); return; }
+      selectedFighterId = null;
+      await refresh(true);
+    });
+  }
   const hmb = document.getElementById("heroMoreBtn"); if (hmb) hmb.addEventListener("click", () => { heroMore = !heroMore; render(); });
 }
 
