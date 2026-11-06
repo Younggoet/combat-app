@@ -2695,32 +2695,7 @@ function renderLanding(){
       <div class="welcome">Draft real UFC fighters and score every fight live. Try a draft now, no sign-up needed.</div>
     </div>
 
-    <div class="home-section">
-      <h2>This week's cards</h2>
-      <div class="sub">Draft any fighter on the card against a bot, then watch your score update as each fight happens.</div>
-    </div>
-    <div class="week-cards" style="margin-top:0;">
-      ${WEEK_CARDS.map((c) => `
-        <div class="week-card ${c.tone}" data-week-card="${c.id}">
-          <div class="week-card-bg" style="background-image:url('${esc(c.bgUrl)}');"></div>
-          <div class="week-card-content">
-            <div class="week-card-kicker">${esc(c.kicker)}</div>
-            <div class="week-card-matchup">
-              <div class="week-card-fighter-ring"><img src="${esc(c.fighterAPhoto)}" alt=""></div>
-              <div class="week-card-vs">VS</div>
-              <div class="week-card-fighter-ring"><img src="${esc(c.fighterBPhoto)}" alt=""></div>
-            </div>
-            <div class="week-card-name">${esc(c.eventName)}</div>
-            <div class="week-card-sub">${esc(c.eventSub)}</div>
-            ${c.live
-              ? `<button type="button" class="week-card-cta" data-week-draft="${c.id}">DRAFT THIS CARD</button>`
-              : `<button type="button" class="week-card-cta" disabled>CARD LOCKS OCT 24</button>`}
-          </div>
-        </div>
-      `).join("")}
-    </div>
-
-    <div class="home-section">
+<div class="home-section">
       <h2>How it works</h2>
       <div class="home-steps">
         <div class="home-step"><div class="t">Create a league</div><div class="d">Pick a format and how many teams. Invite friends or fill the rest with bots.</div></div>
