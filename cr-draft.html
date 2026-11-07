@@ -894,7 +894,7 @@ async function loadMine(){
     const [q, p, c] = await Promise.all([
       userTeamId ? sb.from("cr_queue").select("fighter_id,pos").eq("team_id", userTeamId).order("pos") : Promise.resolve({ data: [] }),
       userTeamId ? sb.from("cr_team_prefs").select("auto_draft").eq("team_id", userTeamId).maybeSingle() : Promise.resolve({ data: null }),
-      sb.from("cr_chat").select("id,team_id,body,created_at").eq("league_id", LEAGUE_ID).order("id", { ascending: false }).limit(60)
+      sb.from("cr_chat").select("id,team_id,user_id,body,created_at").eq("league_id", LEAGUE_ID).order("id", { ascending: false }).limit(60)
     ]);
     if (q.data) myQueue = q.data.map((r) => r.fighter_id);
     autoDraft = !!(p.data && p.data.auto_draft);
@@ -1234,8 +1234,9 @@ function renderDraft(){
   const queueCard = userTeamId && !complete ? ob(`<div class="side-card-head"><div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">YOUR QUEUE</div>${autoBtn}</div><div class="side-card-body">${qRows}</div>${autoDraft ? `<div style="font-size:11px;color:#6A6A72;padding:0 16px 12px;">Auto-draft is on: you'll be picked for as soon as you're on the clock, from your queue first, then best available.</div>` : ""}`, { cls: "lg", pad: "0", st: "margin-top:18px;" }) : "";
 
   /* ---- draft chat ---- */
+  const chatActs = (m) => { const mine = m.user_id && m.user_id === userId, rm = (L && L.commissioner_user_id === userId) || mine; return `<span style="font-size:10.5px;margin-left:8px;white-space:nowrap;">${mine ? "" : `<a href="#" data-rptchat="${m.id}" style="color:var(--text-faint);text-decoration:none;margin-right:8px;">REPORT</a>`}${rm ? `<a href="#" data-delchat="${m.id}" style="color:var(--text-faint);text-decoration:none;">REMOVE</a>` : ""}</span>`; };
   const teamNm = (tid) => { const t = teams.find((x) => x.id === tid); return t ? t.name : "Commish"; };
-  const chatHtml = chatMsgs.map((m) => `<div class="feed-item" style="display:block;"><span class="h-font" style="font-size:12px;color:${m.team_id === userTeamId ? "var(--gold)" : "#9A9AA2"};">${esc(teamNm(m.team_id))}</span> <span style="font-size:13px;color:#C9C6BD;word-break:break-word;">${esc(m.body)}</span></div>`).join("") || `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">No messages yet.</div>`;
+  const chatHtml = chatMsgs.map((m) => `<div class="feed-item" style="display:block;"><span class="h-font" style="font-size:12px;color:${m.team_id === userTeamId ? "var(--gold)" : "#9A9AA2"};">${esc(teamNm(m.team_id))}</span> <span style="font-size:13px;color:#C9C6BD;word-break:break-word;">${esc(m.body)}</span>${chatActs(m)}</div>`).join("") || `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">No messages yet.</div>`;
   const chatCard = ob(`<div class="side-card-head"><div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">DRAFT CHAT</div></div><div class="side-card-body" id="chatList" style="max-height:220px;overflow-y:auto;">${chatHtml}</div>${userTeamId ? `<div style="display:flex;gap:8px;padding:10px 16px 14px;"><input class="search" id="chatInput" maxlength="500" placeholder="Message the league…" value="${esc(chatDraft)}" style="flex:1;min-width:0;"><button class="board-link h-font" id="chatSend" style="font-size:11px;letter-spacing:2px;">SEND</button></div>` : ""}`, { cls: "lg", pad: "0", st: "margin-top:18px;" });
 
   /* ---- news ---- */
@@ -1367,6 +1368,8 @@ function renderDraft(){
     btn.addEventListener("click", () => { activeFilter = btn.dataset.filter; render(); });
   });
   document.querySelectorAll("[data-mtab]").forEach((b) => b.addEventListener("click", () => { mobTab = b.dataset.mtab; render(); window.scrollTo(0, 0); }));
+  document.querySelectorAll("[data-rptchat]").forEach((a) => a.addEventListener("click", async (e) => { e.preventDefault(); const { error } = await sb.rpc("report_chat_message", { p_source: "draft", p_message: String(a.dataset.rptchat) }); a.textContent = error ? "COULD NOT REPORT" : "REPORTED"; }));
+  document.querySelectorAll("[data-delchat]").forEach((a) => a.addEventListener("click", async (e) => { e.preventDefault(); const { error } = await sb.from("cr_chat").delete().eq("id", a.dataset.delchat); if (error) { a.textContent = "COULD NOT REMOVE"; return; } await loadMine(); lastSig = ""; render(); }));
   document.querySelectorAll("[data-endtest]").forEach((b) => b.addEventListener("click", async () => {
     if (b.disabled) return; b.disabled = true;
     const { error } = await sb.rpc("cr_reset_test_draft", { p_league: LEAGUE_ID });

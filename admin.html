@@ -50,8 +50,8 @@ input{background:#0F0F12;border:1px solid #3a3628;color:var(--fg);padding:9px 12
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sb=CombatAuth.client,FN='https://combat-sync.netlify.app/.netlify/functions/';
-let D=null,tab=(location.hash||'#overview').slice(1),err='',busy=false;
-const TABS=[['overview','OVERVIEW'],['scoring','SCORING'],['leagues','LEAGUES'],['usage','USAGE'],['data','DATA'],['tools','TOOLS']];
+let R=[],D=null,tab=(location.hash||'#overview').slice(1),err='',busy=false;
+const TABS=[['overview','OVERVIEW'],['scoring','SCORING'],['leagues','LEAGUES'],['reports','REPORTS'],['usage','USAGE'],['data','DATA'],['tools','TOOLS']];
 const n=v=>v==null?'—':Number(v).toLocaleString();
 const ago=s=>s==null?'never':s<90?s+'s ago':s<5400?Math.round(s/60)+' min ago':s<172800?Math.round(s/3600)+' h ago':Math.round(s/86400)+' d ago';
 const stat=(l,v,sub,cls)=>`<div class="card ${cls||''}"><div class="i"><div class="lab">${l}</div><div class="big">${v}</div>${sub?`<div class="dim" style="font-size:12px;margin-top:4px">${sub}</div>`:''}</div></div>`;
@@ -59,13 +59,14 @@ const sec=t=>`<div class="sec"><span>${t}</span></div>`;
 const box=(inner,cls)=>`<div class="card ${cls||''}"><div class="i">${inner}</div></div>`;
 const kv=o=>Object.keys(o||{}).length?Object.entries(o).map(([k,v])=>`<span class="pill y" style="margin:2px 6px 2px 0">${esc(k)} ${v}</span>`).join(''):'<span class="dim">none</span>';
 const etToday=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
-async function load(){if(busy)return;busy=true;try{const {data,error}=await sb.rpc('admin_overview');if(error)throw error;D=data;err=''}catch(e){err=e.message||String(e)}busy=false;draw()}
+async function load(){if(busy)return;busy=true;try{const {data,error}=await sb.rpc('admin_overview');if(error)throw error;D=data;err='';try{const {data:rr}=await sb.rpc('admin_chat_reports');R=rr||[]}catch(_){R=[]}}catch(e){err=e.message||String(e)}busy=false;draw()}
 function health(){const s=D.scoring,bad=[];const today=etToday();const t=s.bouts.filter(b=>b.date===today);
   if(t.some(b=>!b.cito))bad.push(t.filter(b=>!b.cito).length+' of today’s bouts are not linked to live scoring');
   if(s.live_stale.length)bad.push(s.live_stale.length+' live fight(s) have not updated in over 5 minutes');
   if(D.drafts.stuck.length)bad.push(D.drafts.stuck.length+' draft(s) look stuck');
   if(D.usage.error_count_24h>0)bad.push(D.usage.error_count_24h+' app error(s) in the last 24 hours');
   if(s.odd_matchups.length)bad.push(s.odd_matchups.length+' final matchup(s) ended 0.0 to 0.0');
+  const open=R.filter(x=>x.status==='open').length;if(open)bad.push(open+' open chat report(s). See the REPORTS tab');
   return bad}
 function pOverview(){const u=D.users,l=D.leagues,a=D.activity,us=D.usage,f=D.funnel,h=health();
   const mx=Math.max(1,...u.signups_by_day.map(x=>x.n));
@@ -86,6 +87,8 @@ function pLeagues(){const L=D.leagues;
   ${sec('DRAFTS')}${box(kv(D.drafts.by_status)+`<div class="note">${D.drafts.autopick_share==null?'':D.drafts.autopick_share+'% of all picks were auto-picks.'}</div>`)}
   ${D.drafts.stuck.length?sec('STUCK DRAFTS')+box(D.drafts.stuck.map(x=>`<div>${esc(x.league)}: pick ${x.pick}, deadline passed ${ago(x.overdue_s)}</div>`).join(''),'red'):''}
   ${sec('TRADES AND WAIVERS, LAST 7 DAYS')}<div class="two">${box('<div class="lab">Trades</div>'+kv(D.activity.trades_7d))}${box('<div class="lab">Waiver claims</div>'+kv(D.activity.claims_7d))}</div>`}
+function pReports(){const o=R.filter(x=>x.status==='open'),c=R.length-o.length;
+  return `<div class="grid">${stat('Open reports',n(o.length),'',o.length?'red':'grn')}${stat('Closed',n(c))}</div>${sec('REPORTED MESSAGES')}${box(R.length?`<div class="scroll"><table><tr><th>WHEN</th><th>FROM</th><th>MESSAGE</th><th>REASON</th><th>STATUS</th><th></th></tr>${R.map(x=>`<tr><td class="dim">${esc(String(x.created_at).slice(0,16).replace('T',' '))}</td><td>${esc(x.message_name||'')}</td><td style="max-width:360px;word-break:break-word">${esc(x.message_body||'')}</td><td class="dim">${esc(x.reason||'')}</td><td><span class="pill ${x.status==='open'?'r':'g'}">${esc(x.status)}</span></td><td>${x.status==='open'?`<button class="btn o" data-rm="${x.id}">REMOVE MESSAGE</button> <button class="btn o" data-cl="${x.id}">DISMISS</button>`:''}</td></tr>`).join('')}</table></div>`:'<span class="dim">No reports yet.</span>')}`}
 function pUsage(){const u=D.usage,tot=Math.max(1,...u.views_7d.map(x=>x.n)),ta=Math.max(1,...u.actions_7d.map(x=>x.n));
   const bars=(arr,k,mx)=>arr.map(x=>`<div class="row" style="margin:5px 0"><div style="width:190px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x[k]||'(unknown)')}</div><div class="bar" style="flex:1"><i style="width:${x.n/mx*100}%"></i></div><div style="width:40px;text-align:right" class="h">${x.n}</div></div>`).join('')||'<span class="dim">No data yet. It fills in as people use the app.</span>';
   const p=u.press_room;
@@ -106,9 +109,11 @@ function pTools(){const d=etToday();
 function draw(){const app=$('#app');
   if(err){app.innerHTML=`<div class="msg"><div class="h gold" style="font-size:28px">COMBAT PANEL</div><p class="mut">${/Not allowed/i.test(err)?'This page is only for the Combat owner.':'Could not load the panel: '+esc(err)}</p><p><a class="btn" href="login.html">SIGN IN</a></p></div>`;return}
   if(!D){app.innerHTML='<div class="msg dim">Loading…</div>';return}
-  const body={overview:pOverview,scoring:pScoring,leagues:pLeagues,usage:pUsage,data:pData,tools:pTools}[tab]||pOverview;
+  const body={overview:pOverview,scoring:pScoring,leagues:pLeagues,reports:pReports,usage:pUsage,data:pData,tools:pTools}[tab]||pOverview;
   app.innerHTML=`<div class="top"><span class="t">COMBAT</span><span class="s">OWNER PANEL</span><span style="flex:1"></span><span class="dim" style="font-size:12px">Updated ${new Date(D.generated_at).toLocaleTimeString()} · refreshes every 30 s</span><button class="btn o" id="rf">REFRESH</button></div><div class="tabs">${TABS.map(([k,l])=>`<button class="tab ${tab===k?'on':''}" data-t="${k}">${l}</button>`).join('')}</div>${body()}`;
   const l1=$('#l1'),l2=$('#l2'),ld=$('#ld');if(ld){const set=()=>{l1.href=FN+'link-card-bouts?date='+encodeURIComponent(ld.value)+'&dryRun=true';l2.href=FN+'link-card-bouts?date='+encodeURIComponent(ld.value)};set();ld.addEventListener('input',set)}}
-document.addEventListener('click',e=>{const t=e.target.closest('[data-t]');if(t){tab=t.dataset.t;location.hash=tab;draw();return}if(e.target.closest('#rf'))load()});
+document.addEventListener('click',e=>{const t=e.target.closest('[data-t]');if(t){tab=t.dataset.t;location.hash=tab;draw();return}const rm=e.target.closest('[data-rm]');if(rm){const x=R.find(q=>String(q.id)===rm.dataset.rm);if(x)(async()=>{await sb.from(x.source==='league'?'chat_messages':'cr_chat').delete().eq('id',x.message_id);await sb.from('chat_reports').update({status:'removed'}).eq('id',x.id);load()})();return}
+  const cl=e.target.closest('[data-cl]');if(cl){(async()=>{await sb.from('chat_reports').update({status:'dismissed'}).eq('id',cl.dataset.cl);load()})();return}
+  if(e.target.closest('#rf'))load()});
 (async()=>{const u=await CombatAuth.getUser();if(!u){err='Not signed in';draw();return}load();setInterval(()=>{if(!document.hidden&&tab!=='tools')load()},30000)})();
 </script></body></html>
