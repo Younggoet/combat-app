@@ -1167,11 +1167,11 @@ function renderDraft(){
   const draftedIds = {};
   picks.forEach((p) => { draftedIds[p.fighter_id] = true; });
   const available = availableFighters();
-  const manualTarget = (isMyTurn && selectedFighterId && !draftedIds[selectedFighterId]) ? fightersById[selectedFighterId] : null;
+  const manualTarget = ((isMyTurn || pv) && selectedFighterId && !draftedIds[selectedFighterId]) ? fightersById[selectedFighterId] : null;
   const availSet = new Set(available.map((f) => f.id));
   const queueAvail = myQueue.map((id) => fightersById[id]).filter((f) => f && availSet.has(f.id));
   const defaultTarget = queueAvail[0] || available[0];
-  const spotlight = isMyTurn ? (manualTarget || defaultTarget) : null;
+  const spotlight = isMyTurn ? (manualTarget || defaultTarget) : pv ? manualTarget : null;
   const isManualPick = !!manualTarget;
   const remain = room.current_pick_deadline ? Math.max(0, Math.ceil((new Date(room.current_pick_deadline) - Date.now()) / 1000)) : 0;
 
@@ -1220,16 +1220,16 @@ function renderDraft(){
     stageMainHtml = ob(`<div style="text-align:center;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT COMPLETE</div>
       <div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;margin-top:10px;">ALL ${total} PICKS HAVE BEEN MADE ACROSS ALL ${n} TEAMS</div>
       ${L && L.is_test ? `<div style="font-size:13px;color:#9A9AA2;margin-top:10px;">This was a test draft. Nothing from it counts.</div><button data-endtest="1" class="start-draft oct-btn h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;margin-top:20px;">FINISH TEST · BACK TO SETUP</button>` : `<a href="league.html?open=${esc(LEAGUE_ID)}" style="display:inline-block;margin-top:20px;"><button class="start-draft oct-btn h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">GO TO LEAGUE</button></a>`}</div>`, { cls: "lg", pad: "34px", ol: "rgba(212,175,55,0.6)" });
-  } else if (pv) {
+  } else if (pv && !spotlight) {
     stageMainHtml = ob(`<div style="display:flex;flex-direction:column;gap:10px;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT PREVIEW</div>
-      <div style="font-size:14px;color:#D8D5CC;line-height:1.5;">The draft hasn't started yet. Look around the board, open any fighter's spotlight, build your queue and chat. No picks can be made until the commissioner starts the draft, and this room switches to the live draft on its own.</div>
+      <div style="font-size:14px;color:#D8D5CC;line-height:1.5;">The draft hasn't started yet. Tap any fighter in the list to see their spotlight, and tap their picture for their full profile. build your queue and chat. No picks can be made until the commissioner starts the draft, and this room switches to the live draft on its own.</div>
       <div style="border-top:1px solid var(--border-2);padding-top:10px;"><div class="h-font" style="font-size:11px;letter-spacing:2px;color:#7A7A82;">FIRST PICK</div><div class="h-font" style="font-size:22px;font-weight:700;margin-top:4px;">${esc(teamName(onClockTeam).toUpperCase())}</div></div></div>`, { cls: "lg", pad: "22px 24px", ol: "rgba(212,175,55,0.5)" });
   } else if (paused) {
     const holdT = teamById(onClockTeam);
     stageMainHtml = ob(`<div style="display:flex;flex-direction:column;gap:12px;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT PAUSED</div>
       <div style="font-size:14px;color:#D8D5CC;line-height:1.5;">Every announced fighter has been picked. The draft picks up again when more fights are announced. You can still trade picks while it waits.</div>
       ${holdT ? `<div style="border-top:1px solid var(--border-2);padding-top:12px;"><div class="h-font" style="font-size:11px;letter-spacing:2px;color:#7A7A82;">PICKS FIRST WHEN IT RESUMES</div><div class="h-font" style="font-size:22px;font-weight:700;margin-top:4px;">${esc(holdT.name.toUpperCase())}${holdT.id === userTeamId ? " (YOU)" : ""}</div><div style="font-size:12px;color:#9A9AA2;">${esc(pickLbl(pickNum))} &middot; Pick ${pickNum} of ${total}</div></div>` : ""}</div>`, { cls: "lg", pad: "28px 30px", ol: "rgba(212,175,55,0.55)", fill: "linear-gradient(120deg,rgba(212,175,55,0.16),rgba(212,175,55,0.03) 60%),#121214" });
-  } else if (isMyTurn && spotlight) {
+  } else if ((isMyTurn || pv) && spotlight) {
     const lastOwnPickEntry = picks.slice().reverse().find((p) => p.team_id === userTeamId);
     const lastOwnPick = lastOwnPickEntry ? fightersById[lastOwnPickEntry.fighter_id] : null;
     const tapeRows = [
@@ -1263,8 +1263,8 @@ function renderDraft(){
     stageMainHtml += `
       <div style="display:flex;align-items:center;gap:10px;">
         <div class="live-dot" style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div>
-        <div class="h-font" style="font-size:13px;letter-spacing:3px;color:var(--red);">ON THE CLOCK &mdash; YOUR PICK</div>
-        ${isManualPick ? `<button id="clearSelectedBtn" class="h-font" style="margin-left:auto;font-size:9px;letter-spacing:1.5px;color:var(--red);background:rgba(226,40,60,0.12);border:0;padding:5px 10px;cursor:pointer;--c:6px;clip-path:var(--P);">YOUR PICK &times;</button>` : ""}
+        <div class="h-font" style="font-size:13px;letter-spacing:3px;color:${pv ? "var(--gold)" : "var(--red)"};">${pv ? "SPOTLIGHT &mdash; DRAFT PREVIEW" : "ON THE CLOCK &mdash; YOUR PICK"}</div>
+        ${isManualPick ? `<button id="clearSelectedBtn" class="h-font" style="margin-left:auto;font-size:9px;letter-spacing:1.5px;color:${pv ? "var(--gold)" : "var(--red)"};background:rgba(226,40,60,0.12);border:0;padding:5px 10px;cursor:pointer;--c:6px;clip-path:var(--P);">${pv ? "CLOSE" : "YOUR PICK"} &times;</button>` : ""}
       </div>
       ${ob(`<div style="display:flex;align-items:center;gap:${MOB ? 14 : 30}px;${MOB ? "" : "flex-wrap:wrap;"}">
         ${octagonRingAvatar(spotlight, sdc, MOB ? 84 : 210)}
@@ -1292,8 +1292,8 @@ function renderDraft(){
       ${upNext.length ? ob(`<div class="h-font" style="font-size:14px;letter-spacing:2px;color:#9A9AA2;margin-bottom:10px;">BEST AVAILABLE AFTER THIS PICK</div>
         <div style="display:flex;gap:18px;flex-wrap:wrap;">${upNext.map((f) => `<div data-profile="${f.id}" style="display:flex;align-items:center;gap:10px;cursor:pointer;">${octagonRingAvatar(f, fighterDc(f), 38)}<div><div class="h-font" style="font-size:14px;font-weight:600;">${esc(f.full_name)}</div><div style="font-size:11px;color:#B8B5AE;">${esc(DIV_SHORT[f.announced_weight_class] || "")} · ${fmtRank(overallRankById[f.id])}</div></div></div>`).join("")}</div>`, { cls: "md", pad: "16px 22px" }) : ""}
       </div>
-      <button id="lockBtn" class="lock-pick-btn oct-btn" style="background:var(--red);color:#F5F2EA;cursor:pointer;">LOCK PICK — ${esc(spotlight.full_name.toUpperCase())}</button>
-      <div class="error" id="pickError" style="display:none;"></div>`;
+      ${pv ? "" : `<button id="lockBtn" class="lock-pick-btn oct-btn" style="background:var(--red);color:#F5F2EA;cursor:pointer;">LOCK PICK — ${esc(spotlight.full_name.toUpperCase())}</button>
+      <div class="error" id="pickError" style="display:none;"></div>`}`;
   } else {
     stageMainHtml = ob(`<div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;text-align:center;">Waiting on ${activeDot(onClockTeam)}${esc(teamName(onClockTeam))}…</div>`, { cls: "lg", pad: "30px" });
   }
@@ -1367,7 +1367,7 @@ function renderDraft(){
   const poolRows = searched.slice(0, poolLimit).map((f) => {
     const dc = fighterDc(f), isSpot = !!spotlight && f.id === spotlight.id, hl = isSpot ? "background:rgba(212,175,55,0.06);" : "";
     return `<button class="pool-row-btn" data-fighter-id="${f.id}">
-      <div style="${hl}box-shadow:inset 6px 0 0 ${dc};padding-left:14px;" class="pool-cell fname-cell" data-profile="${f.id}">${isMyTurn ? `<span class="draft-plus" data-draft="${f.id}" role="button" aria-label="Draft ${esc(f.full_name)}" title="Draft ${esc(f.full_name)}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#101012" stroke-width="3.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>` : ""}${octagonRingAvatar(f, dc, 42)}<span class="h-font" style="font-size:14px;font-weight:600;color:${isSpot ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span>${isNewF(f.id) ? `<span class="newtag">NEW</span>` : ""}${(nextBoutById[f.id] || {}).rumored ? `<span class="rumtag" title="This bout has been reported but the UFC has not announced it yet">RUMORED</span>` : ""}</div>
+      <div style="${hl}box-shadow:inset 6px 0 0 ${dc};padding-left:14px;" class="pool-cell fname-cell" ${pv ? "" : `data-profile="${f.id}"`}>${isMyTurn ? `<span class="draft-plus" data-draft="${f.id}" role="button" aria-label="Draft ${esc(f.full_name)}" title="Draft ${esc(f.full_name)}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#101012" stroke-width="3.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>` : ""}${octagonRingAvatar(f, dc, 42)}<span class="h-font" style="font-size:14px;font-weight:600;color:${isSpot ? "var(--gold)" : "var(--text)"};">${esc(f.full_name)}</span>${isNewF(f.id) ? `<span class="newtag">NEW</span>` : ""}${(nextBoutById[f.id] || {}).rumored ? `<span class="rumtag" title="This bout has been reported but the UFC has not announced it yet">RUMORED</span>` : ""}</div>
       <div style="${hl}" class="pool-cell cell-div"><div class="divtag2" style="background:${dc}2A;color:${txc(dc)};">${esc(DIV_SHORT[f.announced_weight_class] || "")}</div></div>
       <div style="${hl}" class="pool-cell cell-record" data-label="REC">${esc(fmtRecord(f))}</div>
       <div style="${hl}" class="pool-cell cell-sigstr">${esc(fmtNum(f.avg_sig_strikes))}</div>
@@ -1441,8 +1441,8 @@ function renderDraft(){
     btn.addEventListener("click", (e) => {
       const qb = e.target.closest("[data-q]"); if (qb) { toggleQueue(qb.dataset.q); return; }
       const dp = e.target.closest("[data-draft]"); if (dp) { e.stopPropagation(); draftNow(dp.dataset.draft); return; }
-      if (e.target.closest("[data-profile]") || !isMyTurn) { openProfile(btn.dataset.fighterId); return; }
-      selectedFighterId = btn.dataset.fighterId; render();
+      if (e.target.closest("[data-profile]") || !(isMyTurn || pv)) { openProfile(btn.dataset.fighterId); return; }
+      selectedFighterId = btn.dataset.fighterId; if (pv) mobTab = "pick"; render(); if (pv) window.scrollTo(0, 0);
     });
   });
   document.querySelectorAll("[data-qrm]").forEach((b) => b.addEventListener("click", () => toggleQueue(b.dataset.qrm)));
