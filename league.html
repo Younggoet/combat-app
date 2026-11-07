@@ -165,7 +165,7 @@ const tavT=(t,s,list)=>`<div class="oc tav" style="--s:${s}px;--tc:${colorOf(t,l
 const tavL=(name,s,c)=>`<div class="oc tav" style="--s:${s}px;--tc:${c||'#D4AF37'}"><b class="oc">${esc(initials(name))}</b></div>`;
 const fmtDT=iso=>iso?new Date(iso).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
 const fmtD=d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-const genCode=()=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';const r=crypto.getRandomValues(new Uint8Array(6));for(const x of r)s+=a[x%a.length];return s.slice(0,3)+'-'+s.slice(3)};
+const genCode=()=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZ';let s='';const r=crypto.getRandomValues(new Uint8Array(6));for(const x of r)s+=a[x%a.length];return s};
 const joinLink=L=>'https://combatfantasy.netlify.app/league.html?join='+encodeURIComponent(L.join_code);
 function toast(m){const e=$('#toast');e.textContent=m;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2200)}
 const isComm=()=>Z.L&&Z.L.commissioner_user_id===Z.uid;
@@ -243,7 +243,7 @@ function sName(){return shell(back('go','home'),'Pick your username','This becom
 function sHome(){
   const mine=Z.leagues.length?secH('YOUR LEAGUES')+Z.leagues.map(l=>ob(`<div class="row" style="gap:12px">${tavL(l.name,44)}<div class="grow" style="min-width:0"><div class="nm">${esc(l.name)}</div><div class="small mut">Card Redraft · ${l.status==='setup'?'Setting up':l.status==='drafting'?'Drafting':'In season'} · ${Z.counts[l.id]||1}/${l.team_count} teams</div><div class="tiny gold">${l.draft_time?'Draft '+fmtDT(l.draft_time):'Draft time not set'}</div></div><button class="btn g" data-a="open" data-v="${l.id}">OPEN</button></div>`,{cls:'md',col:'#D4AF37',pad:'12px 14px'})).join('<div style="height:10px"></div>'):'';
   const hero=ob(`<div class="row" data-a="start" style="gap:14px;cursor:pointer"><div class="oc" style="width:58px;height:58px;flex:none;background:linear-gradient(135deg,#F2D675,#9C7A1E);display:flex;align-items:center;justify-content:center;color:#14120A">${svg('<path d="M12 5v14M5 12h14"/>',30)}</div><div class="grow"><div class="h" style="font-size:20px;letter-spacing:1px">CREATE A LEAGUE</div><div class="small mut">Try UFC fantasy draft today</div></div></div><div class="row" style="gap:10px;margin-top:12px"><button class="btn g grow" data-a="start">+ CREATE</button><button class="btn grow" data-a="lobby">FIND A LEAGUE</button></div>`,{cls:'md',col:'#D4AF37',pad:'14px'});
-  const code=ob(`<div class="small mut" style="margin-bottom:6px">Have an invite code?</div><div class="row" style="gap:8px"><input class="fi grow" id="jc" placeholder="ABC-123" maxlength="8" autocomplete="off" style="text-transform:uppercase"><button class="btn g" data-a="join_code">JOIN</button></div>${Z.err?note(Z.err):''}`,{cls:'md',pad:'12px 14px'});
+  const code=ob(`<div class="small mut" style="margin-bottom:6px">Have an invite code?</div><div class="row" style="gap:8px"><input class="fi grow" id="jc" placeholder="ABCDEF" maxlength="10" autocomplete="off" style="text-transform:uppercase"><button class="btn g" data-a="join_code">JOIN</button></div>${Z.err?note(Z.err):''}`,{cls:'md',pad:'12px 14px'});
   return `<div class="hdr pad"><a class="ibtn" href="index.html" aria-label="Home">${svg(ICON.back)}</a><div class="t"><b class="h" style="color:var(--fg)">Leagues</b><span>Card Redraft · ${esc(teamName(Z.dn))}</span></div></div><div class="sec pad">${hero}${mine}${code}<div class="tiny dim" style="text-align:center;margin-top:22px;line-height:1.5">Combat is an independent fan game. Free to play, no prizes. Not affiliated with or endorsed by the UFC or any fighter.<br><a href="terms.html" class="dim">Terms</a> &middot; <a href="privacy.html" class="dim">Privacy</a></div></div>`;
 }
 function sCreate(){const c=Z.c,st=Z.step,[tm,fg]=SIZES[c.sz];
@@ -908,7 +908,7 @@ async function joinLeague(id){
   }catch(e){Z.busy=false;fail(e,"Couldn't join the league.")}
 }
 async function lookupCode(code){
-  const {data,error}=await sb.rpc('lookup_league_by_code',{p_code:code.toUpperCase().trim()});
+  const {data,error}=await sb.rpc('lookup_league_by_code',{p_code:String(code).toUpperCase().replace(/[^A-Z0-9]/g,'')});
   if(error)throw error;
   Z.found=data;if(data){const {data:p}=await sb.from('profiles').select('id,display_name').eq('id',data.commissioner_user_id);(p||[]).forEach(x=>Z.hosts[x.id]=x.display_name);
     if(Z.leagues.some(l=>l.id===data.id)){await openLeague(data.id);return}}
@@ -933,7 +933,7 @@ document.addEventListener('click',async e=>{let el=e.target.closest('[data-a]');
   else if(a==='open')await openLeague(v);
   else if(a==='lobby'){Z.f='all';await loadPublic();await loadMine();go('lobby')}
   else if(a==='lf'){Z.f=v;render()}
-  else if(a==='join_code'){const code=($('#jc').value||'').trim();if(code.length<4){Z.err='Enter the invite code';render();return}await lookupCode(code)}
+  else if(a==='join_code'){const code=($('#jc').value||'').replace(/[^A-Za-z0-9]/g,'');if(code.length<4){Z.err='Enter the invite code';render();return}await lookupCode(code)}
   else if(a==='join_id'){const {data}=await sb.from('leagues').select('*,teams(id)').eq('id',v).single();Z.found=data;go('join')}
   else if(a==='do_join')await joinLeague(v);
   else if(a==='save_name'){const n=(Z.dn||'').trim();if(n.length<2){Z.err='Use at least 2 characters';render();return}const {error}=await sb.from('profiles').upsert({id:Z.uid,display_name:n},{onConflict:'id'});if(error){Z.err='Could not save your username';render();return}Z.dn=n;await loadMine();if(Z.pendingJoin){const c2=Z.pendingJoin;Z.pendingJoin=null;await lookupCode(c2)}else go('home')}
