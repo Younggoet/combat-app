@@ -1109,13 +1109,26 @@ function availableFighters(){
 function backBtn(){ return `<a class="ibtn" href="league.html?open=${esc(LEAGUE_ID)}" aria-label="Back to league"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M15 5l-7 7 7 7"/></svg></a>`; }
 
 function renderNoRoom(){
+  const have = teams.map((t) => t.id), d = ((L && L.draft_order) || []).filter((x) => have.includes(x));
+  const ord = d.concat(have.filter((x) => !d.includes(x)));
+  const tm = (L && L.team_count) || teams.length, joined = teams.filter((t) => t.owner_user_id).length;
+  const tys = { snake: "Snake", linear: "Linear", "3rr": "Third-round reversal" };
+  const secs = (L && +L.pick_seconds) || 45, clock = Math.floor(secs / 60) + ":" + String(secs % 60).padStart(2, "0");
+  const isComm = L && L.commissioner_user_id === userId;
+  const rows = ord.map((id, i) => { const t = teamById(id); return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;${i ? "border-top:1px solid #26262C;" : ""}"><div style="width:22px;color:#6E6E78;font-size:13px;">${i + 1}</div><div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;">${esc(t.name)}${t.owner_user_id === userId ? " (you)" : ""} ${activeDot(id)}</div><div style="font-size:12px;color:#9A9AA2;">${t.owner_user_id ? "Manager" : "Open"}</div></div>`; }).join("");
+  const stat = (k, v) => `<div style="flex:1;min-width:120px;"><div style="font-size:11px;letter-spacing:1.5px;color:#6E6E78;">${k}</div><div class="h-font" style="font-size:20px;font-weight:700;">${v}</div></div>`;
   content.innerHTML = `
-    <div class="dr-header"><div class="dr-header-left">${backBtn()}<div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:1px;color:var(--gold);">COMBAT</div><div class="vrule"></div><div class="h-font dr-header-subtitle" style="font-size:15px;letter-spacing:2px;color:#9A9AA2;">CARD REDRAFT</div></div></div>
-    <div style="max-width:520px;margin:60px auto;">${ob(`<div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;">
-      <div class="octagon" style="width:60px;height:60px;background:var(--gold);"></div>
-      <div class="h-font" style="font-size:18px;font-weight:700;letter-spacing:2px;">NO DRAFT YET</div>
-      <div style="font-size:13px;color:#9A9AA2;">The commissioner starts the draft from the league page. This page opens by itself when it begins.</div>
-      <a href="league.html?open=${esc(LEAGUE_ID)}"><button class="start-draft oct-btn h-font" style="font-size:14px;letter-spacing:2px;padding:14px 32px;">BACK TO LEAGUE</button></a></div>`, { cls: "lg", pad: "34px", ol: "rgba(212,175,55,0.5)" })}</div>`;
+    <div class="dr-header"><div class="dr-header-left">${backBtn()}<div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:1px;color:var(--gold);">COMBAT</div><div class="vrule"></div><div class="h-font dr-header-subtitle" style="font-size:15px;letter-spacing:2px;color:#9A9AA2;">DRAFT LOBBY</div></div></div>
+    <div style="max-width:560px;margin:40px auto;padding:0 16px;">${ob(`<div style="display:flex;flex-direction:column;gap:18px;">
+      <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;">
+        <div class="octagon" style="width:54px;height:54px;background:var(--gold);"></div>
+        <div class="h-font" style="font-size:20px;font-weight:700;letter-spacing:2px;">${esc((L && L.name) || "League")}</div>
+        <div style="font-size:13px;color:#9A9AA2;">${isComm ? "Start the draft from your league page. Everyone here moves into the draft room when you do." : "Waiting for the commissioner to start the draft. This page opens the draft room on its own."}</div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;">${stat("DRAFT TYPE", tys[L && L.draft_type] || "Snake")}${stat("PICK TIMER", clock)}${stat("FIGHTERS EACH", (L && L.fighters_per_team) || 10)}</div>
+      <div><div class="h-font" style="font-size:14px;letter-spacing:2px;margin-bottom:4px;">${joined} OF ${tm} TEAMS JOINED</div>
+        <div style="font-size:12px;color:#9A9AA2;margin-bottom:6px;">Draft order is shown below. Teams without a number yet are placed at random when the draft starts. The red dot means the manager is here now.</div>${rows}</div>
+      <a href="league.html?open=${esc(LEAGUE_ID)}" style="text-align:center;"><button class="start-draft oct-btn h-font" style="font-size:14px;letter-spacing:2px;padding:14px 32px;">BACK TO LEAGUE</button></a></div>`, { cls: "lg", pad: "28px", ol: "rgba(212,175,55,0.5)" })}</div>`;
 }
 
 let mobTab = null, heroMore = false, prevMyTurn = false;
@@ -1649,11 +1662,12 @@ document.getElementById("modalRoot").addEventListener("click", async (e) => {
 
 /* ---------------- loop ---------------- */
 function signature(){
-  if (!room) return "none";
+  if (!room) return "none|" + teams.map((t) => t.id + (t.owner_user_id ? "o" : "")).join(",") + "|" + [...presentUsers].sort().join(",") + "|" + JSON.stringify((L && L.draft_order) || []) + "|" + (L && L.pick_seconds);
   return [room.status, room.current_pick_number, picks.length, (room.pool || []).length, (room.pool_new || []).length, JSON.stringify(po), pt.map((t) => t.id).join(","), screen, chatMsgs.length ? chatMsgs[chatMsgs.length - 1].id : 0, myQueue.join(","), autoDraft, [...presentUsers].sort().join(",")].join("|");
 }
 async function refresh(force){
   await Promise.all([loadRoomState(), loadMine()]);
+  if (!room) { const { data: lg } = await sb.from("leagues").select("*").eq("id", LEAGUE_ID).maybeSingle(); if (lg) L = lg; await loadTeams(); }
   soundCheck();
   if (room && room.pool) { const miss = room.pool.filter((id) => !fightersById[id]); if (miss.length) { const { data } = await sb.from("fighters").select(STAT_COLS).in("id", miss); (data || []).forEach((f) => { fighters.push(f); fightersById[f.id] = f; projectedFPById[f.id] = projectedFantasyPoints(f); }); } }
   const sig = signature();
@@ -1661,7 +1675,8 @@ async function refresh(force){
 }
 let busy = false, pz = 0;
 setInterval(async () => {
-  if (busy || document.hidden || !room) return;
+  if (busy || document.hidden) return;
+  if (!room) { busy = true; try { await refresh(false); } catch (e) { console.error(e); } busy = false; return; }
   busy = true;
   try {
     if (room.status === "live") {
