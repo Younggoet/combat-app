@@ -324,6 +324,7 @@
   .pool-head{padding:12px 16px;background:var(--panel-3);border-bottom:1px solid var(--border-2);font-size:10px;letter-spacing:1px;color:#6A6A72;}
   .draft-plus{flex:0 0 auto;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;background:var(--gold);cursor:pointer;clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%);}
   .draft-plus:hover{filter:brightness(1.15);}
+  .actdot{display:inline-block;width:8px;height:8px;margin-right:5px;vertical-align:middle;background:var(--red);clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%);}
   .rumtag{margin-left:6px;font-size:9px;font-weight:700;letter-spacing:.8px;color:#E8B04A;border:1px solid #E8B04A66;border-radius:3px;padding:1px 5px;white-space:nowrap}
   button.pool-row-btn{all:unset;display:contents;cursor:pointer;}
   .pool-cell{padding:13px 16px;border-bottom:1px solid var(--border-2);font-size:13.5px;color:#C4C1B8;display:flex;align-items:center;}
@@ -887,6 +888,22 @@ let lastSig = "";
 let modal = null;      // pick trade sheet state
 let fighterPoolError = null;
 let myQueue = [], autoDraft = false, chatMsgs = [], chatDraft = "";
+/* ---- who is active in the draft room (Realtime presence) ---- */
+let presentUsers = new Set(), presCh = null;
+const isActive = (tid) => { const t = teamById(tid); return !!(t && t.owner_user_id && presentUsers.has(t.owner_user_id)); };
+const activeDot = (tid) => isActive(tid) ? '<span class="actdot" title="Active in the draft" aria-label="Active in the draft"></span>' : "";
+function startPresence(){
+  try {
+    if (presCh || !LEAGUE_ID || !userId) return;
+    presCh = sb.channel("cr-presence-" + LEAGUE_ID, { config: { presence: { key: userId } } });
+    presCh.on("presence", { event: "sync" }, () => { presentUsers = new Set(Object.keys(presCh.presenceState())); });
+    presCh.subscribe(async (status) => { if (status === "SUBSCRIBED" && document.visibilityState === "visible") await presCh.track({ at: Date.now() }); });
+    document.addEventListener("visibilitychange", async () => {
+      if (!presCh) return;
+      try { if (document.visibilityState === "visible") await presCh.track({ at: Date.now() }); else await presCh.untrack(); } catch (e) {}
+    });
+  } catch (e) { console.error(e); }
+}
 
 /* ---------------- Queue, auto-draft & chat ---------------- */
 async function loadMine(){
@@ -1094,16 +1111,16 @@ function renderDraft(){
     if (entry) {
       const ef = fightersById[entry.fighter_id], dc = fighterDc(ef);
       trackerHtml += `<div class="tslot${k === pickNum - 1 ? " just" : ""}">${octagonRingAvatar(ef, dc, 52)}
-        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${esc(teamInitials(team))}</span></div>
+        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${activeDot(team)}${esc(teamInitials(team))}</span></div>
         <div class="info" style="color:${txc(dc)};font-weight:700;">${esc(ef ? ef.full_name : "?")}</div>
         <div class="divtag" style="background:${dc}2A;"><span class="h-font" style="font-size:8px;letter-spacing:0.5px;color:${txc(dc)};">${esc(ef ? (DIV_SHORT[ef.announced_weight_class] || "") : "")}</span></div></div>`;
     } else if (k === pickNum && !complete) {
       trackerHtml += `<div class="tslot">${octagonEmptyAvatar(52, paused ? "upcoming" : "clock")}
-        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${paused ? "var(--gold)" : "var(--red)"};font-weight:700;">&middot; ${esc(teamInitials(team))}</span></div>
+        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${paused ? "var(--gold)" : "var(--red)"};font-weight:700;">&middot; ${activeDot(team)}${esc(teamInitials(team))}</span></div>
         <div class="info" style="color:${paused ? "var(--gold)" : "var(--red)"};font-weight:700;">${paused ? "ON HOLD" : team === userTeamId ? "ON THE CLOCK" : "ON CLOCK"}</div></div>`;
     } else {
       trackerHtml += `<div class="tslot">${octagonEmptyAvatar(52, "upcoming")}
-        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${esc(teamInitials(team))}</span></div>
+        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${activeDot(team)}${esc(teamInitials(team))}</span></div>
         <div class="info" style="color:#5A5A62;">UPCOMING</div></div>`;
     }
   }
@@ -1197,7 +1214,7 @@ function renderDraft(){
       <button id="lockBtn" class="lock-pick-btn oct-btn" style="background:var(--red);color:#F5F2EA;cursor:pointer;">LOCK PICK — ${esc(spotlight.full_name.toUpperCase())}</button>
       <div class="error" id="pickError" style="display:none;"></div>`;
   } else {
-    stageMainHtml = ob(`<div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;text-align:center;">Waiting on ${esc(teamName(onClockTeam))}…</div>`, { cls: "lg", pad: "30px" });
+    stageMainHtml = ob(`<div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;text-align:center;">Waiting on ${activeDot(onClockTeam)}${esc(teamName(onClockTeam))}…</div>`, { cls: "lg", pad: "30px" });
   }
 
   /* ---- your slip ---- */
@@ -1236,7 +1253,7 @@ function renderDraft(){
   /* ---- draft chat ---- */
   const chatActs = (m) => { const mine = m.user_id && m.user_id === userId, rm = (L && L.commissioner_user_id === userId) || mine; return `<span style="font-size:10.5px;margin-left:8px;white-space:nowrap;">${mine ? "" : `<a href="#" data-rptchat="${m.id}" style="color:var(--text-faint);text-decoration:none;margin-right:8px;">REPORT</a>`}${rm ? `<a href="#" data-delchat="${m.id}" style="color:var(--text-faint);text-decoration:none;">REMOVE</a>` : ""}</span>`; };
   const teamNm = (tid) => { const t = teams.find((x) => x.id === tid); return t ? t.name : "Commish"; };
-  const chatHtml = chatMsgs.map((m) => `<div class="feed-item" style="display:block;"><span class="h-font" style="font-size:12px;color:${m.team_id === userTeamId ? "var(--gold)" : "#9A9AA2"};">${esc(teamNm(m.team_id))}</span> <span style="font-size:13px;color:#C9C6BD;word-break:break-word;">${esc(m.body)}</span>${chatActs(m)}</div>`).join("") || `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">No messages yet.</div>`;
+  const chatHtml = chatMsgs.map((m) => `<div class="feed-item" style="display:block;"><span class="h-font" style="font-size:12px;color:${m.team_id === userTeamId ? "var(--gold)" : "#9A9AA2"};">${activeDot(m.team_id)}${esc(teamNm(m.team_id))}</span> <span style="font-size:13px;color:#C9C6BD;word-break:break-word;">${esc(m.body)}</span>${chatActs(m)}</div>`).join("") || `<div style="color:var(--text-faint);font-size:12.5px;padding:12px 0;">No messages yet.</div>`;
   const chatCard = ob(`<div class="side-card-head"><div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">DRAFT CHAT</div></div><div class="side-card-body" id="chatList" style="max-height:220px;overflow-y:auto;">${chatHtml}</div>${userTeamId ? `<div style="display:flex;gap:8px;padding:10px 16px 14px;"><input class="search" id="chatInput" maxlength="500" placeholder="Message the league…" value="${esc(chatDraft)}" style="flex:1;min-width:0;"><button class="board-link h-font" id="chatSend" style="font-size:11px;letter-spacing:2px;">SEND</button></div>` : ""}`, { cls: "lg", pad: "0", st: "margin-top:18px;" });
 
   /* ---- news ---- */
@@ -1408,7 +1425,7 @@ function renderBoard(){
   const cols = room.team_order.length, n = cols;
   const teamHeaderHtml = room.team_order.map((tid) => `
     <div class="board-team-cell" style="${tid === userTeamId ? "background:rgba(212,175,55,0.12);border-color:var(--gold);" : ""}">
-      <div class="h-font" style="font-size:13px;font-weight:700;color:${tid === userTeamId ? "var(--gold)" : "#C9C6BD"};">${esc(teamInitials(tid))}</div>
+      <div class="h-font" style="font-size:13px;font-weight:700;color:${tid === userTeamId ? "var(--gold)" : "#C9C6BD"};">${activeDot(tid)}${esc(teamInitials(tid))}</div>
       ${tid === userTeamId ? `<div class="h-font" style="font-size:9px;letter-spacing:1px;color:var(--gold);margin-top:2px;">YOUR TEAM</div>` : ""}
     </div>`).join("");
   const byPick = {}; picks.forEach((p) => { byPick[p.pick_number] = p; });
@@ -1588,7 +1605,7 @@ document.getElementById("modalRoot").addEventListener("click", async (e) => {
 /* ---------------- loop ---------------- */
 function signature(){
   if (!room) return "none";
-  return [room.status, room.current_pick_number, picks.length, (room.pool || []).length, (room.pool_new || []).length, JSON.stringify(po), pt.map((t) => t.id).join(","), screen, chatMsgs.length ? chatMsgs[chatMsgs.length - 1].id : 0, myQueue.join(","), autoDraft].join("|");
+  return [room.status, room.current_pick_number, picks.length, (room.pool || []).length, (room.pool_new || []).length, JSON.stringify(po), pt.map((t) => t.id).join(","), screen, chatMsgs.length ? chatMsgs[chatMsgs.length - 1].id : 0, myQueue.join(","), autoDraft, [...presentUsers].sort().join(",")].join("|");
 }
 async function refresh(force){
   await Promise.all([loadRoomState(), loadMine()]);
@@ -1632,6 +1649,7 @@ setInterval(() => {
     loadNews();
     render();
     lastSig = signature();
+    startPresence();
   } catch (e) {
     console.error(e);
     content.innerHTML = `<div class="error" style="max-width:520px;margin:60px auto;">Couldn't load the draft room. Check your connection and refresh.</div>`;
