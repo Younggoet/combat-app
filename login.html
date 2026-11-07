@@ -179,7 +179,7 @@ tabSignUp.addEventListener("click", () => setMode("signup"));
 // A page that requires sign-in (like joining a Face-Off room) links here
 // with ?redirect=<url> so we can send people back where they meant to go
 // instead of always landing on team.html.
-const redirectTarget = new URLSearchParams(location.search).get("redirect") || "team.html";
+const redirectTarget = new URLSearchParams(location.search).get("redirect") || "league.html";
 
 // Already signed in? Bounce straight back rather than showing the form.
 const isRecovery = /type=recovery/.test(location.hash);
