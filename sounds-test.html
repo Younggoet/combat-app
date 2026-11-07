@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Combat sound test</title>
+<style>
+:root{--bg:#0A1124;--panel:#141417;--text:#F5F2EA;--dim:#9A9AA2;--gold:#D4AF37;--red:#E2283C}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Inter",Arial,sans-serif;line-height:1.5}
+.wrap{max-width:560px;margin:0 auto;padding:36px 20px 80px}h1{font-size:24px;margin:0 0 6px}p{color:var(--dim);font-size:14.5px;margin:0 0 22px}
+.row{display:flex;align-items:center;gap:10px;background:var(--panel);padding:14px 16px;margin-bottom:10px;border-radius:10px}
+.row b{flex:1;font-size:15px}.row small{display:block;color:var(--dim);font-weight:400;font-size:12.5px}
+button{border:0;cursor:pointer;font-weight:700;font-size:12px;letter-spacing:1px;padding:10px 14px;border-radius:6px}
+.play{background:var(--gold);color:#14120A}.use{background:#26262C;color:var(--text)}.use.on{background:var(--red)}
+#msg{color:var(--gold);font-size:13.5px;min-height:20px;margin-top:14px}
+</style></head><body><div class="wrap">
+<h1>Pick sound test</h1><p>Tap PLAY to hear each one. Tap USE on your favorite, then run a test draft to hear it on every pick. This only changes the sound on this device.</p>
+<div id="list"></div><div id="msg"></div></div>
+<script>
+const AC=window.AudioContext||window.webkitAudioContext;let ac=null;
+const ctx=()=>{if(!ac)ac=new AC();if(ac.state==='suspended')ac.resume();return ac};
+const tone=(a,f,t0,dur,type,vol,f2)=>{const o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t0+dur);g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+.01);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);o.connect(g);g.connect(a.destination);o.start(t0);o.stop(t0+dur+.05)};
+const noise=(a,t0,dur,vol,cutoff,ftype)=>{const n=Math.floor(a.sampleRate*dur),buf=a.createBuffer(1,n,a.sampleRate),d=buf.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const src=a.createBufferSource();src.buffer=buf;const lp=a.createBiquadFilter();lp.type=ftype||'lowpass';lp.frequency.value=cutoff;lp.Q.value=.9;const g=a.createGain();g.gain.value=vol;src.connect(lp);lp.connect(g);g.connect(a.destination);src.start(t0)};
+const PICKS={
+ pop:['Mitt pop','The crack of a punch landing on a coach’s pad',(a,t)=>{noise(a,t,.06,1,2600,'bandpass');tone(a,300,t,.12,'sine',.55,90)}],
+ speedbag:['Speed bag','A quick roll, like a boxer warming up',(a,t)=>{for(let i=0;i<7;i++){const d=i*.075,v=.55*(1-i*.08);noise(a,t+d,.035,v,1900,'bandpass');tone(a,150,t+d,.05,'sine',v*.5,90)}}],
+ ding:['Single ding','One strike of the ring bell',(a,t)=>{[[1,.35],[2.76,.18],[5.4,.09]].forEach(([m,v])=>tone(a,740*m,t,1,'sine',v))}],
+ slap:['Glove slap','A sharp open-hand crack',(a,t)=>{noise(a,t,.09,1,1600,'highpass');tone(a,420,t,.06,'triangle',.4,200)}],
+ horn:['Arena horn','A short blast, like a round ending',(a,t)=>{[220,277.2,329.6].forEach(f=>tone(a,f,t,.45,'sawtooth',.12))}]
+};
+let cur='pop';try{cur=localStorage.getItem('combat-pick-sound')||'pop'}catch(e){}
+const list=document.getElementById('list'),msg=document.getElementById('msg');
+function draw(){list.innerHTML=Object.entries(PICKS).map(([k,[n,d]])=>`<div class="row"><b>${n}<small>${d}</small></b><button class="play" data-p="${k}">PLAY</button><button class="use ${cur===k?'on':''}" data-u="${k}">${cur===k?'IN USE':'USE'}</button></div>`).join('')}
+list.addEventListener('click',e=>{const p=e.target.closest('[data-p]'),u=e.target.closest('[data-u]');
+ if(p){const a=ctx();PICKS[p.dataset.p][2](a,a.currentTime+.02)}
+ if(u){cur=u.dataset.u;try{localStorage.setItem('combat-pick-sound',cur)}catch(x){}msg.textContent=PICKS[cur][0]+' is now your pick sound on this device.';draw()}});
+draw();
+</script></body></html>

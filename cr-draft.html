@@ -894,13 +894,21 @@ const sfx = (() => {
   const ctx = () => { if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ac = new C(); } if (ac.state === "suspended") ac.resume(); return ac; };
   const on = () => { try { return localStorage.getItem("combat-sound") !== "off"; } catch (e) { return true; } };
   const tone = (a, f, t0, dur, type, vol, f2) => { const o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.setValueAtTime(f, t0); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + dur); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0 + dur + 0.05); };
-  const noise = (a, t0, dur, vol, cutoff) => { const n = Math.floor(a.sampleRate * dur), buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n); const src = a.createBufferSource(); src.buffer = buf; const lp = a.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = cutoff; const g = a.createGain(); g.gain.value = vol; src.connect(lp); lp.connect(g); g.connect(a.destination); src.start(t0); };
+  const noise = (a, t0, dur, vol, cutoff, ftype) => { const n = Math.floor(a.sampleRate * dur), buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n); const src = a.createBufferSource(); src.buffer = buf; const lp = a.createBiquadFilter(); lp.type = ftype || "lowpass"; lp.frequency.value = cutoff; lp.Q.value = 0.9; const g = a.createGain(); g.gain.value = vol; src.connect(lp); lp.connect(g); g.connect(a.destination); src.start(t0); };
   const play = (fn) => { if (!on()) return; try { const a = ctx(); if (a) fn(a, a.currentTime + 0.02); } catch (e) {} };
+  const PICKS = {
+    pop: (a, t) => { noise(a, t, 0.06, 1.0, 2600, "bandpass"); tone(a, 300, t, 0.12, "sine", 0.55, 90); },
+    speedbag: (a, t) => { for (let i = 0; i < 7; i++) { const d = i * 0.075, v = 0.55 * (1 - i * 0.08); noise(a, t + d, 0.035, v, 1900, "bandpass"); tone(a, 150, t + d, 0.05, "sine", v * 0.5, 90); } },
+    ding: (a, t) => { [[1, 0.35], [2.76, 0.18], [5.4, 0.09]].forEach(([m, v]) => tone(a, 740 * m, t, 1.0, "sine", v)); },
+    slap: (a, t) => { noise(a, t, 0.09, 1.0, 1600, "highpass"); tone(a, 420, t, 0.06, "triangle", 0.4, 200); },
+    horn: (a, t) => { [220, 277.2, 329.6].forEach((f) => tone(a, f, t, 0.45, "sawtooth", 0.12)); }
+  };
+  const pickKind = () => { try { const k = localStorage.getItem("combat-pick-sound"); return PICKS[k] ? k : "pop"; } catch (e) { return "pop"; } };
   ["pointerdown", "keydown", "touchstart"].forEach((ev) => document.addEventListener(ev, () => { try { ctx(); } catch (e) {} }, { once: true, passive: true }));
   return {
     on,
     bell: () => play((a, t) => { [0, 0.55, 1.1].forEach((d) => [[1, 0.30], [2.76, 0.16], [5.4, 0.08]].forEach(([m, v]) => tone(a, 620 * m, t + d, 1.4, "sine", v))); }),
-    pick: () => play((a, t) => { tone(a, 170, t, 0.22, "sine", 0.9, 42); noise(a, t, 0.09, 0.5, 900); }),
+    pick: () => play((a, t) => (PICKS[pickKind()] || PICKS.pop)(a, t)),
     turn: () => play((a, t) => { tone(a, 660, t, 0.14, "triangle", 0.35); tone(a, 990, t + 0.16, 0.22, "triangle", 0.35); }),
   };
 })();
