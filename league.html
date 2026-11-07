@@ -961,7 +961,7 @@ document.addEventListener('click',async e=>{let el=e.target.closest('[data-a]');
   else if(a==='drop'){Z.drop=v}
   else if(a==='doadd'){if(!Z.drop){toast('Pick a fighter to drop');return}const bid=Z.L.waiver_type==='faab'?+($('#bid')||{value:0}).value||0:0;const {error}=await sb.rpc('cr_submit_claim',{p_league:Z.L.id,p_add:Z.sh.add,p_drop:Z.drop,p_bid:bid});if(error){toast(error.message||"Couldn't submit that claim");return}closeSheet();await loadSeason();Z.ps='trades';render();toast('Claim submitted')}
   else if(a==='cl_cancel'){await sb.rpc('cr_cancel_claim',{p_claim:v});await loadSeason();render();toast('Claim cancelled')}
-  else if(a==='enter_draft'){location.href='cr-draft.html?league='+Z.L.id}
+  else if(a==='enter_draft'){if(Z.L.is_test&&Z.L.test_solo&&Z.L.commissioner_user_id!==Z.uid){toast('The commissioner is running a solo test. Your team is on auto-pick.');return}location.href='cr-draft.html?league='+Z.L.id}
   else if(a==='pt_new'){pickTradeSheet()}
   else if(a==='pt_to'){Z.sh.to=v;Z.sh.get=null;$('#pn').innerHTML=Z.sh.body()}
   else if(a==='pt_send'){Z.sh.send=v}

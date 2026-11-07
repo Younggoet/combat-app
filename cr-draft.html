@@ -1728,6 +1728,7 @@ setInterval(() => {
     userId = user.id;
     const { data: lg } = await sb.from("leagues").select("*").eq("id", LEAGUE_ID).maybeSingle();
     L = lg;
+    if (L && L.is_test && L.test_solo && L.commissioner_user_id !== userId) { location.replace("league.html?open=" + LEAGUE_ID); return; }
     await Promise.all([loadTeams(), loadRoomState()]);
     await loadMine();
     await loadFighterPool();
