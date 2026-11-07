@@ -1024,10 +1024,29 @@ function myUpcoming(tid){
 const isNewF = (id) => !!(room && (room.pool_new || []).includes(id));
 
 /* ---------- data ---------- */
+let pvCache = null;
+async function buildPreviewRoom(){
+  if (!L || L.status !== "setup" || !teams.length) return null;
+  const now = Date.now();
+  if (!pvCache || now - pvCache.at > 60000) {
+    const today = new Date().toISOString().slice(0, 10), from = today > "2026-11-14" ? today : "2026-11-14";
+    const { data: bs } = await sb.from("bouts").select("event_name,bout_date,fighter_a,fighter_b,status").gte("bout_date", from).order("bout_date");
+    const ok = (bs || []).filter((b) => b.status !== "completed" && b.status !== "cancelled");
+    const cardKeys = [], seen = {};
+    ok.forEach((b) => { const k = b.event_name + "|" + b.bout_date; if (!seen[k]) { seen[k] = 1; cardKeys.push(k); } });
+    const keep = new Set(cardKeys.slice(0, 4));
+    const pool = new Set();
+    ok.forEach((b) => { if (keep.has(b.event_name + "|" + b.bout_date)) { if (b.fighter_a) pool.add(b.fighter_a); if (b.fighter_b) pool.add(b.fighter_b); } });
+    pvCache = { at: now, pool: [...pool] };
+  }
+  const have = teams.map((t) => t.id), d = ((L && L.draft_order) || []).filter((x) => have.includes(x));
+  const order = d.concat(have.filter((x) => !d.includes(x)));
+  return { id: null, preview: true, status: "preview", team_order: order, rounds: (L && L.fighters_per_team) || 10, pool: pvCache.pool, pool_new: [], current_pick_number: 1, current_pick_deadline: null, block_no: 1, draft_type: (L && L.draft_type) || "snake", pick_seconds: (L && L.pick_seconds) || 45 };
+}
 async function loadRoomState(){
   const { data: r } = await sb.from("draft_rooms").select("*").eq("league_id", LEAGUE_ID).eq("format", "card_redraft").order("block_no", { ascending: false }).limit(1).maybeSingle();
   room = r || null; picks = []; po = {}; pt = [];
-  if (!room) return;
+  if (!room) { try { room = await buildPreviewRoom(); } catch (e) { console.error(e); room = null; } return; }
   const open = room.status === "live" || room.status === "paused";
   const [pk, pw, pr] = await Promise.all([
     sb.from("cr_picks").select("*").eq("draft_room_id", room.id).order("pick_number"),
@@ -1136,7 +1155,7 @@ const isMob = () => window.matchMedia("(max-width:700px)").matches;
 function renderDraft(){
   recomputeRanks();
   const n = room.team_order.length, total = n * room.rounds;
-  const complete = room.status === "complete", paused = room.status === "paused", live = room.status === "live";
+  const complete = room.status === "complete", paused = room.status === "paused", live = room.status === "live", pv = !!room.preview;
   const pickNum = Math.min(room.current_pick_number, total);
   const onClockTeam = complete ? null : pickTid(pickNum);
   const isMyTurn = live && onClockTeam === userTeamId;
@@ -1173,9 +1192,9 @@ function renderDraft(){
         <div class="info" style="color:${txc(dc)};font-weight:700;">${esc(ef ? ef.full_name : "?")}</div>
         <div class="divtag" style="background:${dc}2A;"><span class="h-font" style="font-size:8px;letter-spacing:0.5px;color:${txc(dc)};">${esc(ef ? (DIV_SHORT[ef.announced_weight_class] || "") : "")}</span></div></div>`;
     } else if (k === pickNum && !complete) {
-      trackerHtml += `<div class="tslot">${octagonEmptyAvatar(52, paused ? "upcoming" : "clock")}
-        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${paused ? "var(--gold)" : "var(--red)"};font-weight:700;">&middot; ${activeDot(team)}${esc(teamInitials(team))}</span></div>
-        <div class="info" style="color:${paused ? "var(--gold)" : "var(--red)"};font-weight:700;">${paused ? "ON HOLD" : team === userTeamId ? "ON THE CLOCK" : "ON CLOCK"}</div></div>`;
+      trackerHtml += `<div class="tslot">${octagonEmptyAvatar(52, (paused || pv) ? "upcoming" : "clock")}
+        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${(paused || pv) ? "var(--gold)" : "var(--red)"};font-weight:700;">&middot; ${activeDot(team)}${esc(teamInitials(team))}</span></div>
+        <div class="info" style="color:${(paused || pv) ? "var(--gold)" : "var(--red)"};font-weight:700;">${pv ? "FIRST PICK" : paused ? "ON HOLD" : team === userTeamId ? "ON THE CLOCK" : "ON CLOCK"}</div></div>`;
     } else {
       trackerHtml += `<div class="tslot">${octagonEmptyAvatar(52, "upcoming")}
         <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${activeDot(team)}${esc(teamInitials(team))}</span></div>
@@ -1201,6 +1220,10 @@ function renderDraft(){
     stageMainHtml = ob(`<div style="text-align:center;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT COMPLETE</div>
       <div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;margin-top:10px;">ALL ${total} PICKS HAVE BEEN MADE ACROSS ALL ${n} TEAMS</div>
       ${L && L.is_test ? `<div style="font-size:13px;color:#9A9AA2;margin-top:10px;">This was a test draft. Nothing from it counts.</div><button data-endtest="1" class="start-draft oct-btn h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;margin-top:20px;">FINISH TEST · BACK TO SETUP</button>` : `<a href="league.html?open=${esc(LEAGUE_ID)}" style="display:inline-block;margin-top:20px;"><button class="start-draft oct-btn h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">GO TO LEAGUE</button></a>`}</div>`, { cls: "lg", pad: "34px", ol: "rgba(212,175,55,0.6)" });
+  } else if (pv) {
+    stageMainHtml = ob(`<div style="display:flex;flex-direction:column;gap:10px;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT PREVIEW</div>
+      <div style="font-size:14px;color:#D8D5CC;line-height:1.5;">The draft hasn't started yet. Look around the board, open any fighter's spotlight, build your queue and chat. No picks can be made until the commissioner starts the draft, and this room switches to the live draft on its own.</div>
+      <div style="border-top:1px solid var(--border-2);padding-top:10px;"><div class="h-font" style="font-size:11px;letter-spacing:2px;color:#7A7A82;">FIRST PICK</div><div class="h-font" style="font-size:22px;font-weight:700;margin-top:4px;">${esc(teamName(onClockTeam).toUpperCase())}</div></div></div>`, { cls: "lg", pad: "22px 24px", ol: "rgba(212,175,55,0.5)" });
   } else if (paused) {
     const holdT = teamById(onClockTeam);
     stageMainHtml = ob(`<div style="display:flex;flex-direction:column;gap:12px;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT PAUSED</div>
@@ -1366,8 +1389,9 @@ function renderDraft(){
       ${poolRows || `<div style="grid-column:1/-1;padding:24px;color:#6A6A72;font-size:13px;">${paused ? "Every announced fighter is drafted. New fights will show up here." : "No fighters match."}</div>`}</div></div>${searched.length > poolLimit ? `<button id="moreBtn" class="more-btn h-font">SHOW MORE FIGHTERS (${searched.length - poolLimit} LEFT)</button>` : ""}`, { cls: "lg", pad: "0" });
 
   /* ---- header ---- */
-  const hasTrades = !!userTeamId && !complete;
+  const hasTrades = !!userTeamId && !complete && !pv;
   const clockInner = complete ? `<div class="h-font" style="font-size:28px;font-weight:700;line-height:1;color:var(--gold);">—</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Done</div>`
+    : pv ? `<div class="h-font" style="font-size:18px;font-weight:700;line-height:1;color:var(--gold);">PREVIEW</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Not started</div>`
     : paused ? `<div class="h-font" style="font-size:20px;font-weight:700;line-height:1;color:var(--gold);">PAUSED</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Waiting on fights</div>`
     : isMyTurn ? `<div class="h-font pick-clock-val" style="font-size:34px;font-weight:700;line-height:1;color:${remain <= 10 ? "var(--red)" : "#FF6A78"};">${fmtClock(remain)}</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Your pick</div>`
     : `<div class="h-font" style="font-size:28px;font-weight:700;line-height:1;color:var(--gold);">${esc(teamInitials(onClockTeam))}</div><div class="pick-clock-val" style="font-size:12px;color:#C9C6BD;margin-top:2px;">${fmtClock(remain)}</div>`;
@@ -1386,7 +1410,7 @@ function renderDraft(){
         <div class="vrule"></div>
         <div class="status-right hd-round"><div class="lbl">ROUND</div>
           <div class="h-font" style="font-size:44px;font-weight:700;line-height:1;">${roundNumber}<span style="color:#8C8982;font-size:26px;"> / ${room.rounds}</span></div>
-          <div class="h-font" style="font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-top:2px;">${complete ? "DRAFT COMPLETE" : isMyTurn ? "YOUR PICK" : "PICK " + pickNum + " OF " + total}</div></div>
+          <div class="h-font" style="font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-top:2px;">${complete ? "DRAFT COMPLETE" : pv ? "DRAFT PREVIEW" : isMyTurn ? "YOUR PICK" : "PICK " + pickNum + " OF " + total}</div></div>
         <div class="oct-wrap hd-oct${isMyTurn ? " pulse" : ""}" style="width:104px;height:104px;">
           <div style="width:104px;height:104px;clip-path:${OCT_CLIP};display:flex;align-items:center;justify-content:center;background:${octBg};">
             <div style="width:92px;height:92px;clip-path:${OCT_CLIP};background:${isMyTurn ? "#1A0A0D" : "#14120A"};display:flex;flex-direction:column;align-items:center;justify-content:center;">${clockInner}</div>
@@ -1469,7 +1493,7 @@ function renderDraft(){
 
 let drafting = false;
 async function draftNow(id) {
-  const f = fightersById[id]; if (!f || drafting || !room) return;
+  const f = fightersById[id]; if (!f || drafting || !room || room.preview) return;
   drafting = true;
   const { error } = await sb.rpc("cr_make_pick", { p_room: room.id, p_fighter: id });
   drafting = false;
@@ -1663,11 +1687,11 @@ document.getElementById("modalRoot").addEventListener("click", async (e) => {
 /* ---------------- loop ---------------- */
 function signature(){
   if (!room) return "none|" + teams.map((t) => t.id + (t.owner_user_id ? "o" : "")).join(",") + "|" + [...presentUsers].sort().join(",") + "|" + JSON.stringify((L && L.draft_order) || []) + "|" + (L && L.pick_seconds);
-  return [room.status, room.current_pick_number, picks.length, (room.pool || []).length, (room.pool_new || []).length, JSON.stringify(po), pt.map((t) => t.id).join(","), screen, chatMsgs.length ? chatMsgs[chatMsgs.length - 1].id : 0, myQueue.join(","), autoDraft, [...presentUsers].sort().join(",")].join("|");
+  return [room.status, room.preview ? room.team_order.join(",") : "", room.current_pick_number, picks.length, (room.pool || []).length, (room.pool_new || []).length, JSON.stringify(po), pt.map((t) => t.id).join(","), screen, chatMsgs.length ? chatMsgs[chatMsgs.length - 1].id : 0, myQueue.join(","), autoDraft, [...presentUsers].sort().join(",")].join("|");
 }
 async function refresh(force){
+  if (!room || room.preview) { const { data: lg } = await sb.from("leagues").select("*").eq("id", LEAGUE_ID).maybeSingle(); if (lg) L = lg; await loadTeams(); }
   await Promise.all([loadRoomState(), loadMine()]);
-  if (!room) { const { data: lg } = await sb.from("leagues").select("*").eq("id", LEAGUE_ID).maybeSingle(); if (lg) L = lg; await loadTeams(); }
   soundCheck();
   if (room && room.pool) { const miss = room.pool.filter((id) => !fightersById[id]); if (miss.length) { const { data } = await sb.from("fighters").select(STAT_COLS).in("id", miss); (data || []).forEach((f) => { fighters.push(f); fightersById[f.id] = f; projectedFPById[f.id] = projectedFantasyPoints(f); }); } }
   const sig = signature();
@@ -1676,7 +1700,7 @@ async function refresh(force){
 let busy = false, pz = 0;
 setInterval(async () => {
   if (busy || document.hidden) return;
-  if (!room) { busy = true; try { await refresh(false); } catch (e) { console.error(e); } busy = false; return; }
+  if (!room || room.preview) { busy = true; try { await refresh(false); } catch (e) { console.error(e); } busy = false; return; }
   busy = true;
   try {
     if (room.status === "live") {
@@ -1691,7 +1715,7 @@ setInterval(async () => {
   busy = false;
 }, 1500);
 setInterval(() => {
-  if (!room || room.status !== "live" || !room.current_pick_deadline) return;
+  if (!room || room.preview || room.status !== "live" || !room.current_pick_deadline) return;
   const t = Math.max(0, Math.ceil((new Date(room.current_pick_deadline) - Date.now()) / 1000));
   document.querySelectorAll(".pick-clock-val").forEach((c) => { c.textContent = fmtClock(t); if (c.classList.contains("h-font")) c.style.color = t <= 10 ? "var(--red)" : "#FF6A78"; });
 }, 250);
