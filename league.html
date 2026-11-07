@@ -166,7 +166,7 @@ const tavL=(name,s,c)=>`<div class="oc tav" style="--s:${s}px;--tc:${c||'#D4AF37
 const fmtDT=iso=>iso?new Date(iso).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
 const fmtD=d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 const genCode=()=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';const r=crypto.getRandomValues(new Uint8Array(6));for(const x of r)s+=a[x%a.length];return s.slice(0,3)+'-'+s.slice(3)};
-const joinLink=L=>location.origin+location.pathname.replace(/[^/]*$/,'')+'league.html?join='+encodeURIComponent(L.join_code);
+const joinLink=L=>'https://combatfantasy.netlify.app/league.html?join='+encodeURIComponent(L.join_code);
 function toast(m){const e=$('#toast');e.textContent=m;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2200)}
 const isComm=()=>Z.L&&Z.L.commissioner_user_id===Z.uid;
 const myTeam=()=>Z.teams.find(t=>t.owner_user_id===Z.uid);

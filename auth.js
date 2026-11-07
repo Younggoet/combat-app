@@ -1,3 +1,5 @@
+/* The old combat-app site must not be used: send everyone to the live site. */
+if (location.hostname === 'combat-app.netlify.app') { location.replace('https://combatfantasy.netlify.app' + location.pathname + location.search + location.hash); }
 // Combat — shared auth helper
 //
 // Include after the supabase-js script tag on any page:
