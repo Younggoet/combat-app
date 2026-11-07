@@ -888,6 +888,43 @@ let lastSig = "";
 let modal = null;      // pick trade sheet state
 let fighterPoolError = null;
 let myQueue = [], autoDraft = false, chatMsgs = [], chatDraft = "";
+/* ---- draft sounds: synthesized in the browser, no audio files, nothing copyrighted ---- */
+const sfx = (() => {
+  let ac = null;
+  const ctx = () => { if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ac = new C(); } if (ac.state === "suspended") ac.resume(); return ac; };
+  const on = () => { try { return localStorage.getItem("combat-sound") !== "off"; } catch (e) { return true; } };
+  const tone = (a, f, t0, dur, type, vol, f2) => { const o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.setValueAtTime(f, t0); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + dur); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0 + dur + 0.05); };
+  const noise = (a, t0, dur, vol, cutoff) => { const n = Math.floor(a.sampleRate * dur), buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n); const src = a.createBufferSource(); src.buffer = buf; const lp = a.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = cutoff; const g = a.createGain(); g.gain.value = vol; src.connect(lp); lp.connect(g); g.connect(a.destination); src.start(t0); };
+  const play = (fn) => { if (!on()) return; try { const a = ctx(); if (a) fn(a, a.currentTime + 0.02); } catch (e) {} };
+  ["pointerdown", "keydown", "touchstart"].forEach((ev) => document.addEventListener(ev, () => { try { ctx(); } catch (e) {} }, { once: true, passive: true }));
+  return {
+    on,
+    bell: () => play((a, t) => { [0, 0.55, 1.1].forEach((d) => [[1, 0.30], [2.76, 0.16], [5.4, 0.08]].forEach(([m, v]) => tone(a, 620 * m, t + d, 1.4, "sine", v))); }),
+    pick: () => play((a, t) => { tone(a, 170, t, 0.22, "sine", 0.9, 42); noise(a, t, 0.09, 0.5, 900); }),
+    turn: () => play((a, t) => { tone(a, 660, t, 0.14, "triangle", 0.35); tone(a, 990, t + 0.16, 0.22, "triangle", 0.35); }),
+  };
+})();
+let sndPrev = null;
+function soundCheck(){
+  const total = room ? room.team_order.length * room.rounds : 0;
+  const cur = { id: room ? room.id : null, status: room ? room.status : null, picks: picks.length,
+    my: !!(room && room.status === "live" && userTeamId && room.current_pick_number <= total && pickTid(room.current_pick_number) === userTeamId) };
+  const p = sndPrev; sndPrev = cur;
+  if (!p || !room) return;
+  if ((p.id !== cur.id || p.status !== "live") && cur.status === "live" && cur.picks === 0) { sfx.bell(); return; }
+  if (p.id !== cur.id) return;
+  if (cur.picks > p.picks) { sfx.pick(); if (cur.my && !p.my) setTimeout(sfx.turn, 450); }
+  else if (cur.my && !p.my) sfx.turn();
+  if (p.status !== "complete" && cur.status === "complete") setTimeout(sfx.bell, 700);
+}
+function makeSoundBtn(){
+  if (document.getElementById("sndBtn")) return;
+  const b = document.createElement("button"); b.id = "sndBtn"; b.type = "button"; b.className = "h-font";
+  b.style.cssText = "position:fixed;left:14px;bottom:14px;z-index:60;padding:9px 14px;border:0;cursor:pointer;background:#1A1A1E;color:#C9C6BD;font-size:10px;font-weight:700;line-height:1;letter-spacing:1.5px;--c:7px;clip-path:var(--P);";
+  const paint = () => { b.textContent = sfx.on() ? "SOUND ON" : "SOUND OFF"; b.style.color = sfx.on() ? "#C9C6BD" : "#6A6A72"; b.setAttribute("aria-pressed", sfx.on() ? "true" : "false"); };
+  b.addEventListener("click", () => { try { localStorage.setItem("combat-sound", sfx.on() ? "off" : "on"); } catch (e) {} paint(); sfx.pick(); });
+  paint(); document.body.appendChild(b);
+}
 /* ---- who is active in the draft room (Realtime presence) ---- */
 let presentUsers = new Set(), presCh = null;
 const isActive = (tid) => { const t = teamById(tid); return !!(t && t.owner_user_id && presentUsers.has(t.owner_user_id)); };
@@ -1609,6 +1646,7 @@ function signature(){
 }
 async function refresh(force){
   await Promise.all([loadRoomState(), loadMine()]);
+  soundCheck();
   if (room && room.pool) { const miss = room.pool.filter((id) => !fightersById[id]); if (miss.length) { const { data } = await sb.from("fighters").select(STAT_COLS).in("id", miss); (data || []).forEach((f) => { fighters.push(f); fightersById[f.id] = f; projectedFPById[f.id] = projectedFantasyPoints(f); }); } }
   const sig = signature();
   if (force || sig !== lastSig) { lastSig = sig; render(); if (modal) renderModal(); }
@@ -1650,6 +1688,7 @@ setInterval(() => {
     render();
     lastSig = signature();
     startPresence();
+    soundCheck(); makeSoundBtn();
   } catch (e) {
     console.error(e);
     content.innerHTML = `<div class="error" style="max-width:520px;margin:60px auto;">Couldn't load the draft room. Check your connection and refresh.</div>`;
