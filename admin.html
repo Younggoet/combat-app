@@ -1,125 +1,161 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Combat Panel</title>
+<title>Combat Admin</title>
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#0A1124">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;500;600;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="auth.js"></script>
 <style>
-:root{--bg:#0A1124;--surf:#131317;--fg:#F2EFE6;--mut:#B8B5AE;--dim:#8C8982;--gold:#D4AF37;--gold2:#E8C93A;--red:#E2283C;--redl:#FF6A78;--green:#4CD08A;--teal:#3FD8C5;color-scheme:dark}
+:root{--bg:#0A1124;--card:#141A2E;--line:#2A3350;--fg:#F5F2EA;--mut:#D2D0C8;--dim:#A3A8B8;--gold:#E8C93A;--red:#FF6A78;--green:#4CD08A;--redbg:rgba(226,40,60,.14);--grnbg:rgba(76,208,138,.12);--ylbg:rgba(232,201,58,.12);color-scheme:dark}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,system-ui,sans-serif;font-size:14px}
-body{min-height:100vh;background:linear-gradient(#0A1124,#0A1124),var(--bg);background-attachment:fixed}
-.wrap{max-width:1240px;margin:0 auto;padding:22px 20px 60px}
-.h{font-family:Oswald,sans-serif;letter-spacing:1px}
-.gold{color:var(--gold2)}.dim{color:var(--dim)}.mut{color:var(--mut)}
-.top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:14px}
-.top .t{font-size:34px;color:var(--gold2);font-family:Oswald;letter-spacing:2px}
-.top .s{letter-spacing:2px;color:var(--gold2);font-size:12px}
-.oc{clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 14px,100% calc(100% - 14px),calc(100% - 14px) 100%,14px 100%,0 calc(100% - 14px),0 14px)}
-.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 18px}
-.tab{font-family:Oswald;letter-spacing:1.5px;font-size:14px;color:var(--gold2);background:#3a3628;border:0;padding:10px 18px;cursor:pointer;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px)}
-.tab.on{background:linear-gradient(135deg,#F2D675,#D4AF37 60%,#9C7A1E);color:#14120A}
-.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
-.card{background:var(--gold);padding:1.5px;clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 14px,100% calc(100% - 14px),calc(100% - 14px) 100%,14px 100%,0 calc(100% - 14px),0 14px)}
-.card>.i{background:linear-gradient(155deg,rgba(212,175,55,.12),rgba(0,0,0,0) 60%),#131317;padding:14px 16px;height:100%;clip-path:polygon(13px 0,calc(100% - 13px) 0,100% 13px,100% calc(100% - 13px),calc(100% - 13px) 100%,13px 100%,0 calc(100% - 13px),0 13px)}
-.card.red{background:var(--red)}.card.grn{background:var(--green)}.card.dm{background:#6E6A5E}
-.lab{font-size:11px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
-.big{font-family:Oswald;font-size:38px;line-height:1.05;margin-top:4px}
-.sec{display:flex;align-items:center;gap:14px;margin:26px 0 12px}
-.sec:before,.sec:after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,#D4AF3766)}.sec:after{background:linear-gradient(270deg,transparent,#D4AF3766)}
-.sec span{font-family:Oswald;letter-spacing:3px;color:var(--gold2);font-size:16px}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{font-size:11px;letter-spacing:1.5px;color:var(--dim);text-align:left;font-weight:500;padding:6px 8px;border-bottom:1px solid #26262C;white-space:nowrap}
-td{padding:7px 8px;border-top:1px solid #1f1f25;vertical-align:top}
-.scroll{overflow-x:auto}
-.pill{display:inline-block;font-family:Oswald;letter-spacing:1px;font-size:11px;padding:2px 8px;background:#26262C;color:var(--mut);clip-path:polygon(5px 0,calc(100% - 5px) 0,100% 5px,100% calc(100% - 5px),calc(100% - 5px) 100%,5px 100%,0 calc(100% - 5px),0 5px)}
-.pill.g{background:rgba(76,208,138,.18);color:var(--green)}.pill.r{background:rgba(226,40,60,.2);color:var(--redl)}.pill.y{background:rgba(232,201,58,.18);color:var(--gold2)}
-.bar{height:10px;background:#26262C;position:relative}.bar i{display:block;height:100%;background:var(--gold)}
-.row{display:flex;align-items:center;gap:10px}
-.two{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
-a.btn,button.btn{display:inline-block;font-family:Oswald;letter-spacing:1.5px;font-size:13px;padding:10px 16px;border:0;cursor:pointer;text-decoration:none;color:#14120A;background:linear-gradient(135deg,#F2D675,#D4AF37 60%,#9C7A1E);clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0 calc(100% - 8px),0 8px)}
-a.btn.o,button.btn.o{background:#26262C;color:var(--fg)}
-input{background:#0F0F12;border:1px solid #3a3628;color:var(--fg);padding:9px 12px;font-size:14px;border-radius:8px}
-.note{color:var(--dim);font-size:12px;margin-top:6px;line-height:1.5}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,system-ui,sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 80px}
+h1,h2,h3{font-family:Oswald,sans-serif;margin:0;font-weight:700;letter-spacing:.5px}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.top h1{font-size:30px;color:var(--gold)}
+.top .upd{flex:1;color:var(--dim);font-size:14px;min-width:160px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:22px;border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch}
+.tab{flex:none;font:600 15px Inter,sans-serif;color:var(--mut);background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;cursor:pointer;white-space:nowrap}
+.tab:hover{color:var(--fg)}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold)}
+.tab .dot{display:inline-block;min-width:20px;padding:0 6px;margin-left:6px;border-radius:10px;background:var(--red);color:#fff;font-size:12px;line-height:20px;text-align:center}
+.intro{color:var(--mut);margin:0 0 20px;max-width:70ch}
+h2.sec{font-size:20px;margin:30px 0 4px;color:var(--fg)}
+.secnote{color:var(--dim);font-size:14px;margin:0 0 12px;max-width:70ch}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.card.red{border-color:var(--red);background:var(--redbg)}.card.grn{border-color:var(--green);background:var(--grnbg)}.card.yel{border-color:var(--gold);background:var(--ylbg)}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.two{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.stat .l{font-weight:600;color:var(--mut);font-size:15px}
+.stat .v{font-family:Oswald;font-size:38px;line-height:1.1;margin:4px 0}
+.stat .s{color:var(--dim);font-size:14px}
+.banner{display:flex;gap:14px;align-items:flex-start}
+.banner .ic{font-size:28px;line-height:1}
+.banner h2{font-size:22px}
+.issue{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,.1)}
+.issue:first-of-type{border-top:0}
+.pill{display:inline-block;font:600 13px Inter,sans-serif;padding:3px 10px;border-radius:999px;background:#262D47;color:var(--mut);white-space:nowrap}
+.pill.g{background:rgba(76,208,138,.2);color:var(--green)}.pill.r{background:rgba(226,40,60,.25);color:var(--red)}.pill.y{background:rgba(232,201,58,.2);color:var(--gold)}
+.btn{display:inline-block;font:600 15px Inter,sans-serif;padding:10px 18px;border:0;border-radius:8px;cursor:pointer;text-decoration:none;color:#14120A;background:var(--gold)}
+.btn:hover{filter:brightness(1.08)}
+.btn.o{background:#262D47;color:var(--fg)}
+.btn.sm{padding:6px 12px;font-size:14px}
+input,select{background:#0D1328;border:1px solid var(--line);color:var(--fg);padding:10px 12px;font:16px Inter,sans-serif;border-radius:8px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bar{height:12px;background:#262D47;border-radius:6px;overflow:hidden;flex:1;min-width:80px}.bar i{display:block;height:100%;background:var(--gold);border-radius:6px}
+.list>div{padding:12px 0;border-top:1px solid var(--line)}.list>div:first-child{border-top:0}
+.bout{display:grid;grid-template-columns:1fr auto;gap:4px 12px}
+.bout .nm{font-weight:600;font-size:17px}.bout .vs{color:var(--dim);font-weight:400}
+.bout .meta{grid-column:1/-1;color:var(--dim);font-size:14px;display:flex;gap:8px 16px;flex-wrap:wrap}
+.date{font-family:Oswald;color:var(--gold);font-size:17px;letter-spacing:.5px;margin:22px 0 6px}
+.kvrow{display:flex;gap:6px;flex-wrap:wrap}
+.note{color:var(--dim);font-size:14px;margin-top:8px}
+.tool h3{font-size:18px;margin-bottom:6px}
+.tool .what{color:var(--mut);margin:0 0 6px}.tool .when{color:var(--dim);font-size:14px;margin:0 0 12px}
 .msg{max-width:520px;margin:12vh auto;text-align:center}
-@media(max-width:600px){.top .t{font-size:28px}.big{font-size:30px}}
+.lg{display:grid;gap:4px 14px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;font-size:14px;color:var(--dim)}
+.lg b{display:block;color:var(--fg);font-size:15px;font-weight:600}
+.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:15px}th{text-align:left;color:var(--dim);font-weight:600;font-size:14px;padding:8px;border-bottom:1px solid var(--line)}td{padding:10px 8px;border-top:1px solid var(--line);vertical-align:top}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 </style></head><body>
-<div class="wrap" id="app"><div class="msg dim">Loading…</div></div>
+<div class="wrap" id="app"><div class="msg" style="color:var(--dim)">Loading…</div></div>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sb=CombatAuth.client,FN='https://combat-sync.netlify.app/.netlify/functions/';
-let R=[],D=null,tab=(location.hash||'#overview').slice(1),err='',busy=false;
-const TABS=[['overview','OVERVIEW'],['scoring','SCORING'],['leagues','LEAGUES'],['reports','REPORTS'],['usage','USAGE'],['data','DATA'],['tools','TOOLS']];
+let R=[],D=null,tab=(location.hash||'#home').slice(1),err='',busy=false;
+const TABS=[['home','Home'],['fights','Fights'],['leagues','Leagues'],['users','Users & Usage'],['reports','Reports'],['data','Fighter Data'],['tools','Fix-It Tools']];
 const n=v=>v==null?'—':Number(v).toLocaleString();
-const ago=s=>s==null?'never':s<90?s+'s ago':s<5400?Math.round(s/60)+' min ago':s<172800?Math.round(s/3600)+' h ago':Math.round(s/86400)+' d ago';
-const stat=(l,v,sub,cls)=>`<div class="card ${cls||''}"><div class="i"><div class="lab">${l}</div><div class="big">${v}</div>${sub?`<div class="dim" style="font-size:12px;margin-top:4px">${sub}</div>`:''}</div></div>`;
-const sec=t=>`<div class="sec"><span>${t}</span></div>`;
-const box=(inner,cls)=>`<div class="card ${cls||''}"><div class="i">${inner}</div></div>`;
-const kv=o=>Object.keys(o||{}).length?Object.entries(o).map(([k,v])=>`<span class="pill y" style="margin:2px 6px 2px 0">${esc(k)} ${v}</span>`).join(''):'<span class="dim">none</span>';
+const ago=s=>s==null?'never':s<90?s+' sec ago':s<5400?Math.round(s/60)+' min ago':s<172800?Math.round(s/3600)+' hours ago':Math.round(s/86400)+' days ago';
 const etToday=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
+const niceDate=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}catch(_){return d}};
+const shortDate=d=>{try{return new Date(String(d).slice(0,10)+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}catch(_){return d}};
+const stat=(l,v,sub,cls)=>`<div class="card stat ${cls||''}"><div class="l">${l}</div><div class="v">${v}</div>${sub?`<div class="s">${sub}</div>`:''}</div>`;
+const sec=(t,note)=>`<h2 class="sec">${t}</h2>${note?`<p class="secnote">${note}</p>`:'<div style="height:8px"></div>'}`;
+const box=(inner,cls)=>`<div class="card ${cls||''}">${inner}</div>`;
+const kv=o=>Object.keys(o||{}).length?`<div class="kvrow">${Object.entries(o).map(([k,v])=>`<span class="pill y">${esc(k)}: ${v}</span>`).join('')}</div>`:'<span style="color:var(--dim)">None</span>';
+const LSTAT={setup:'Not drafted yet',drafting:'Drafting now',live:'Drafting now',active:'In season',complete:'Finished',archived:'Archived'};
+const BSTAT={scheduled:['Upcoming','y'],live:['Live now','r'],completed:['Finished','g']};
 async function load(){if(busy)return;busy=true;try{const {data,error}=await sb.rpc('admin_overview');if(error)throw error;D=data;err='';try{const {data:rr}=await sb.rpc('admin_chat_reports');R=rr||[]}catch(_){R=[]}}catch(e){err=e.message||String(e)}busy=false;draw()}
-function health(){const s=D.scoring,bad=[];const today=etToday();const t=s.bouts.filter(b=>b.date===today);
-  if(t.some(b=>!b.cito))bad.push(t.filter(b=>!b.cito).length+' of today’s bouts are not linked to live scoring');
-  if(s.live_stale.length)bad.push(s.live_stale.length+' live fight(s) have not updated in over 5 minutes');
-  if(D.drafts.stuck.length)bad.push(D.drafts.stuck.length+' draft(s) look stuck');
-  if(D.usage.error_count_24h>0)bad.push(D.usage.error_count_24h+' app error(s) in the last 24 hours');
-  if(s.odd_matchups.length)bad.push(s.odd_matchups.length+' final matchup(s) ended 0.0 to 0.0');
-  const open=R.filter(x=>x.status==='open').length;if(open)bad.push(open+' open chat report(s). See the REPORTS tab');
-  return bad}
-function pOverview(){const u=D.users,l=D.leagues,a=D.activity,us=D.usage,f=D.funnel,h=health();
+function issues(){const s=D.scoring,out=[],today=etToday();const t=s.bouts.filter(b=>b.date===today);
+  const nl=t.filter(b=>!b.cito).length;if(nl)out.push({t:nl+(nl>1?' fights today are':' fight today is')+' not connected to live scoring, so points will not update.',tab:'tools',go:'Fix it'});
+  if(s.live_stale.length)out.push({t:s.live_stale.length+' live fight'+(s.live_stale.length>1?'s have':' has')+' not updated in over 5 minutes.',tab:'tools',go:'Fix it'});
+  if(D.drafts.stuck.length)out.push({t:D.drafts.stuck.length+' draft'+(D.drafts.stuck.length>1?'s look':' looks')+' stuck. The pick timer ran out and nothing happened.',tab:'leagues',go:'See which'});
+  if(D.usage.error_count_24h>0)out.push({t:D.usage.error_count_24h+' app error'+(D.usage.error_count_24h>1?'s':'')+' in the last 24 hours.',tab:'users',go:'See errors'});
+  if(s.odd_matchups.length)out.push({t:s.odd_matchups.length+' finished matchup'+(s.odd_matchups.length>1?'s':'')+' ended 0.0 to 0.0, which usually means stats are missing.',tab:'fights',go:'See which'});
+  const open=R.filter(x=>x.status==='open').length;if(open)out.push({t:open+' chat message'+(open>1?'s were':' was')+' reported by players and need a decision.',tab:'reports',go:'Review'});
+  return out}
+function pHome(){const u=D.users,l=D.leagues,a=D.activity,us=D.usage,f=D.funnel,h=issues();
   const mx=Math.max(1,...u.signups_by_day.map(x=>x.n));
-  return `<div class="two"><div>${box(h.length?`<div class="lab" style="color:var(--redl)">Needs attention</div>${h.map(x=>`<div style="margin-top:8px">• ${esc(x)}</div>`).join('')}`:`<div class="lab" style="color:var(--green)">All clear</div><div style="margin-top:8px">No problems found in scoring, drafts or errors.</div>`,h.length?'red':'grn')}</div><div>${box(`<div class="lab">Signups, last 14 days</div><div class="row" style="align-items:flex-end;gap:4px;height:70px;margin-top:10px">${u.signups_by_day.map(x=>`<div title="${x.d}: ${x.n}" style="flex:1;background:${x.n?'var(--gold)':'#26262C'};height:${Math.max(4,x.n/mx*70)}px"></div>`).join('')}</div>`)}</div></div>
-  ${sec('PEOPLE')}<div class="grid">${stat('Accounts',n(u.total),n(u.new_7d)+' new this week')}${stat('Signed in, 24h',n(u.signed_in_24h))}${stat('Active users, 24h',n(us.users_24h),'from app tracking')}${stat('Sessions, 24h',n(us.sessions_24h))}${stat('Returning users',n(us.returning_users),'came back on 2+ days, last 14 days')}${stat('Avg minutes / session',us.avg_minutes_per_session_7d==null?'—':us.avg_minutes_per_session_7d,'last 7 days, while the app is open')}</div>
-  ${sec('LEAGUES AND ACTIVITY')}<div class="grid">${stat('Leagues',n(l.total),n(l.real)+' real, '+(l.total-l.real)+' test')}${stat('Drafts finished',n(D.drafts.by_status.complete||0),n(D.drafts.by_status.live||0)+' live')}${stat('Auto-picks',D.drafts.autopick_share==null?'—':D.drafts.autopick_share+'%','of all draft picks')}${stat('Trades, 7 days',n(Object.values(a.trades_7d).reduce((x,y)=>x+y,0)),n(a.trades_all)+' all time')}${stat('Chat, 24h',n(a.chat_24h),n(a.chat_7d)+' this week')}${stat('Teams customized',n(a.renamed_teams),'color or photo set')}</div>
-  ${sec('FUNNEL')}${box(`<div class="scroll">${[['Created an account',f.accounts],['Created a league',f.created_league],['Joined a team',f.joined_team],['Finished a draft',f.finished_draft]].map(([lab,v])=>`<div class="row" style="margin:7px 0"><div style="width:190px">${lab}</div><div class="bar" style="flex:1"><i style="width:${f.accounts?v/f.accounts*100:0}%"></i></div><div class="h" style="width:44px;text-align:right">${v}</div></div>`).join('')}</div>`)}`}
-function pScoring(){const s=D.scoring,today=etToday();
-  const rows=s.bouts.map(b=>{const st=b.status,pill=st==='live'?'r':st==='completed'?'g':'y';const linked=b.cito?`<span class="pill g">linked ${esc(b.cito)}</span>`:'<span class="pill r">NOT LINKED</span>';
-   return `<tr><td>${esc(b.date)}</td><td class="dim">${b.order||''}</td><td>${esc(b.a)} <span class="dim">vs</span> ${esc(b.b)}</td><td><span class="pill ${pill}">${esc(st)}</span></td><td>${linked}</td><td>${b.stats}/${b.perfs}</td><td class="h gold">${b.pts_a==null?'—':b.pts_a} <span class="dim">/</span> ${b.pts_b==null?'—':b.pts_b}</td><td>${esc(b.method||'')}</td><td class="dim">${b.last_sync_s==null?'—':ago(b.last_sync_s)}</td></tr>`}).join('');
-  return `<div class="grid">${stat('Bouts yesterday to tomorrow',s.bouts.length)}${stat('Not linked (next 7 days)',s.unlinked_upcoming,'scheduled bouts with no live-scoring link',s.unlinked_upcoming?'red':'grn')}${stat('Live but stale',s.live_stale.length,'no update for 5+ minutes',s.live_stale.length?'red':'grn')}${stat('0.0 to 0.0 finals',s.odd_matchups.length,'matchups that look wrong',s.odd_matchups.length?'red':'grn')}</div>
-  ${sec('BOUTS')}${box(`<div class="scroll"><table><tr><th>DATE</th><th>#</th><th>BOUT</th><th>STATUS</th><th>LIVE SCORING</th><th>STATS ROWS</th><th>POINTS A / B</th><th>METHOD</th><th>LAST UPDATE</th></tr>${rows||'<tr><td colspan="9" class="dim">No bouts in this window.</td></tr>'}</table></div><div class="note">Stats rows shows how many fighters have live stats recorded out of the fighters in the bout. Today (Eastern) is ${today}.</div>`)}
-  ${s.live_stale.length?sec('STALE LIVE FIGHTS')+box(s.live_stale.map(x=>`<div>${esc(x.a)} vs ${esc(x.b)} <span class="pill r">${ago(x.age_s)}</span></div>`).join(''),'red'):''}
-  ${s.odd_matchups.length?sec('MATCHUPS TO CHECK')+box(s.odd_matchups.map(x=>`<div>${esc(x.league)} block ${x.block}: ${x.a} to ${x.b}</div>`).join(''),'red'):''}`}
+  const banner=h.length?box(`<div class="banner"><div class="ic">⚠️</div><div style="flex:1"><h2 style="color:var(--red)">${h.length} thing${h.length>1?'s':''} need${h.length>1?'':'s'} your attention</h2><div style="margin-top:8px">${h.map(x=>`<div class="issue"><span>${esc(x.t)}</span><button class="btn sm" data-t="${x.tab}">${x.go}</button></div>`).join('')}</div></div></div>`,'red'):box(`<div class="banner"><div class="ic">✅</div><div><h2 style="color:var(--green)">Everything looks good</h2><div style="color:var(--mut);margin-top:4px">No problems found with scoring, drafts or app errors.</div></div></div>`,'grn');
+  const steps=[['Made an account',f.accounts],['Created a league',f.created_league],['Joined a team',f.joined_team],['Finished a draft',f.finished_draft]];
+  return `${banner}
+  ${sec('People','Who is using Combat.')}<div class="grid">${stat('Total accounts',n(u.total),n(u.new_7d)+' new this week')}${stat('Signed in today',n(u.signed_in_24h),'in the last 24 hours')}${stat('Active in the app',n(us.users_24h),'last 24 hours')}${stat('Came back again',n(us.returning_users),'used the app on 2 or more days (last 14 days)')}</div>
+  ${sec('Leagues','Leagues players have created.')}<div class="grid">${stat('Leagues',n(l.total),n(l.real)+' real, '+(l.total-l.real)+' test')}${stat('Drafts finished',n(D.drafts.by_status.complete||0),n(D.drafts.by_status.live||0)+' happening now')}${stat('Trades this week',n(Object.values(a.trades_7d).reduce((x,y)=>x+y,0)),n(a.trades_all)+' all time')}${stat('Chat messages today',n(a.chat_24h),n(a.chat_7d)+' this week')}</div>
+  ${sec('New accounts, last 14 days')}${box(`<div class="row" style="align-items:flex-end;gap:5px;height:90px">${u.signups_by_day.map(x=>`<div title="${esc(x.d)}: ${x.n} new" style="flex:1;border-radius:4px 4px 0 0;background:${x.n?'var(--gold)':'#262D47'};height:${Math.max(5,x.n/mx*90)}px"></div>`).join('')}</div><div class="note">Each bar is one day. Hover or tap a bar to see the number.</div>`)}
+  ${sec('How far people get','Of everyone who made an account, how many got to each step.')}${box(steps.map(([lab,v])=>`<div class="row" style="margin:10px 0"><div style="width:170px;font-weight:600">${lab}</div><div class="bar"><i style="width:${f.accounts?v/f.accounts*100:0}%"></i></div><div style="width:110px;text-align:right"><b>${v}</b> <span style="color:var(--dim)">(${f.accounts?Math.round(v/f.accounts*100):0}%)</span></div></div>`).join(''))}`}
+function pFights(){const s=D.scoring,today=etToday();
+  const byDate={};s.bouts.forEach(b=>{(byDate[b.date]=byDate[b.date]||[]).push(b)});
+  const days=Object.keys(byDate).sort().map(d=>`<div class="date">${esc(niceDate(d))}${d===today?' · TODAY':''}</div>${box(`<div class="list">${byDate[d].map(b=>{const [lab,cl]=BSTAT[b.status]||[b.status,''];
+    const both=b.perfs?(b.stats>=b.perfs?'Stats received for both fighters':b.stats+' of '+b.perfs+' fighters have stats'):'No stats yet';
+    return `<div class="bout"><div class="nm">${esc(b.a)} <span class="vs">vs</span> ${esc(b.b)}</div><div><span class="pill ${cl}">${esc(lab)}</span></div><div class="meta"><span>${b.cito?'<span class="pill g">Live scoring connected</span>':'<span class="pill r">Not connected to live scoring</span>'}</span><span>${esc(both)}</span>${b.pts_a==null?'':`<span>Fantasy points: <b style="color:var(--gold)">${b.pts_a}</b> to <b style="color:var(--gold)">${b.pts_b}</b></span>`}${b.method?`<span>Result: ${esc(b.method)}</span>`:''}<span>Last update: ${b.last_sync_s==null?'none yet':ago(b.last_sync_s)}</span></div></div>`}).join('')}</div>`)}`).join('');
+  return `<p class="intro">Every fight from yesterday through tomorrow, and whether its points are coming in. Times use US Eastern. Today is ${esc(niceDate(today))}.</p>
+  <div class="grid">${stat('Fights shown',s.bouts.length,'yesterday to tomorrow')}${stat('Not connected',s.unlinked_upcoming,'upcoming fights (next 7 days) with no live scoring link',s.unlinked_upcoming?'red':'grn')}${stat('Stalled live fights',s.live_stale.length,'live, but no update for 5+ minutes',s.live_stale.length?'red':'grn')}${stat('Suspicious results',s.odd_matchups.length,'matchups that ended 0.0 to 0.0',s.odd_matchups.length?'red':'grn')}</div>
+  ${(s.unlinked_upcoming||s.live_stale.length)?box('<b>To fix a connection problem:</b> go to the Fix-It Tools tab and use “Connect fights to live scoring” or “Refresh live scores now”.','yel').replace('class="card','style="margin-top:14px" class="card'):''}
+  ${s.live_stale.length?sec('Stalled live fights')+box(s.live_stale.map(x=>`<div>${esc(x.a)} vs ${esc(x.b)} <span class="pill r">last update ${ago(x.age_s)}</span></div>`).join(''),'red'):''}
+  ${s.odd_matchups.length?sec('Matchups to double-check','These league matchups finished 0.0 to 0.0.')+box(s.odd_matchups.map(x=>`<div>${esc(x.league)}, block ${x.block}: ${x.a} to ${x.b}</div>`).join(''),'red'):''}
+  ${sec('Fights')}${days||box('<span style="color:var(--dim)">No fights in this window.</span>')}`}
 function pLeagues(){const L=D.leagues;
-  return `<div class="grid">${stat('Total',n(L.total))}${stat('Real',n(L.real))}</div>${sec('BY STATUS')}${box(kv(L.by_status))}${sec('BY FORMAT')}${box(kv(L.by_format))}
-  ${sec('ALL LEAGUES')}${box(`<div class="scroll"><table><tr><th>NAME</th><th>STATUS</th><th>FORMAT</th><th>PLAYERS</th><th>CPU</th><th>COMMISSIONER</th><th>FINISH BONUS</th><th>CHAT 7D</th><th>CREATED</th></tr>${L.list.map(l=>`<tr><td>${esc(l.name)} ${l.is_test?'<span class="pill">test</span>':''}</td><td><span class="pill ${l.status==='active'?'g':'y'}">${esc(l.status)}</span></td><td>${esc(l.format||'')}</td><td>${l.teams}/${l.team_count}</td><td>${l.cpu}</td><td>${esc(l.commissioner||'')}</td><td>${l.finish_bonus?'<span class="pill g">on</span>':'<span class="pill">off</span>'}</td><td>${l.msgs_7d}</td><td class="dim">${esc(String(l.created).slice(0,10))}</td></tr>`).join('')}</table></div>`)}
-  ${sec('DRAFTS')}${box(kv(D.drafts.by_status)+`<div class="note">${D.drafts.autopick_share==null?'':D.drafts.autopick_share+'% of all picks were auto-picks.'}</div>`)}
-  ${D.drafts.stuck.length?sec('STUCK DRAFTS')+box(D.drafts.stuck.map(x=>`<div>${esc(x.league)}: pick ${x.pick}, deadline passed ${ago(x.overdue_s)}</div>`).join(''),'red'):''}
-  ${sec('TRADES AND WAIVERS, LAST 7 DAYS')}<div class="two">${box('<div class="lab">Trades</div>'+kv(D.activity.trades_7d))}${box('<div class="lab">Waiver claims</div>'+kv(D.activity.claims_7d))}</div>`}
-function pReports(){const o=R.filter(x=>x.status==='open'),c=R.length-o.length;
-  return `<div class="grid">${stat('Open reports',n(o.length),'',o.length?'red':'grn')}${stat('Closed',n(c))}</div>${sec('REPORTED MESSAGES')}${box(R.length?`<div class="scroll"><table><tr><th>WHEN</th><th>FROM</th><th>MESSAGE</th><th>REASON</th><th>STATUS</th><th></th></tr>${R.map(x=>`<tr><td class="dim">${esc(String(x.created_at).slice(0,16).replace('T',' '))}</td><td>${esc(x.message_name||'')}</td><td style="max-width:360px;word-break:break-word">${esc(x.message_body||'')}</td><td class="dim">${esc(x.reason||'')}</td><td><span class="pill ${x.status==='open'?'r':'g'}">${esc(x.status)}</span></td><td>${x.status==='open'?`<button class="btn o" data-rm="${x.id}">REMOVE MESSAGE</button> <button class="btn o" data-cl="${x.id}">DISMISS</button>`:''}</td></tr>`).join('')}</table></div>`:'<span class="dim">No reports yet.</span>')}`}
-function pUsage(){const u=D.usage,tot=Math.max(1,...u.views_7d.map(x=>x.n)),ta=Math.max(1,...u.actions_7d.map(x=>x.n));
-  const bars=(arr,k,mx)=>arr.map(x=>`<div class="row" style="margin:5px 0"><div style="width:190px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x[k]||'(unknown)')}</div><div class="bar" style="flex:1"><i style="width:${x.n/mx*100}%"></i></div><div style="width:40px;text-align:right" class="h">${x.n}</div></div>`).join('')||'<span class="dim">No data yet. It fills in as people use the app.</span>';
+  const cards=L.list.map(l=>`<div class="card"><div class="row" style="justify-content:space-between"><h3 style="font-size:19px">${esc(l.name)}</h3><span class="row" style="gap:6px">${l.is_test?'<span class="pill">Test</span>':''}<span class="pill ${l.status==='active'?'g':'y'}">${esc(LSTAT[l.status]||l.status)}</span></span></div>
+   <div class="lg"><div><b>${l.teams} of ${l.team_count}</b>teams filled</div><div><b>${l.cpu}</b>computer teams</div><div><b>${esc(l.commissioner||'—')}</b>commissioner</div><div><b>${l.finish_bonus?'On':'Off'}</b>finish bonus</div><div><b>${l.msgs_7d}</b>chat messages this week</div><div><b>${esc(shortDate(l.created))}</b>created</div></div></div>`).join('');
+  return `<p class="intro">Every league in Combat. Real leagues are made by players. Test leagues are practice drafts.</p>
+  <div class="grid">${stat('All leagues',n(L.total))}${stat('Real leagues',n(L.real),'not counting tests')}</div>
+  ${D.drafts.stuck.length?sec('Stuck drafts','The pick timer ran out and the draft did not move on.')+box(D.drafts.stuck.map(x=>`<div>${esc(x.league)}: pick ${x.pick}, timer ran out ${ago(x.overdue_s)}</div>`).join(''),'red'):''}
+  ${sec('Where leagues are at')}${box(kv(Object.fromEntries(Object.entries(L.by_status).map(([k,v])=>[LSTAT[k]||k,v]))))}
+  ${sec('Draft results')}${box(kv(D.drafts.by_status)+`<div class="note">${D.drafts.autopick_share==null?'':D.drafts.autopick_share+'% of all draft picks were made automatically because a player ran out of time.'}</div>`)}
+  ${sec('Trades and waiver claims, last 7 days')}<div class="two">${box('<b>Trades</b><div style="margin-top:8px">'+kv(D.activity.trades_7d)+'</div>')}${box('<b>Waiver claims</b><div style="margin-top:8px">'+kv(D.activity.claims_7d)+'</div>')}</div>
+  ${sec('All leagues')}<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">${cards}</div>`}
+function pUsers(){const u=D.usage,us=u,tot=Math.max(1,...u.views_7d.map(x=>x.n)),ta=Math.max(1,...u.actions_7d.map(x=>x.n));
+  const bars=(arr,k,mx)=>arr.map(x=>`<div class="row" style="margin:8px 0"><div style="width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x[k]||'(unknown)')}</div><div class="bar"><i style="width:${x.n/mx*100}%"></i></div><div style="width:44px;text-align:right"><b>${x.n}</b></div></div>`).join('')||'<span style="color:var(--dim)">No data yet. It fills in as people use the app.</span>';
   const p=u.press_room;
-  return `<div class="grid">${stat('Events, 24h',n(u.events_24h))}${stat('Active users, 7d',n(u.users_7d))}${stat('Errors, 24h',n(u.error_count_24h),'',u.error_count_24h?'red':'grn')}${stat('Press room opens',n(p.opened),'last 7 days')}${stat('Mic taps',n(p.mic))}${stat('Chat sends',n(p.chat))}${stat('Interrupts',n(p.interrupts))}</div>
-  ${sec('SCREENS VIEWED, 7 DAYS')}${box(bars(u.views_7d,'screen',tot))}${sec('MOST TAPPED, 7 DAYS')}${box(bars(u.actions_7d,'action',ta))}
-  ${sec('DEVICES (SESSIONS, 7 DAYS)')}${box(kv(u.devices_7d))}
-  ${sec('RECENT ERRORS')}${box(u.errors_24h.length?`<div class="scroll"><table><tr><th>WHEN</th><th>SCREEN</th><th>MESSAGE</th></tr>${u.errors_24h.map(e=>`<tr><td class="dim">${esc(String(e.at).slice(11,19))}</td><td>${esc(e.screen||'')}</td><td>${esc(e.msg||'')}</td></tr>`).join('')}</table></div>`:'<span class="dim">No errors in the last 24 hours.</span>',u.errors_24h.length?'red':'')}`}
-function pData(){const q=D.data_quality,pc=v=>q.fighters?Math.round(v/q.fighters*100)+'%':'—';
-  return `<div class="grid">${stat('Fighters',n(q.fighters))}${stat('No photo',n(q.no_photo),pc(q.no_photo)+' of fighters')}${stat('No age',n(q.no_age),pc(q.no_age))}${stat('No height',n(q.no_height),pc(q.no_height))}${stat('No reach',n(q.no_reach),pc(q.no_reach))}${stat('No stance',n(q.no_stance),pc(q.no_stance))}${stat('No country',n(q.no_country),pc(q.no_country))}${stat('Duplicate fights',n(q.dup_bouts),'extra copies in the database',q.dup_bouts?'red':'grn')}</div>
-  ${sec('UPCOMING FIGHTERS WITH MISSING INFO (NEXT 30 DAYS)')}${box(q.upcoming_missing.length?`<div class="scroll"><table><tr><th>FIGHTER</th><th>PHOTO</th><th>AGE</th><th>HEIGHT</th><th>REACH</th><th>COUNTRY</th></tr>${q.upcoming_missing.map(f=>`<tr><td>${esc(f.name)}</td>${['photo','age','height','reach','country'].map(k=>`<td>${f[k]?'<span class="pill r">missing</span>':'<span class="dim">ok</span>'}</td>`).join('')}</tr>`).join('')}</table></div>`:'<span class="gold">Every fighter on an upcoming card has full info.</span>')}`}
+  return `<p class="intro">How people are using the app. These numbers come from app tracking, so they start filling in once people sign in.</p>
+  <div class="grid">${stat('Active people',n(u.users_24h),'last 24 hours')}${stat('Active people',n(u.users_7d),'last 7 days')}${stat('Visits',n(us.sessions_24h),'last 24 hours')}${stat('Time per visit',us.avg_minutes_per_session_7d==null?'—':us.avg_minutes_per_session_7d+' min','average, last 7 days')}</div>
+  ${sec('Errors','Things that broke for a player.')}<div class="grid">${stat('Errors',n(u.error_count_24h),'last 24 hours',u.error_count_24h?'red':'grn')}</div>
+  ${box(u.errors_24h.length?`<div class="scroll"><table><tr><th>Time (UTC)</th><th>Screen</th><th>What happened</th></tr>${u.errors_24h.map(e=>`<tr><td style="color:var(--dim)">${esc(String(e.at).slice(11,19))}</td><td>${esc(e.screen||'')}</td><td>${esc(e.msg||'')}</td></tr>`).join('')}</table></div>`:'<span style="color:var(--green)">No errors in the last 24 hours.</span>',u.errors_24h.length?'red':'').replace('class="card','style="margin-top:12px" class="card')}
+  ${sec('Pages people visit','Number of views in the last 7 days.')}${box(bars(u.views_7d,'screen',tot))}
+  ${sec('Buttons people tap','Most used buttons in the last 7 days.')}${box(bars(u.actions_7d,'action',ta))}
+  ${sec('Phones and computers','Visits in the last 7 days by device.')}${box(kv(u.devices_7d))}
+  ${sec('Press room','The live commentary feature, last 7 days.')}<div class="grid">${stat('Times opened',n(p.opened))}${stat('Mic taps',n(p.mic))}${stat('Chat messages sent',n(p.chat))}${stat('Interruptions',n(p.interrupts))}</div>`}
+function pReports(){const o=R.filter(x=>x.status==='open'),c=R.length-o.length;
+  return `<p class="intro">Players can report chat messages. For each one you can remove the message or dismiss the report if it is fine.</p>
+  <div class="grid">${stat('Waiting for you',n(o.length),'',o.length?'red':'grn')}${stat('Already handled',n(c))}</div>
+  ${sec('Reported messages')}${R.length?`<div class="list card">${R.map(x=>`<div><div class="row" style="justify-content:space-between"><b>${esc(x.message_name||'Someone')}</b><span class="row" style="gap:8px"><span style="color:var(--dim);font-size:14px">${esc(shortDate(x.created_at))}</span><span class="pill ${x.status==='open'?'r':'g'}">${x.status==='open'?'Needs a decision':esc(x.status==='removed'?'Removed':'Dismissed')}</span></span></div><div style="margin:6px 0;word-break:break-word">“${esc(x.message_body||'')}”</div>${x.reason?`<div style="color:var(--dim);font-size:14px">Reason given: ${esc(x.reason)}</div>`:''}${x.status==='open'?`<div class="row" style="margin-top:10px"><button class="btn sm" data-rm="${x.id}">Remove message</button><button class="btn o sm" data-cl="${x.id}">It's fine, dismiss</button></div>`:''}</div>`).join('')}</div>`:box('<span style="color:var(--dim)">No reports yet.</span>')}`}
+function pData(){const q=D.data_quality,pc=v=>q.fighters?Math.round(v/q.fighters*100)+'% of fighters':'—';
+  return `<p class="intro">How complete the fighter information is. Numbers show how many fighters are missing each piece.</p>
+  <div class="grid">${stat('Fighters in Combat',n(q.fighters))}${stat('Missing a photo',n(q.no_photo),pc(q.no_photo))}${stat('Missing age',n(q.no_age),pc(q.no_age))}${stat('Missing height',n(q.no_height),pc(q.no_height))}${stat('Missing reach',n(q.no_reach),pc(q.no_reach))}${stat('Missing stance',n(q.no_stance),pc(q.no_stance))}${stat('Missing country',n(q.no_country),pc(q.no_country))}${stat('Duplicate fights',n(q.dup_bouts),'extra copies of the same fight in the database',q.dup_bouts?'red':'grn')}</div>
+  ${sec('Fighters on upcoming cards with missing info','Fighters fighting in the next 30 days. These are the ones players will see first.')}${box(q.upcoming_missing.length?`<div class="scroll"><table><tr><th>Fighter</th><th>Photo</th><th>Age</th><th>Height</th><th>Reach</th><th>Country</th></tr>${q.upcoming_missing.map(f=>`<tr><td><b>${esc(f.name)}</b></td>${['photo','age','height','reach','country'].map(k=>`<td>${f[k]?'<span class="pill r">Missing</span>':'<span style="color:var(--dim)">OK</span>'}</td>`).join('')}</tr>`).join('')}</table></div><div class="note">To fill these in, use “Fill in fighter info and photos” on the Fix-It Tools tab.</div>`:'<span style="color:var(--green)">Every fighter on an upcoming card has full info.</span>')}`}
 let FC=null,FCerr='';
 async function loadFouls(){try{const {data,error}=await sb.rpc('admin_foul_candidates');if(error)throw error;FC=data||[];FCerr=''}catch(e){FC=[];FCerr=e.message||'Could not load fights'}draw()}
-function pFouls(){if(FC===null){loadFouls();return box('<div class="lab">Fouls and point deductions</div><div class="note">Loading fights…</div>')}
-  const opts=FC.map(x=>`<option value="${esc(x.id)}">${esc(x.date)} · ${esc(x.fighter)} vs ${esc(x.opponent)}${x.fouls?' · '+x.fouls+' foul'+(x.fouls>1?'s':''):''}</option>`).join('');
-  return box(`<div class="lab">Fouls and point deductions</div><div class="note" style="margin:6px 0 10px">Pick the fighter who committed the foul or lost a point, then set how many. Each one is −2 for leagues with Deductions on. Fights from the last 21 days.</div>${FCerr?`<div class="note" style="color:#E2283C">${esc(FCerr)}</div>`:''}<select id="fcSel" style="max-width:100%">${opts||'<option value="">No finished fights yet</option>'}</select> <input id="fcN" type="number" min="0" max="10" value="1" style="width:70px"> <button class="btn" id="fcGo">SAVE</button><div class="note" id="fcMsg" style="margin-top:8px"></div>`)}
+function pFouls(){if(FC===null){loadFouls();return box('<div class="tool"><h3>Record a foul or point deduction</h3><p class="what">Loading fights…</p></div>')}
+  const opts=FC.map(x=>`<option value="${esc(x.id)}">${esc(x.date)} · ${esc(x.fighter)} (vs ${esc(x.opponent)})${x.fouls?' · '+x.fouls+' foul'+(x.fouls>1?'s':'')+' recorded':''}</option>`).join('');
+  return box(`<div class="tool"><h3>Record a foul or point deduction</h3><p class="what">Choose the fighter who committed the foul or had a point taken, then enter how many.</p><p class="when">Each foul costs that fighter 2 fantasy points, but only in leagues that have Deductions turned on. Shows fights from the last 21 days.</p>${FCerr?`<div class="note" style="color:var(--red)">${esc(FCerr)}</div>`:''}<div class="row"><select id="fcSel" style="max-width:100%;flex:1;min-width:220px">${opts||'<option value="">No finished fights yet</option>'}</select><label class="row" style="gap:6px">Fouls <input id="fcN" type="number" min="0" max="10" value="1" style="width:80px"></label><button class="btn" id="fcGo">Save</button></div><div class="note" id="fcMsg"></div></div>`)}
 function pTools(){const d=etToday();
-  return `<div class="note" style="margin-bottom:12px">These open in a new tab and show a result you can read. Run the dry run first when there is one.</div><div class="two">
-  ${box(`<div class="lab">Link a card to live scoring</div><div class="row" style="margin:10px 0"><input id="ld" value="${d}" style="width:140px"></div><a class="btn o" id="l1" target="_blank">DRY RUN</a> <a class="btn" id="l2" target="_blank">LINK IT</a><div class="note">Connects each bout on that date to Cito so points update live.</div>`)}
-  ${box(`<div class="lab">Fill in fighter info and photos</div><div style="margin:10px 0"><a class="btn o" target="_blank" href="${FN}enrich-upcoming?dryRun=true">DRY RUN</a> <a class="btn" target="_blank" href="${FN}enrich-upcoming">RUN</a></div><div class="note">Age, height, reach, stance, record and photo for fighters on upcoming cards.</div>`)}
-  ${box(`<div class="lab">Live scoring right now</div><div style="margin:10px 0"><a class="btn" target="_blank" href="${FN}live-poll">RUN LIVE POLL NOW</a></div><div class="note">Normally runs by itself every minute. Use this if a fight looks stuck.</div>`)}
+  return `<p class="intro">Fixes you can run yourself. Each button opens a new tab that shows what happened. Where there is a “Preview” button, run it first. It only shows what would change and does not change anything.</p><div class="two">
+  ${box(`<div class="tool"><h3>Connect fights to live scoring</h3><p class="what">Links every fight on a date to the live stats feed so fantasy points update during the fight.</p><p class="when">Use when the Fights tab says a fight is not connected. Normally do this the morning of an event.</p><div class="row" style="margin:6px 0 12px"><label class="row" style="gap:8px">Event date <input id="ld" value="${d}" style="width:150px"></label></div><a class="btn o" id="l1" target="_blank">Preview</a> <a class="btn" id="l2" target="_blank">Connect them</a></div>`)}
+  ${box(`<div class="tool"><h3>Refresh live scores now</h3><p class="what">Pulls the newest stats for all live fights right away.</p><p class="when">This already runs by itself every minute. Use it only if a live fight looks stuck.</p><a class="btn" target="_blank" href="${FN}live-poll">Refresh now</a></div>`)}
+  ${box(`<div class="tool"><h3>Fill in fighter info and photos</h3><p class="what">Adds age, height, reach, stance, record and photo for fighters on upcoming cards.</p><p class="when">Use when the Fighter Data tab shows missing info for upcoming fighters.</p><a class="btn o" target="_blank" href="${FN}enrich-upcoming?dryRun=true">Preview</a> <a class="btn" target="_blank" href="${FN}enrich-upcoming">Fill it in</a></div>`)}
+  ${box(`<div class="tool"><h3>Re-check winners</h3><p class="what">Goes back over finished fights and corrects any wrong winner.</p><p class="when">Use if a league matchup was decided by the wrong winner.</p><a class="btn" target="_blank" href="${FN}repair-winners">Re-check winners</a></div>`)}
   ${pFouls()}
-  ${box(`<div class="lab">Fix winners</div><div style="margin:10px 0"><a class="btn o" target="_blank" href="${FN}repair-winners">RUN</a></div><div class="note">Re-checks winners on finished fights.</div>`)}
   </div>`}
 function draw(){const app=$('#app');
-  if(err){app.innerHTML=`<div class="msg"><div class="h gold" style="font-size:28px">COMBAT PANEL</div><p class="mut">${/Not allowed/i.test(err)?'This page is only for the Combat owner.':'Could not load the panel: '+esc(err)}</p><p><a class="btn" href="login.html">SIGN IN</a></p></div>`;return}
-  if(!D){app.innerHTML='<div class="msg dim">Loading…</div>';return}
-  const body={overview:pOverview,scoring:pScoring,leagues:pLeagues,reports:pReports,usage:pUsage,data:pData,tools:pTools}[tab]||pOverview;
-  app.innerHTML=`<div class="top"><span class="t">COMBAT</span><span class="s">OWNER PANEL</span><span style="flex:1"></span><span class="dim" style="font-size:12px">Updated ${new Date(D.generated_at).toLocaleTimeString()} · refreshes every 30 s</span><button class="btn o" id="rf">REFRESH</button></div><div class="tabs">${TABS.map(([k,l])=>`<button class="tab ${tab===k?'on':''}" data-t="${k}">${l}</button>`).join('')}</div>${body()}`;
-  const fcGo=$('#fcGo');if(fcGo)fcGo.addEventListener('click',async()=>{const id=$('#fcSel').value,n=+$('#fcN').value;if(!id){return}const {error}=await sb.rpc('admin_set_fouls',{p_performance:id,p_fouls:n});const m=$('#fcMsg');if(error){m.textContent=error.message;return}m.textContent='Saved.';FC=null;setTimeout(loadFouls,400)});
+  if(err){app.innerHTML=`<div class="msg"><h1 style="color:var(--gold);font-size:30px">Combat Admin</h1><p style="color:var(--mut)">${/Not allowed/i.test(err)?'This page is only for the Combat owner.':'Could not load the admin page: '+esc(err)}</p><p><a class="btn" href="login.html?redirect=admin.html">Sign in</a></p></div>`;return}
+  if(!D){app.innerHTML='<div class="msg" style="color:var(--dim)">Loading…</div>';return}
+  const body={home:pHome,fights:pFights,leagues:pLeagues,users:pUsers,reports:pReports,data:pData,tools:pTools}[tab]||pHome;
+  const open=R.filter(x=>x.status==='open').length;
+  app.innerHTML=`<div class="top"><h1>Combat Admin</h1><span class="upd">Updated ${new Date(D.generated_at).toLocaleTimeString()}. Refreshes by itself every 30 seconds.</span><button class="btn o" id="rf">Refresh</button></div><div class="tabs" role="tablist">${TABS.map(([k,l])=>`<button class="tab ${tab===k?'on':''}" data-t="${k}">${l}${k==='reports'&&open?`<span class="dot">${open}</span>`:''}</button>`).join('')}</div>${body()}`;
+  const fcGo=$('#fcGo');if(fcGo)fcGo.addEventListener('click',async()=>{const id=$('#fcSel').value,k=+$('#fcN').value;if(!id){return}const {error}=await sb.rpc('admin_set_fouls',{p_performance:id,p_fouls:k});const m=$('#fcMsg');if(error){m.textContent=error.message;return}m.textContent='Saved.';FC=null;setTimeout(loadFouls,400)});
   const l1=$('#l1'),l2=$('#l2'),ld=$('#ld');if(ld){const set=()=>{l1.href=FN+'link-card-bouts?date='+encodeURIComponent(ld.value)+'&dryRun=true';l2.href=FN+'link-card-bouts?date='+encodeURIComponent(ld.value)};set();ld.addEventListener('input',set)}}
-document.addEventListener('click',e=>{const t=e.target.closest('[data-t]');if(t){tab=t.dataset.t;location.hash=tab;draw();return}const rm=e.target.closest('[data-rm]');if(rm){const x=R.find(q=>String(q.id)===rm.dataset.rm);if(x)(async()=>{await sb.from(x.source==='league'?'chat_messages':'cr_chat').delete().eq('id',x.message_id);await sb.from('chat_reports').update({status:'removed'}).eq('id',x.id);load()})();return}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-t]');if(t){tab=t.dataset.t;location.hash=tab;draw();window.scrollTo(0,0);return}const rm=e.target.closest('[data-rm]');if(rm){const x=R.find(q=>String(q.id)===rm.dataset.rm);if(x)(async()=>{await sb.from(x.source==='league'?'chat_messages':'cr_chat').delete().eq('id',x.message_id);await sb.from('chat_reports').update({status:'removed'}).eq('id',x.id);load()})();return}
   const cl=e.target.closest('[data-cl]');if(cl){(async()=>{await sb.from('chat_reports').update({status:'dismissed'}).eq('id',cl.dataset.cl);load()})();return}
   if(e.target.closest('#rf'))load()});
 (async()=>{const u=await CombatAuth.getUser();if(!u){err='Not signed in';draw();return}load();setInterval(()=>{if(!document.hidden&&tab!=='tools')load()},30000)})();
