@@ -102,14 +102,12 @@
   <div class="topbar">
     <div class="brand">COMBAT <span>NOTIFICATIONS</span></div>
     <nav>
-      <a href="index.html">Mock Draft</a>
       <a href="chat.html">League Chat</a>
       <a href="news.html">News</a>
       <a href="settings.html">League Settings</a>
       <a href="notifications.html" class="active">Notifications</a>
-      <a href="draft.html">Draft</a>
       <a href="live.html">Live</a>
-      <a href="team.html">My Team</a>
+      <a href="league.html">My Leagues</a>
       <span id="authStatus"></span>
     </nav>
   </div>
@@ -192,7 +190,7 @@ async function loadMyTeam() {
   const user = await CombatAuth.getUser();
   if (!user) {
     myTeamId = null;
-    teamNote.innerHTML = `Sign in and <a href="team.html" style="color:#D4AF37;text-decoration:none;">create your team</a> to get pick alerts. Chat and news alerts still work either way.`;
+    teamNote.innerHTML = `Sign in and <a href="league.html" style="color:#D4AF37;text-decoration:none;">create your team</a> to get pick alerts. Chat and news alerts still work either way.`;
     toggleYourTeamPick.disabled = true;
     return;
   }
@@ -210,7 +208,7 @@ async function loadMyTeam() {
     } else {
       myTeamId = null;
       toggleYourTeamPick.disabled = true;
-      teamNote.innerHTML = `<a href="team.html" style="color:#D4AF37;text-decoration:none;">Create your team</a> to get pick alerts. Chat and news alerts still work either way.`;
+      teamNote.innerHTML = `<a href="league.html" style="color:#D4AF37;text-decoration:none;">Create your team</a> to get pick alerts. Chat and news alerts still work either way.`;
     }
   } catch (err) {
     myTeamId = null;

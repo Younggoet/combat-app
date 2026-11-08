@@ -119,13 +119,11 @@
       <span class="sub h-font">Live Scoring</span>
     </div>
     <div class="nav">
-      <a href="index.html">Mock Draft</a>
-      <a href="draft.html">Draft</a>
       <a href="news.html">News</a>
       <a href="chat.html">League Chat</a>
       <a href="settings.html">League Settings</a>
       <a href="notifications.html">Notifications</a>
-      <a href="team.html">My Team</a>
+      <a href="league.html">My Leagues</a>
       <span id="authStatus"></span>
     </div>
   </div>
@@ -379,7 +377,7 @@ function render(team, roster, data){
     </div>
 
     ${roster.length === 0
-      ? `<div class="empty-roster">No active roster set yet. Head to <a href="draft.html">Draft</a> to fill your active slots.</div>`
+      ? `<div class="empty-roster">No active roster set yet. Head to <a href="league.html">your league</a> to set your lineup.</div>`
       : `<div class="roster-list">${roster.map((slot) => renderRosterRow(slot, data)).join("")}</div>`
     }
   `;
@@ -421,7 +419,7 @@ async function load(){
       content.innerHTML = `
         <div class="signed-out">
           You don't have a team yet.<br><br>
-          <a href="team.html">Create your team →</a>
+          <a href="league.html">Create your team →</a>
         </div>`;
       return;
     }
