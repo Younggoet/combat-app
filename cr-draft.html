@@ -1009,9 +1009,11 @@ function roomSeat(pick){
   return rev ? n - pos + 1 : pos;
 }
 function pickTid(pick){ return po[pick] || room.team_order[roomSeat(pick) - 1]; }
-function teamById(id){ return teams.find((t) => t.id === id); }
+const pvOpen = {};
+function teamById(id){ return teams.find((t) => t.id === id) || pvOpen[id]; }
 function teamName(id){ const t = teamById(id); return t ? t.name : "Team"; }
 function teamInitials(id){
+  if (pvOpen[id]) return "OPEN";
   if (id === userTeamId) return "YOU";
   return teamName(id).split(/\s+/).map((w) => w[0]).join("").slice(0, 3).toUpperCase();
 }
@@ -1041,6 +1043,8 @@ async function buildPreviewRoom(){
   }
   const have = teams.map((t) => t.id), d = ((L && L.draft_order) || []).filter((x) => have.includes(x));
   const order = d.concat(have.filter((x) => !d.includes(x)));
+  const want = (L && L.team_count) || order.length;
+  for (let i = order.length + 1; i <= want; i++) { const id = "open-" + i; pvOpen[id] = { id, name: "Open spot " + i, owner_user_id: null, color: null, photo_url: null }; order.push(id); }
   return { id: null, preview: true, status: "preview", team_order: order, rounds: (L && L.fighters_per_team) || 10, pool: pvCache.pool, pool_new: [], current_pick_number: 1, current_pick_deadline: null, block_no: 1, draft_type: (L && L.draft_type) || "snake", pick_seconds: (L && L.pick_seconds) || 45 };
 }
 async function loadRoomState(){
