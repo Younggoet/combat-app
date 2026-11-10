@@ -83,6 +83,9 @@
           <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456">
         </div>
       </div>
+      <div id="trustNote" style="display:none;margin:14px 0 4px;padding:12px 14px;border:1px solid rgba(212,175,55,.45);border-radius:10px;background:rgba(212,175,55,.07);font-size:13px;line-height:1.5;color:var(--text-dim,#9A9AA2);">
+        <b style="color:var(--text,#F5F2EA);">Why we ask for an email</b><br>It's only so you can sign in and reset your password. Your password is scrambled, so nobody can read it, not even us. Other players never see your email. No ads, no spam, nothing sold. Don't want to use your main email? A secondary or Apple "Hide My Email" address works fine.
+      </div>
       <button class="primary" id="submitBtn" type="submit">Sign In</button>
     </form>
 
@@ -166,6 +169,7 @@ function setMode(next) {
   tabSignUp.classList.toggle("active", mode === "signup");
   displayNameField.style.display = mode === "signup" ? "block" : "none";
   displayNameInput.required = mode === "signup";
+  const tn = document.getElementById("trustNote"); if (tn) tn.style.display = mode === "signup" ? "block" : "none";
   passwordInput.autocomplete = mode === "signup" ? "new-password" : "current-password";
   codeSent = false; codeField.style.display = "none";
   submitBtn.textContent = submitLabel();
