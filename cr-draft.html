@@ -1048,7 +1048,8 @@ async function buildPreviewRoom(){
   return { id: null, preview: true, status: "preview", team_order: order, rounds: (L && L.fighters_per_team) || 10, pool: pvCache.pool, pool_new: [], current_pick_number: 1, current_pick_deadline: null, block_no: 1, draft_type: (L && L.draft_type) || "snake", pick_seconds: (L && L.pick_seconds) || 45 };
 }
 async function loadRoomState(){
-  const { data: r } = await sb.from("draft_rooms").select("*").eq("league_id", LEAGUE_ID).eq("format", "card_redraft").order("block_no", { ascending: false }).limit(1).maybeSingle();
+  const { data: r, error: rerr } = await sb.from("draft_rooms").select("*").eq("league_id", LEAGUE_ID).eq("format", "card_redraft").order("block_no", { ascending: false }).limit(1).maybeSingle();
+  if (rerr && room) return; // a dropped connection must never wipe the room you are looking at
   room = r || null; picks = []; po = {}; pt = [];
   if (!room) { try { room = await buildPreviewRoom(); } catch (e) { console.error(e); room = null; } return; }
   const open = room.status === "live" || room.status === "paused";
@@ -1062,7 +1063,8 @@ async function loadRoomState(){
   pt = (pr.data || []).filter((t) => new Date(t.expires_at) > new Date());
 }
 async function loadTeams(){
-  const { data } = await sb.from("teams").select("*").eq("league_id", LEAGUE_ID).order("created_at");
+  const { data, error: terr } = await sb.from("teams").select("*").eq("league_id", LEAGUE_ID).order("created_at");
+  if (terr || !data) { if (teams.length) return; }
   teams = data || [];
   const me = teams.find((t) => t.owner_user_id === userId);
   userTeamId = me ? me.id : null; userTeamName = me ? me.name : "";
