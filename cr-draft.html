@@ -776,9 +776,8 @@ function projectedFantasyPoints(f){
   const ctrlMin = (Number(f.avg_control_seconds) || 0) / 60;
   const subAtt = Number(f.avg_sub_attempts) || 0;
   const rev = Number(f.avg_reversals) || 0;
-  const tdDefBonus = (f.td_def_pct !== null && f.td_def_pct !== undefined)
-    ? Number(f.td_def_pct) * ASSUMED_OPP_TD_ATTEMPTS * FANTASY_WEIGHTS.tdDefended
-    : 0;
+  // no UFC takedown-defense data yet (debuts): use the typical fighter (64%) so they aren't projected as if they never defend
+  const tdDefBonus = (f.td_def_pct !== null && f.td_def_pct !== undefined ? Number(f.td_def_pct) : 0.64) * ASSUMED_OPP_TD_ATTEMPTS * FANTASY_WEIGHTS.tdDefended;
   return sig * FANTASY_WEIGHTS.sigStrike + td * FANTASY_WEIGHTS.takedown + kd * FANTASY_WEIGHTS.knockdown
     + ctrlMin * FANTASY_WEIGHTS.controlMinute + subAtt * FANTASY_WEIGHTS.subAttempt + rev * FANTASY_WEIGHTS.reversal
     + tdDefBonus;
@@ -1227,9 +1226,9 @@ function renderDraft(){
       <div class="h-font" style="font-size:13px;letter-spacing:1px;color:#9A9AA2;margin-top:10px;">ALL ${total} PICKS HAVE BEEN MADE ACROSS ALL ${n} TEAMS</div>
       ${L && L.is_test ? `<div style="font-size:13px;color:#9A9AA2;margin-top:10px;">This was a test draft. Nothing from it counts.</div><button data-endtest="1" class="start-draft oct-btn h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;margin-top:20px;">FINISH TEST · BACK TO SETUP</button>` : `<a href="league.html?open=${esc(LEAGUE_ID)}" style="display:inline-block;margin-top:20px;"><button class="start-draft oct-btn h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">GO TO LEAGUE</button></a>`}</div>`, { cls: "lg", pad: "34px", ol: "rgba(212,175,55,0.6)" });
   } else if (pv && !spotlight) {
-    stageMainHtml = ob(`<div style="display:flex;flex-direction:column;gap:10px;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT PREVIEW</div>
-      <div style="font-size:14px;color:#D8D5CC;line-height:1.5;">The draft hasn't started yet. Tap any fighter in the list to see their spotlight, and tap their picture for their full profile. build your queue and chat. No picks can be made until the commissioner starts the draft, and this room switches to the live draft on its own.</div>
-      <div style="border-top:1px solid var(--border-2);padding-top:10px;"><div class="h-font" style="font-size:11px;letter-spacing:2px;color:#7A7A82;">FIRST PICK</div><div class="h-font" style="font-size:22px;font-weight:700;margin-top:4px;">${esc(teamName(onClockTeam).toUpperCase())}</div></div></div>`, { cls: "lg", pad: "22px 24px", ol: "rgba(212,175,55,0.5)" });
+    stageMainHtml = ob(`<div style="display:flex;flex-direction:column;gap:10px;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">WAITING FOR THE DRAFT</div>
+      <div style="font-size:14px;color:#D8D5CC;line-height:1.5;">You're in the draft room. Stay as long as you like. Tap any fighter to see their spotlight, tap their picture for their full profile, build your queue and chat. When the commissioner starts the draft, it begins right here and you don't need to do anything.</div>
+      <div style="border-top:1px solid var(--border-2);padding-top:10px;"><div class="h-font" style="font-size:11px;letter-spacing:2px;color:#7A7A82;">FIRST PICK</div><div class="h-font" style="font-size:22px;font-weight:700;margin-top:4px;">${esc(teamName(onClockTeam).toUpperCase())}</div></div>${L && L.commissioner_user_id === userId ? `<button id="pvStart" class="start-draft oct-btn h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">START THE DRAFT</button><div id="pvErr" style="font-size:12px;color:#FF6A78;min-height:16px;"></div>` : ""}</div>`, { cls: "lg", pad: "22px 24px", ol: "rgba(212,175,55,0.5)" });
   } else if (paused) {
     const holdT = teamById(onClockTeam);
     stageMainHtml = ob(`<div style="display:flex;flex-direction:column;gap:12px;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT PAUSED</div>
@@ -1269,7 +1268,7 @@ function renderDraft(){
     stageMainHtml += `
       <div style="display:flex;align-items:center;gap:10px;">
         <div class="live-dot" style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div>
-        <div class="h-font" style="font-size:13px;letter-spacing:3px;color:${pv ? "var(--gold)" : "var(--red)"};">${pv ? "SPOTLIGHT &mdash; DRAFT PREVIEW" : "ON THE CLOCK &mdash; YOUR PICK"}</div>
+        <div class="h-font" style="font-size:13px;letter-spacing:3px;color:${pv ? "var(--gold)" : "var(--red)"};">${pv ? "SPOTLIGHT &mdash; WAITING FOR THE DRAFT" : "ON THE CLOCK &mdash; YOUR PICK"}</div>
         ${isManualPick ? `<button id="clearSelectedBtn" class="h-font" style="margin-left:auto;font-size:9px;letter-spacing:1.5px;color:${pv ? "var(--gold)" : "var(--red)"};background:rgba(226,40,60,0.12);border:0;padding:5px 10px;cursor:pointer;--c:6px;clip-path:var(--P);">${pv ? "CLOSE" : "YOUR PICK"} &times;</button>` : ""}
       </div>
       ${ob(`<div style="display:flex;align-items:center;gap:${MOB ? 14 : 30}px;${MOB ? "" : "flex-wrap:wrap;"}">
@@ -1397,7 +1396,7 @@ function renderDraft(){
   /* ---- header ---- */
   const hasTrades = !!userTeamId && !complete && !pv;
   const clockInner = complete ? `<div class="h-font" style="font-size:28px;font-weight:700;line-height:1;color:var(--gold);">—</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Done</div>`
-    : pv ? `<div class="h-font" style="font-size:18px;font-weight:700;line-height:1;color:var(--gold);">PREVIEW</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Not started</div>`
+    : pv ? `<div class="h-font" style="font-size:15px;font-weight:700;line-height:1;color:var(--gold);">WAITING</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Not started</div>`
     : paused ? `<div class="h-font" style="font-size:20px;font-weight:700;line-height:1;color:var(--gold);">PAUSED</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Waiting on fights</div>`
     : isMyTurn ? `<div class="h-font pick-clock-val" style="font-size:34px;font-weight:700;line-height:1;color:${remain <= 10 ? "var(--red)" : "#FF6A78"};">${fmtClock(remain)}</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Your pick</div>`
     : `<div class="h-font" style="font-size:28px;font-weight:700;line-height:1;color:var(--gold);">${esc(teamInitials(onClockTeam))}</div><div class="pick-clock-val" style="font-size:12px;color:#C9C6BD;margin-top:2px;">${fmtClock(remain)}</div>`;
@@ -1416,7 +1415,7 @@ function renderDraft(){
         <div class="vrule"></div>
         <div class="status-right hd-round"><div class="lbl">ROUND</div>
           <div class="h-font" style="font-size:44px;font-weight:700;line-height:1;">${roundNumber}<span style="color:#8C8982;font-size:26px;"> / ${room.rounds}</span></div>
-          <div class="h-font" style="font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-top:2px;">${complete ? "DRAFT COMPLETE" : pv ? "DRAFT PREVIEW" : isMyTurn ? "YOUR PICK" : "PICK " + pickNum + " OF " + total}</div></div>
+          <div class="h-font" style="font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-top:2px;">${complete ? "DRAFT COMPLETE" : pv ? "WAITING ROOM" : isMyTurn ? "YOUR PICK" : "PICK " + pickNum + " OF " + total}</div></div>
         <div class="oct-wrap hd-oct${isMyTurn ? " pulse" : ""}" style="width:104px;height:104px;">
           <div style="width:104px;height:104px;clip-path:${OCT_CLIP};display:flex;align-items:center;justify-content:center;background:${octBg};">
             <div style="width:92px;height:92px;clip-path:${OCT_CLIP};background:${isMyTurn ? "#1A0A0D" : "#14120A"};display:flex;flex-direction:column;align-items:center;justify-content:center;">${clockInner}</div>
@@ -1481,6 +1480,15 @@ function renderDraft(){
     if (error) { b.disabled = false; window.alert(error.message || "Couldn't reset the test draft."); return; }
     location.href = "league.html?open=" + encodeURIComponent(LEAGUE_ID);
   }));
+  const pvStart = document.getElementById("pvStart");
+  if (pvStart) pvStart.addEventListener("click", async () => {
+    if (pvStart.disabled) return; pvStart.disabled = true;
+    const eb = document.getElementById("pvErr");
+    const { error } = await sb.rpc("cr_start_draft", { p_league: LEAGUE_ID });
+    if (error) { pvStart.disabled = false; if (eb) eb.textContent = error.message || "Couldn't start the draft."; return; }
+    pvStart.textContent = "STARTING…";
+    try { await refresh(false); } catch (e) { console.error(e); }
+  });
   const lockBtn = document.getElementById("lockBtn");
   if (lockBtn) {
     lockBtn.addEventListener("click", async () => {
