@@ -886,6 +886,8 @@ let selectedFighterId = null;
 let lastSig = "";
 let modal = null;      // pick trade sheet state
 let fighterPoolError = null;
+let autoTeams = new Set();
+const isComm = () => !!(L && userId && L.commissioner_user_id === userId);
 let myQueue = [], autoDraft = false, chatMsgs = [], chatDraft = "";
 /* ---- draft sounds: synthesized in the browser, no audio files, nothing copyrighted ---- */
 const sfx = (() => {
@@ -960,6 +962,10 @@ async function loadMine(){
     if (q.data) myQueue = q.data.map((r) => r.fighter_id);
     autoDraft = !!(p.data && p.data.auto_draft);
     if (c.data) chatMsgs = c.data.slice().reverse();
+    if (isComm() && teams.length) {
+      const ap = await sb.from("cr_team_prefs").select("team_id,auto_draft").in("team_id", teams.map((t) => t.id));
+      if (ap.data) autoTeams = new Set(ap.data.filter((x) => x.auto_draft).map((x) => x.team_id));
+    }
   } catch (e) { console.error(e); }
 }
 async function saveQueueOrder(){
@@ -983,6 +989,32 @@ async function moveQueue(fid, dir){
   [myQueue[i], myQueue[j]] = [myQueue[j], myQueue[i]]; render();
   await saveQueueOrder();
 }
+function ctmAttr(tid){ return isComm() && tid && !String(tid).startsWith("open-") ? ` data-ctm="${tid}" style="cursor:pointer"` : ""; }
+function closeCtm(){ const o = document.getElementById("ctmSheet"); if (o) o.remove(); }
+function openCtm(tid){
+  closeCtm();
+  const on = autoTeams.has(tid), nm = teamName(tid);
+  const o = document.createElement("div"); o.id = "ctmSheet";
+  o.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:flex-end;justify-content:center;";
+  o.innerHTML = `<div style="width:100%;max-width:420px;background:#141417;border:1px solid rgba(212,175,55,0.5);padding:20px 20px 26px;">
+    <div class="h-font" style="font-size:12px;letter-spacing:2px;color:#9A9AA2;">COMMISSIONER</div>
+    <div class="h-font" style="font-size:22px;font-weight:700;margin:4px 0 6px;">${esc(nm)}</div>
+    <div style="font-size:14px;color:#D8D5CC;line-height:1.5;margin-bottom:16px;">${on ? "Auto-pick is ON. This team's picks are made for them from their queue, then the best fighter left." : "Auto-pick is OFF. Turn it on to have this team's picks made for them from their queue, then the best fighter left."}</div>
+    <button id="ctmToggle" class="start-draft oct-btn h-font" style="width:100%;font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 0;">${on ? "TURN AUTO-PICK OFF" : "TURN AUTO-PICK ON"}</button>
+    <button id="ctmClose" class="board-link h-font" style="width:100%;margin-top:12px;font-size:12px;letter-spacing:2px;">CLOSE</button>
+    <div id="ctmErr" style="font-size:12px;color:#FF6A78;min-height:16px;margin-top:8px;"></div></div>`;
+  document.body.appendChild(o);
+  o.addEventListener("click", (e) => { if (e.target === o || e.target.id === "ctmClose") closeCtm(); });
+  document.getElementById("ctmToggle").addEventListener("click", async (e) => {
+    const b = e.currentTarget; if (b.disabled) return; b.disabled = true;
+    const { error } = await sb.rpc("cr_set_team_auto", { p_team: tid, p_on: !on });
+    if (error) { b.disabled = false; document.getElementById("ctmErr").textContent = error.message || "Couldn't change that."; return; }
+    if (on) autoTeams.delete(tid); else autoTeams.add(tid);
+    closeCtm(); lastSig = ""; render();
+    try { await refresh(true); } catch (err) { console.error(err); }
+  });
+}
+document.addEventListener("click", (e) => { const t = e.target.closest && e.target.closest("[data-ctm]"); if (t) openCtm(t.dataset.ctm); });
 async function setAutoDraft(on){
   if (!userTeamId) return;
   autoDraft = on; render();
@@ -1192,17 +1224,17 @@ function renderDraft(){
     const teamWeight = team === userTeamId ? "700" : "500";
     if (entry) {
       const ef = fightersById[entry.fighter_id], dc = fighterDc(ef);
-      trackerHtml += `<div class="tslot${k === pickNum - 1 ? " just" : ""}">${octagonRingAvatar(ef, dc, 52)}
-        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${activeDot(team)}${esc(teamInitials(team))}</span></div>
+      trackerHtml += `<div class="tslot${k === pickNum - 1 ? " just" : ""}"${ctmAttr(team)}>${octagonRingAvatar(ef, dc, 52)}
+        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${activeDot(team)}${esc(teamInitials(team))}${autoTeams.has(team) ? " AUTO" : ""}</span></div>
         <div class="info" style="color:${txc(dc)};font-weight:700;">${esc(ef ? ef.full_name : "?")}</div>
         <div class="divtag" style="background:${dc}2A;"><span class="h-font" style="font-size:8px;letter-spacing:0.5px;color:${txc(dc)};">${esc(ef ? (DIV_SHORT[ef.announced_weight_class] || "") : "")}</span></div></div>`;
     } else if (k === pickNum && !complete) {
-      trackerHtml += `<div class="tslot">${octagonEmptyAvatar(52, (paused || pv) ? "upcoming" : "clock")}
-        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${(paused || pv) ? "var(--gold)" : "var(--red)"};font-weight:700;">&middot; ${activeDot(team)}${esc(teamInitials(team))}</span></div>
+      trackerHtml += `<div class="tslot"${ctmAttr(team)}>${octagonEmptyAvatar(52, (paused || pv) ? "upcoming" : "clock")}
+        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${(paused || pv) ? "var(--gold)" : "var(--red)"};font-weight:700;">&middot; ${activeDot(team)}${esc(teamInitials(team))}${autoTeams.has(team) ? " AUTO" : ""}</span></div>
         <div class="info" style="color:${(paused || pv) ? "var(--gold)" : "var(--red)"};font-weight:700;">${pv ? "FIRST PICK" : paused ? "ON HOLD" : team === userTeamId ? "ON THE CLOCK" : "ON CLOCK"}</div></div>`;
     } else {
-      trackerHtml += `<div class="tslot">${octagonEmptyAvatar(52, "upcoming")}
-        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${activeDot(team)}${esc(teamInitials(team))}</span></div>
+      trackerHtml += `<div class="tslot"${ctmAttr(team)}>${octagonEmptyAvatar(52, "upcoming")}
+        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${activeDot(team)}${esc(teamInitials(team))}${autoTeams.has(team) ? " AUTO" : ""}</span></div>
         <div class="info" style="color:#5A5A62;">UPCOMING</div></div>`;
     }
   }
