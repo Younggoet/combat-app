@@ -717,7 +717,7 @@ function deskMy(){const me=myTeam(),st=standings(),cs=(Z.cur&&Z.cur.block_cards)
   return hero+`<div style="display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:24px;margin-top:24px;align-items:start"><div class="col" style="gap:18px">${stand}<div class="h" style="font-size:24px;letter-spacing:1px;margin-top:6px">MY CORNER · BY CARD</div>${cornerCards()||'<div class="mut">No fighters yet.</div>'}</div><div class="col" style="gap:18px">${live}${nextD}${winners}${po}${prog}${howItWorks()}</div></div>`}
 
 /* ---------- desktop: Fight Night, Matchup, Press Room (match the computer mockup) ---------- */
-const tapeBtn=(id,st)=>{const b=boutOf(id);return b?`<button class="chip sm" data-a="tape" data-v="${b.id}" style="${st||''}">TALE OF THE TAPE</button>`:''};
+const tapeBtn=(id,st)=>{const b=boutOf(id);return b?`<button class="chip sm" data-a="tape" data-v="${b.id}" style="${st||''}">TALE OF THE TAPE</button>${b.status==='completed'?`<button class="chip sm" data-a="recap" data-v="${b.id}" style="${st||''}">FIGHT RECAP</button>`:''}`:''};
 const cardNo=id=>{const b=boutOf(id),cs=(Z.cur&&Z.cur.block_cards)||[];return b?cs.findIndex(c=>c.date===b.bout_date)+1:0};
 const pillS='font-size:11px;letter-spacing:1px;border-radius:999px;padding:3px 10px;display:inline-block;white-space:nowrap';
 function ownPill(id,right){const t=ownerOf(id),mt=myTeam(),mu=myMu();const al=right?'align-self:flex-end':'align-self:flex-start';
