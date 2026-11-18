@@ -1100,7 +1100,7 @@ async function buildBlockPreview(cur){
     ok.forEach((b) => { if (keep.has(b.event_name + "|" + b.bout_date)) { if (b.fighter_a) pool.add(b.fighter_a); if (b.fighter_b) pool.add(b.fighter_b); } });
     pvBlkCache = { at: now, pool: [...pool], cards: cards.slice(0, 4) };
   }
-  return { id: null, preview: true, status: "preview", team_order: cur.team_order, rounds: cur.rounds, pool: pvBlkCache.pool, pool_new: [], current_pick_number: 1, current_pick_deadline: null, block_no: PV_BLOCK, block_cards: pvBlkCache.cards, draft_type: cur.draft_type || "snake", pick_seconds: cur.pick_seconds || 45 };
+  return { id: null, preview: true, status: "preview", team_order: cur.team_order, rounds: cur.rounds, pool: pvBlkCache.pool, pool_new: [], current_pick_number: 1, current_pick_deadline: null, blockPreview: true, block_no: PV_BLOCK, block_cards: pvBlkCache.cards, draft_type: cur.draft_type || "snake", pick_seconds: cur.pick_seconds || 45 };
 }
 async function loadRoomState(){
   const { data: r, error: rerr } = await sb.from("draft_rooms").select("*").eq("league_id", LEAGUE_ID).eq("format", "card_redraft").order("block_no", { ascending: false }).limit(1).maybeSingle();
@@ -1217,7 +1217,8 @@ const isMob = () => window.matchMedia("(max-width:700px)").matches;
 function renderDraft(){
   recomputeRanks();
   const n = room.team_order.length, total = n * room.rounds;
-  const complete = room.status === "complete", paused = room.status === "paused", live = room.status === "live", pv = !!room.preview;
+  const complete = room.status === "complete", paused = room.status === "paused", live = room.status === "live", pv = !!room.preview && !room.blockPreview, bpv = !!room.blockPreview;
+  const PV_DATE = { 2: "JAN 10" }[room.block_no] || "SOON";
   const pickNum = Math.min(room.current_pick_number, total);
   const onClockTeam = complete ? null : pickTid(pickNum);
   const isMyTurn = live && onClockTeam === userTeamId;
@@ -1254,9 +1255,9 @@ function renderDraft(){
         <div class="info" style="color:${txc(dc)};font-weight:700;">${esc(ef ? ef.full_name : "?")}</div>
         <div class="divtag" style="background:${dc}2A;"><span class="h-font" style="font-size:8px;letter-spacing:0.5px;color:${txc(dc)};">${esc(ef ? (DIV_SHORT[ef.announced_weight_class] || "") : "")}</span></div></div>`;
     } else if (k === pickNum && !complete) {
-      trackerHtml += `<div class="tslot"${ctmAttr(team)}>${octagonEmptyAvatar(52, (paused || pv) ? "upcoming" : "clock")}
-        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${(paused || pv) ? "var(--gold)" : "var(--red)"};font-weight:700;">&middot; ${activeDot(team)}${esc(teamInitials(team))}${autoTeams.has(team) ? " AUTO" : ""}</span></div>
-        <div class="info" style="color:${(paused || pv) ? "var(--gold)" : "var(--red)"};font-weight:700;">${pv ? "FIRST PICK" : paused ? "ON HOLD" : team === userTeamId ? "ON THE CLOCK" : "ON CLOCK"}</div></div>`;
+      trackerHtml += `<div class="tslot"${ctmAttr(team)}>${octagonEmptyAvatar(52, (paused || pv || bpv) ? "upcoming" : "clock")}
+        <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${(paused || pv || bpv) ? "var(--gold)" : "var(--red)"};font-weight:700;">&middot; ${activeDot(team)}${esc(teamInitials(team))}${autoTeams.has(team) ? " AUTO" : ""}</span></div>
+        <div class="info" style="color:${(paused || pv || bpv) ? "var(--gold)" : "var(--red)"};font-weight:700;">${(pv || bpv) ? "FIRST PICK" : paused ? "ON HOLD" : team === userTeamId ? "ON THE CLOCK" : "ON CLOCK"}</div></div>`;
     } else {
       trackerHtml += `<div class="tslot"${ctmAttr(team)}>${octagonEmptyAvatar(52, "upcoming")}
         <div class="pickline"><span class="n">PICK ${k}</span><span class="n" style="color:${teamColor};font-weight:${teamWeight};">&middot; ${activeDot(team)}${esc(teamInitials(team))}${autoTeams.has(team) ? " AUTO" : ""}</span></div>
@@ -1286,6 +1287,10 @@ function renderDraft(){
     stageMainHtml = ob(`<div style="display:flex;flex-direction:column;gap:10px;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">WAITING FOR THE DRAFT</div>
       <div style="font-size:14px;color:#D8D5CC;line-height:1.5;">You're in the draft room. Stay as long as you like. Tap any fighter to see their spotlight, tap their picture for their full profile, build your queue and chat. When the commissioner starts the draft, it begins right here and you don't need to do anything.</div>
       <div style="border-top:1px solid var(--border-2);padding-top:10px;"><div class="h-font" style="font-size:11px;letter-spacing:2px;color:#7A7A82;">FIRST PICK</div><div class="h-font" style="font-size:22px;font-weight:700;margin-top:4px;">${esc(teamName(onClockTeam).toUpperCase())}</div></div>${L && L.commissioner_user_id === userId ? `<button id="pvStart" class="start-draft oct-btn h-font" style="font-size:14px;font-weight:700;letter-spacing:2px;padding:14px 32px;">START THE DRAFT</button><div id="pvErr" style="font-size:12px;color:#FF6A78;min-height:16px;"></div>` : ""}</div>`, { cls: "lg", pad: "22px 24px", ol: "rgba(212,175,55,0.5)" });
+  } else if (bpv) {
+    stageMainHtml = ob(`<div style="display:flex;flex-direction:column;gap:10px;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">BLOCK ${room.block_no} DRAFT PREVIEW</div>
+      <div style="font-size:14px;color:#D8D5CC;line-height:1.5;">The draft opens ${PV_DATE}. This is the pool for the next 4 cards. Tap any fighter to see their profile. Picks start here when the draft goes live.</div>
+      <div style="border-top:1px solid var(--border-2);padding-top:10px;"><div class="h-font" style="font-size:11px;letter-spacing:2px;color:#7A7A82;">FIRST PICK</div><div class="h-font" style="font-size:22px;font-weight:700;margin-top:4px;">${esc(teamName(onClockTeam).toUpperCase())}</div></div></div>`,{pad:"22px"});
   } else if (paused) {
     const holdT = teamById(onClockTeam);
     stageMainHtml = ob(`<div style="display:flex;flex-direction:column;gap:12px;"><div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);">DRAFT PAUSED</div>
@@ -1451,8 +1456,9 @@ function renderDraft(){
       ${poolRows || `<div style="grid-column:1/-1;padding:24px;color:#6A6A72;font-size:13px;">${paused ? "Every announced fighter is drafted. New fights will show up here." : "No fighters match."}</div>`}</div></div>${searched.length > poolLimit ? `<button id="moreBtn" class="more-btn h-font">SHOW MORE FIGHTERS (${searched.length - poolLimit} LEFT)</button>` : ""}`, { cls: "lg", pad: "0" });
 
   /* ---- header ---- */
-  const hasTrades = !!userTeamId && !complete && !pv;
+  const hasTrades = !!userTeamId && !complete && !pv && !bpv;
   const clockInner = complete ? `<div class="h-font" style="font-size:28px;font-weight:700;line-height:1;color:var(--gold);">—</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Done</div>`
+    : bpv ? `<div class="h-font" style="font-size:18px;font-weight:700;line-height:1;color:var(--gold);">${PV_DATE}</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Draft opens</div>`
     : pv ? `<div class="h-font" style="font-size:15px;font-weight:700;line-height:1;color:var(--gold);">WAITING</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Not started</div>`
     : paused ? `<div class="h-font" style="font-size:20px;font-weight:700;line-height:1;color:var(--gold);">PAUSED</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Waiting on fights</div>`
     : isMyTurn ? `<div class="h-font pick-clock-val" style="font-size:34px;font-weight:700;line-height:1;color:${remain <= 10 ? "var(--red)" : "#FF6A78"};">${fmtClock(remain)}</div><div style="font-size:10px;color:#C9C6BD;margin-top:2px;">Your pick</div>`
@@ -1472,7 +1478,7 @@ function renderDraft(){
         <div class="vrule"></div>
         <div class="status-right hd-round"><div class="lbl">ROUND</div>
           <div class="h-font" style="font-size:44px;font-weight:700;line-height:1;">${roundNumber}<span style="color:#8C8982;font-size:26px;"> / ${room.rounds}</span></div>
-          <div class="h-font" style="font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-top:2px;">${complete ? "DRAFT COMPLETE" : pv ? "WAITING ROOM" : isMyTurn ? "YOUR PICK" : "PICK " + pickNum + " OF " + total}</div></div>
+          <div class="h-font" style="font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-top:2px;">${complete ? "DRAFT COMPLETE" : bpv ? "PREVIEW · " + total + " PICKS" : pv ? "WAITING ROOM" : isMyTurn ? "YOUR PICK" : "PICK " + pickNum + " OF " + total}</div></div>
         <div class="oct-wrap hd-oct${isMyTurn ? " pulse" : ""}" style="width:104px;height:104px;">
           <div style="width:104px;height:104px;clip-path:${OCT_CLIP};display:flex;align-items:center;justify-content:center;background:${octBg};">
             <div style="width:92px;height:92px;clip-path:${OCT_CLIP};background:${isMyTurn ? "#1A0A0D" : "#14120A"};display:flex;flex-direction:column;align-items:center;justify-content:center;">${clockInner}</div>
