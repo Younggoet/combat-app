@@ -1078,10 +1078,29 @@ async function buildPreviewRoom(){
   for (let i = order.length + 1; i <= want; i++) { const id = "open-" + i; pvOpen[id] = { id, name: "Open spot " + i, owner_user_id: null, color: null, photo_url: null }; order.push(id); }
   return { id: null, preview: true, status: "preview", team_order: order, rounds: (L && L.fighters_per_team) || 10, pool: pvCache.pool, pool_new: [], current_pick_number: 1, current_pick_deadline: null, block_no: 1, draft_type: (L && L.draft_type) || "snake", pick_seconds: (L && L.pick_seconds) || 45 };
 }
+const PV_BLOCK = parseInt(new URLSearchParams(location.search).get("preview") || "0", 10) || 0;
+let pvBlkCache = null;
+async function buildBlockPreview(cur){
+  // read-only preview of the next block's draft: the 4 cards after the current block, same teams and format
+  if (!cur) return null;
+  const now = Date.now();
+  if (!pvBlkCache || now - pvBlkCache.at > 60000) {
+    const last = ((cur.block_cards || []).map((c) => c.date).sort().pop()) || "";
+    const { data: bs } = await sb.from("bouts").select("event_name,bout_date,fighter_a,fighter_b,status").gt("bout_date", last).order("bout_date");
+    const ok = (bs || []).filter((b) => b.status !== "completed" && b.status !== "cancelled");
+    const keys = [], seen = {}, cards = [];
+    ok.forEach((b) => { const k = b.event_name + "|" + b.bout_date; if (!seen[k]) { seen[k] = 1; keys.push(k); cards.push({ date: b.bout_date, event_name: b.event_name }); } });
+    const keep = new Set(keys.slice(0, 4)), pool = new Set();
+    ok.forEach((b) => { if (keep.has(b.event_name + "|" + b.bout_date)) { if (b.fighter_a) pool.add(b.fighter_a); if (b.fighter_b) pool.add(b.fighter_b); } });
+    pvBlkCache = { at: now, pool: [...pool], cards: cards.slice(0, 4) };
+  }
+  return { id: null, preview: true, status: "preview", team_order: cur.team_order, rounds: cur.rounds, pool: pvBlkCache.pool, pool_new: [], current_pick_number: 1, current_pick_deadline: null, block_no: PV_BLOCK, block_cards: pvBlkCache.cards, draft_type: cur.draft_type || "snake", pick_seconds: cur.pick_seconds || 45 };
+}
 async function loadRoomState(){
   const { data: r, error: rerr } = await sb.from("draft_rooms").select("*").eq("league_id", LEAGUE_ID).eq("format", "card_redraft").order("block_no", { ascending: false }).limit(1).maybeSingle();
   if (rerr && room) return; // a dropped connection must never wipe the room you are looking at
   room = r || null; picks = []; po = {}; pt = [];
+  if (PV_BLOCK) { try { room = await buildBlockPreview(r); } catch (e) { console.error(e); } return; }
   if (!room) { try { room = await buildPreviewRoom(); } catch (e) { console.error(e); room = null; } return; }
   const open = room.status === "live" || room.status === "paused";
   const [pk, pw, pr] = await Promise.all([
