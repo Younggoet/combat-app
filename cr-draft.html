@@ -780,7 +780,13 @@ function projectedFantasyPoints(f){
   const tdDefBonus = (f.td_def_pct !== null && f.td_def_pct !== undefined ? Number(f.td_def_pct) : 0.64) * ASSUMED_OPP_TD_ATTEMPTS * FANTASY_WEIGHTS.tdDefended;
   return sig * FANTASY_WEIGHTS.sigStrike + td * FANTASY_WEIGHTS.takedown + kd * FANTASY_WEIGHTS.knockdown
     + ctrlMin * FANTASY_WEIGHTS.controlMinute + subAtt * FANTASY_WEIGHTS.subAttempt + rev * FANTASY_WEIGHTS.reversal
-    + tdDefBonus;
+    + tdDefBonus + finishBonusProj(f);
+}
+function finishBonusProj(f){
+  // +10 per finish when the league has the finish bonus on, scaled by how often this fighter finishes
+  if (!(L && L.finish_bonus)) return 0;
+  const n = (k) => Number(f[k]) || 0, g = f.pro_wins != null ? n('pro_wins') + n('pro_losses') : n('wins') + n('losses');
+  return g > 0 && f.finishes != null ? 10 * Math.min(1, n('finishes') / g) : 0;
 }
 
 
@@ -1441,7 +1447,7 @@ function renderDraft(){
     </button>`;
   }).join("");
   const poolTable = ob(`<div class="pool-table-scroll"><div class="pool-grid">
-      <div class="pool-head">FIGHTER</div><div class="pool-head">DIV</div><div class="pool-head">RECORD</div><div class="pool-head">SIG STR</div><div class="pool-head">TD</div><div class="pool-head">KD</div><div class="pool-head">CTRL</div><div class="pool-head">SUB ATT</div><div class="pool-head">REV</div><div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div><div class="pool-head">FIGHTS/YR</div><div class="pool-head">PROJ FP</div><div class="pool-head" style="color:var(--gold);">BLOCK RANK</div><div class="pool-head">QUEUE</div>
+      <div class="pool-head">FIGHTER</div><div class="pool-head">DIV</div><div class="pool-head">RECORD</div><div class="pool-head">SIG STR</div><div class="pool-head">TD</div><div class="pool-head">KD</div><div class="pool-head">CTRL</div><div class="pool-head">SUB A</div><div class="pool-head">REV</div><div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div><div class="pool-head">FIGHTS/YR</div><div class="pool-head">PROJ FP</div><div class="pool-head" style="color:var(--gold);">BLOCK RANK</div><div class="pool-head">QUEUE</div>
       ${poolRows || `<div style="grid-column:1/-1;padding:24px;color:#6A6A72;font-size:13px;">${paused ? "Every announced fighter is drafted. New fights will show up here." : "No fighters match."}</div>`}</div></div>${searched.length > poolLimit ? `<button id="moreBtn" class="more-btn h-font">SHOW MORE FIGHTERS (${searched.length - poolLimit} LEFT)</button>` : ""}`, { cls: "lg", pad: "0" });
 
   /* ---- header ---- */
@@ -1662,7 +1668,7 @@ function renderProfile(){
   const divRank = divRankById[f.id] || 0;
   const finishRate = f.wins ? Math.round(((f.finishes || 0) / f.wins) * 100) + "%" : "—";
   const cs = [["SIG STR / FIGHT", fmtNum(f.avg_sig_strikes)], ["TAKEDOWNS / FIGHT", fmtNum(f.avg_takedowns)], ["KNOCKDOWNS / FIGHT", fmtNum(f.avg_knockdowns, 2)], ["CONTROL / FIGHT", fmtCtrl(f.avg_control_seconds)],
-    ["SUB ATT / FIGHT", fmtNum(f.avg_sub_attempts)], ["REVERSALS / FIGHT", fmtNum(f.avg_reversals, 2)], ["TD DEFENSE", fmtPct(f.td_def_pct)], ["FINISH RATE", finishRate],
+    ["SUB A / FIGHT", fmtNum(f.avg_sub_attempts)], ["REVERSALS / FIGHT", fmtNum(f.avg_reversals, 2)], ["TD DEFENSE", fmtPct(f.td_def_pct)], ["FINISH RATE", finishRate],
     ["FINISHES", f.finishes ?? "—"], ["WINS", f.wins ?? "—"], ["FIGHTS / YEAR", fmtFightsPerYear(f)], ["PROJ FANTASY PTS", fmtNum(projectedFPById[f.id], 1)]];
   const form = formById[f.id] || [], perf = perfById[f.id];
   const logRows = (perf && perf.length ? perf : []).map((p) => {
