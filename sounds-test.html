@@ -32,4 +32,5 @@ list.addEventListener('click',e=>{const p=e.target.closest('[data-p]'),u=e.targe
  if(p){const a=ctx();PICKS[p.dataset.p][2](a,a.currentTime+.02)}
  if(u){cur=u.dataset.u;try{localStorage.setItem('combat-pick-sound',cur)}catch(x){}msg.textContent=PICKS[cur][0]+' is now your pick sound on this device.';draw()}});
 draw();
-</script></body></html>
+</script><script src="auto-refresh.js"></script>
+</body></html>

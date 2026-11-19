@@ -164,4 +164,5 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-t]');if(t)
   const cl=e.target.closest('[data-cl]');if(cl){(async()=>{await sb.from('chat_reports').update({status:'dismissed'}).eq('id',cl.dataset.cl);load()})();return}
   if(e.target.closest('#rf'))load()});
 (async()=>{const u=await CombatAuth.getUser();if(!u){err='Not signed in';draw();return}load();setInterval(()=>{if(!document.hidden&&tab!=='tools')load()},30000)})();
-</script></body></html>
+</script><script src="auto-refresh.js"></script>
+</body></html>
