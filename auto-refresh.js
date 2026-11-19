@@ -1,6 +1,6 @@
 // Combat — keeps every open page on the latest deploy.
 // Checks the page's ETag whenever the app comes back to the foreground
-// (and every 10 min while open). If a new version shipped, it reloads.
+// (and every minute while open). If a new version shipped, it reloads.
 (function () {
   if (!('fetch' in window)) return;
   var url = location.pathname + location.search;
@@ -29,5 +29,5 @@
   });
   window.addEventListener('focus', check);
   window.addEventListener('pageshow', function (e) { if (e.persisted) check(); });
-  setInterval(function () { if (document.visibilityState === 'visible') check(); }, 600000);
+  setInterval(function () { if (document.visibilityState === 'visible') check(); }, 60000);
 })();
