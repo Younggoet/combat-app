@@ -15,7 +15,71 @@ if (location.hostname === 'combat-app.netlify.app') { location.replace('https://
 (function () {
   const SUPABASE_URL = "https://cguenfdcrqbduluscsel.supabase.co";
   const SUPABASE_KEY = "sb_publishable_51D_xE2j1vYOWl_0nNc4XQ_r7iAYn8x";
-  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // "Remember me": keep the session in localStorage AND mirror it into
+  // IndexedDB. Phones (esp. home-screen apps) sometimes clear localStorage
+  // while the app is closed; IndexedDB survives that, so we restore from it.
+  const KEY_RE = /^sb-.*-auth-token$/;
+  const idb = {
+    open() {
+      return new Promise((resolve) => {
+        try {
+          const r = indexedDB.open("combat-auth", 1);
+          r.onupgradeneeded = () => r.result.createObjectStore("kv");
+          r.onsuccess = () => resolve(r.result);
+          r.onerror = () => resolve(null);
+        } catch (e) { resolve(null); }
+      });
+    },
+    async run(mode, fn) {
+      const db = await this.open();
+      if (!db) return null;
+      return new Promise((resolve) => {
+        try {
+          const tx = db.transaction("kv", mode);
+          const req = fn(tx.objectStore("kv"));
+          tx.oncomplete = () => resolve(req ? req.result : null);
+          tx.onerror = tx.onabort = () => resolve(null);
+        } catch (e) { resolve(null); }
+      });
+    },
+    get(k) { return this.run("readonly", (st) => st.get(k)); },
+    set(k, v) { return this.run("readwrite", (st) => st.put(v, k)); },
+    del(k) { return this.run("readwrite", (st) => st.delete(k)); },
+  };
+  const rememberStorage = {
+    async getItem(k) {
+      let v = null;
+      try { v = localStorage.getItem(k); } catch (e) {}
+      if (v == null && KEY_RE.test(k)) {
+        v = await idb.get(k);
+        if (v != null) { try { localStorage.setItem(k, v); } catch (e) {} }
+      }
+      return v;
+    },
+    async setItem(k, v) {
+      try { localStorage.setItem(k, v); } catch (e) {}
+      if (KEY_RE.test(k)) await idb.set(k, v);
+    },
+    async removeItem(k) {
+      try { localStorage.removeItem(k); } catch (e) {}
+      if (KEY_RE.test(k)) await idb.del(k);
+    },
+  };
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: rememberStorage },
+  });
+
+  // Phones pause timers while the app is in the background, so the token can
+  // expire before it is refreshed. Refresh as soon as the app comes back.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      try { client.auth.startAutoRefresh(); client.auth.getSession(); } catch (e) {}
+    } else {
+      try { client.auth.stopAutoRefresh(); } catch (e) {}
+    }
+  });
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));

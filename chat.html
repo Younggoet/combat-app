@@ -113,7 +113,7 @@
 <script>
 const SUPABASE_URL = "https://cguenfdcrqbduluscsel.supabase.co";
 const SUPABASE_KEY = "sb_publishable_51D_xE2j1vYOWl_0nNc4XQ_r7iAYn8x";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = CombatAuth.client;
 
 // Single league for now — Combat doesn't have multi-league support yet.
 const LEAGUE_ID = "a18edea0-2355-45c7-a175-f880597aa86e";
