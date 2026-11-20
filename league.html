@@ -160,7 +160,7 @@ const rkAll=id=>RK[id]?RK[id].all:null,rkDiv=id=>RK[id]?RK[id].div:null;
 // "Heavyweight block rank #1" means best heavyweight on these cards. Ties in rating break on projected points.
 const BK={k:'',d:{},a:{}};
 function blkRanks(){const pl=(Z.cur&&Z.cur.pool)||[],k=((Z.cur&&Z.cur.id)||'')+'|'+pl.length+'|'+Object.keys(Z.fmap).length;if(BK.k===k)return BK;
-  const fs=pl.map(i=>Z.fmap[i]).filter(Boolean).sort((x,y)=>(y.current_rating||1500)-(x.current_rating||1500)||(projFP(y)||0)-(projFP(x)||0)||String(x.full_name).localeCompare(y.full_name));
+  const fs=pl.map(i=>Z.fmap[i]).filter(Boolean).map(f=>({f,p:projFP(f)==null?finProj(f)+(Number(f.td_def_pct==null?.64:f.td_def_pct)*3*.5):projFP(f)})).sort((x,y)=>y.p-x.p||String(x.f.full_name).localeCompare(y.f.full_name)).map(o=>o.f);
   const cnt={};BK.a={};BK.d={};fs.forEach((f,i)=>{BK.a[f.id]=i+1;const w=f.announced_weight_class||'';cnt[w]=(cnt[w]||0)+1;BK.d[f.id]=cnt[w]});BK.k=k;return BK}
 const blkDiv=id=>blkRanks().d[id]||null,blkAll=id=>blkRanks().a[id]||null;
 const tavT=(t,s,list)=>`<div class="oc tav" style="--s:${s}px;--tc:${colorOf(t,list)}"><b class="oc">${esc(initials(t.name))}${t.photo_url?`<u style="background-image:url('${esc(t.photo_url)}')"></u>`:''}</b></div>`;
