@@ -14,18 +14,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0A1124;--panel:#131317;--text:#F5F2EA;--dim:#9A9AA2;--faint:#5A5A62;--gold:#D4AF37;--gold2:#E8C93A;--red:#E2283C;--line:#242428}
+:root{--bg:#0A1124;--panel:#0F1A33;--text:#F5F2EA;--dim:#9A9AA2;--faint:#5A5A62;--gold:#D4AF37;--gold2:#E8C93A;--red:#E2283C;--line:#1F2D52}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100vh;color:var(--text);font-family:Inter,-apple-system,sans-serif;
-  background:linear-gradient(#0A1124,#0A1124),var(--bg);background-attachment:fixed}
+  background:radial-gradient(circle at 0% 0%,rgba(44,230,255,.12) 0%,rgba(10,17,36,0) 45%),radial-gradient(circle at 100% 100%,rgba(255,59,78,.10) 0%,rgba(10,17,36,0) 45%),#0A1124;background-attachment:fixed}
 a{color:inherit;text-decoration:none}
 button{font-family:inherit;cursor:pointer}
 .h{font-family:Oswald,Impact,sans-serif;letter-spacing:.5px}
 .wrap{max-width:1080px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left)) 0 max(16px,env(safe-area-inset-right))}
 *{--P:polygon(var(--c) 0,calc(100% - var(--c)) 0,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0 calc(100% - var(--c)),0 var(--c))}
 .ob{--c:18px;padding:1.5px;background:var(--ol,#D4AF37aa);clip-path:var(--P)}
-.ob>.i{--c:17px;clip-path:var(--P);background:var(--fill,linear-gradient(155deg,rgba(212,175,55,.12),rgba(0,0,0,0) 60%),#131317);height:100%}
+.ob>.i{--c:17px;clip-path:var(--P);background:var(--fill,linear-gradient(155deg,rgba(212,175,55,.12),rgba(0,0,0,0) 60%),#0F1A33);height:100%}
 .oc{clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}
 
 /* top bar */
@@ -149,7 +149,7 @@ footer a{color:var(--faint);margin:0 8px}
     <p class="sub">Draft real fighters. Points come from what they do in the cage: strikes, takedowns, knockdowns, control time and finishes.</p>
     <div class="fmts">
       <a href="login.html" class="ob" style="--ol:#D4AF37cc"><div class="i fmt"><h3>Card Draft</h3><p>Pick fighters from one real card. Everyone drafts from the same fights, and the best night wins.</p><div class="go">START A LEAGUE &rarr;</div></div></a>
-      <a href="login.html" class="ob" style="--ol:#E2283Ccc"><div class="i fmt" style="--fill:linear-gradient(155deg,rgba(226,40,60,.14),rgba(0,0,0,0) 60%),#131317"><h3>Dynasty</h3><p>Build a roster that lasts the season. One fighter per division, season-long standings and a championship bracket.</p><div class="go" style="color:#FF6A78">START A LEAGUE &rarr;</div></div></a>
+      <a href="login.html" class="ob" style="--ol:#E2283Ccc"><div class="i fmt" style="--fill:linear-gradient(155deg,rgba(226,40,60,.14),rgba(0,0,0,0) 60%),#0F1A33"><h3>Dynasty</h3><p>Build a roster that lasts the season. One fighter per division, season-long standings and a championship bracket.</p><div class="go" style="color:#FF6A78">START A LEAGUE &rarr;</div></div></a>
     </div>
   </div>
 
@@ -266,7 +266,7 @@ function paint() {
       ${slides.map((b, i) => {
         const A = fById[b.fighter_a], B = fById[b.fighter_b], wc = A.announced_weight_class || B.announced_weight_class || "";
         const dc = DC[wc] || "#D4AF37";
-        return `<div class="slide${i === 0 ? " on" : ""}" data-i="${i}"><div class="ob" style="--ol:${b.is_title_fight ? "#D4AF37" : dc + "aa"}"><div class="i face" style="--fill:linear-gradient(120deg,${dc}2E,rgba(0,0,0,0) 55%),#131317">
+        return `<div class="slide${i === 0 ? " on" : ""}" data-i="${i}"><div class="ob" style="--ol:${b.is_title_fight ? "#D4AF37" : dc + "aa"}"><div class="i face" style="--fill:linear-gradient(120deg,${dc}2E,rgba(0,0,0,0) 55%),#0F1A33">
           <div class="tags">${b.is_title_fight ? `<span class="tag belt">TITLE FIGHT</span>` : i === 0 ? `<span class="tag main">MAIN EVENT</span>` : ""}<span class="tag" style="background:${dc}2A;color:${dc}">${esc(wc.toUpperCase())}</span></div>
           <div class="vs">${fighterSide(A)}<div class="vsmid">VS</div>${fighterSide(B)}</div>
         </div></div></div>`; }).join("")}

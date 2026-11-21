@@ -13,12 +13,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0A1124; --panel:#141417; --panel-2:#1A1A1E; --panel-3:#0F0F12; --border:#242428; --border-2:#1C1C20;
+    --bg:#0A1124; --panel:#0F1A33; --panel-2:#14224A; --panel-3:#0F0F12; --border:#1F2D52; --border-2:#18264A;
     --text:#F5F2EA; --text-dim:#9A9AA2; --text-faint:#5A5A62; --text-faint-2:#4A4A52; --gold:#D4AF37; --red:#E2283C;
     /* Elevation: cards are told apart by depth (shadow), not a hairline
        border — a thin rgba edge keeps things crisp but the shadow carries
        the weight. Two sizes: small controls vs. hero panels. */
-    --edge:1px solid rgba(255,255,255,0.06);
+    --edge:1px solid rgba(120,170,255,0.14);
     --shadow-sm:0 4px 14px rgba(0,0,0,0.35);
     --shadow-lg:0 16px 40px rgba(0,0,0,0.5);
     --r-sm:8px; --r-md:14px; --r-lg:20px;
@@ -29,7 +29,8 @@
     margin:0; color:var(--text);
     font-family:'Barlow',-apple-system,sans-serif; min-height:100vh;
     background:
-      var(--bg);
+      radial-gradient(circle at 0% 0%,rgba(44,230,255,.12) 0%,rgba(10,17,36,0) 45%),radial-gradient(circle at 100% 100%,rgba(255,59,78,.10) 0%,rgba(10,17,36,0) 45%),#0A1124;
+    background-attachment:fixed;
   }
   a{color:inherit;text-decoration:none;}
   button{font-family:inherit;}
@@ -584,7 +585,7 @@
   /* ---------- Octagon pass: every box and rectangle gets the app's cut corners ---------- */
   *{--P:polygon(var(--c) 0,calc(100% - var(--c)) 0,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0 calc(100% - var(--c)),0 var(--c))}
   .ob{--c:16px;padding:1.5px;background:var(--ol);clip-path:var(--P);min-width:0;}
-  .ob>.i{min-width:0;--c:calc(var(--oc,16px) - 1px);clip-path:var(--P);background:var(--fill,linear-gradient(155deg,rgba(212,175,55,.12),rgba(0,0,0,0) 60%),#131317);padding:var(--pad,14px);height:100%;box-sizing:border-box;}
+  .ob>.i{min-width:0;--c:calc(var(--oc,16px) - 1px);clip-path:var(--P);background:var(--fill,linear-gradient(155deg,rgba(212,175,55,.12),rgba(0,0,0,0) 60%),#0F1A33);padding:var(--pad,14px);height:100%;box-sizing:border-box;}
   .ob.sm{--c:10px;--oc:10px}.ob.md{--c:14px;--oc:14px}.ob.lg{--c:22px;--oc:22px}
   .filter-tab,.division-chip,.queue-chip,.board-link,input.search,.board-team-cell,.board-cell,.divtag2,.news-tag,.tslot .divtag,.tag{border-radius:0 !important;--c:8px;clip-path:var(--P);box-shadow:none !important;}
   input.search{--c:9px;}
@@ -610,7 +611,7 @@
   .seg2{display:flex;gap:8px;flex-wrap:wrap;}
   .chipx{border:0;background:#26262B;color:#9A9AA2;font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:1px;padding:8px 14px;cursor:pointer;--c:8px;clip-path:var(--P);}
   .chipx.on{background:linear-gradient(135deg,#F2D675,#D4AF37 60%,#9C7A1E);color:#14120A;}
-  .orow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #26262C;cursor:pointer;}
+  .orow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #1F2D52;cursor:pointer;}
   .orow:first-child{border-top:0;}
   .orow input{width:18px;height:18px;accent-color:#D4AF37;}
   .mbtn{border:0;background:#26262B;color:var(--text);font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:1px;padding:12px 18px;cursor:pointer;--c:10px;clip-path:var(--P);}
@@ -641,12 +642,12 @@
   #profRoot .tag.ph{color:var(--dim)}
   #profRoot .sh{display:flex;justify-content:space-between;align-items:baseline;margin:8px 0 0}#profRoot .sh span{font-size:12px;color:var(--dim)}
   #profRoot .scroll{overflow-x:auto;scrollbar-width:none}#profRoot .scroll::-webkit-scrollbar{display:none}
-  #profRoot .tbl{width:100%;border-collapse:collapse;font-size:13px}#profRoot .tbl th{font-size:10px;letter-spacing:1px;color:var(--dim);text-align:right;font-weight:500;padding:4px 4px}#profRoot .tbl td{padding:8px 4px;text-align:right;border-top:1px solid #26262C}#profRoot .tbl th:first-child,#profRoot .tbl td:first-child{text-align:left}
+  #profRoot .tbl{width:100%;border-collapse:collapse;font-size:13px}#profRoot .tbl th{font-size:10px;letter-spacing:1px;color:var(--dim);text-align:right;font-weight:500;padding:4px 4px}#profRoot .tbl td{padding:8px 4px;text-align:right;border-top:1px solid #1F2D52}#profRoot .tbl th:first-child,#profRoot .tbl td:first-child{text-align:left}
   #profRoot .btn{--c:10px;clip-path:var(--P);border:0;padding:11px 20px;font-family:Oswald,sans-serif;font-size:14px;letter-spacing:1px;background:#26262B;color:var(--fg);cursor:pointer}
   #profRoot .btn.g{background:linear-gradient(135deg,#F2D675,#D4AF37 60%,#9C7A1E);color:#14120A;font-weight:700}
   .prof-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px;}
   .queue-row{align-items:center;}
-  .more-btn{display:block;width:100%;border:0;background:#1B1B20;color:var(--gold);font-size:13px;letter-spacing:2px;padding:14px;cursor:pointer;}
+  .more-btn{display:block;width:100%;border:0;background:#14224A;color:var(--gold);font-size:13px;letter-spacing:2px;padding:14px;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -739,7 +740,7 @@ function fmtFightsPerYear(f){
 const TAPE_LBS = { "Heavyweight":265, "Light Heavyweight":205, "Middleweight":185, "Welterweight":170, "Lightweight":155, "Featherweight":145, "Bantamweight":135, "Flyweight":125, "Women's Bantamweight":135, "Women's Flyweight":125, "Women's Strawweight":115 };
 function tapeCell(v, l, hi){
   const ol = hi ? "#D4AF37" : "rgba(255,255,255,.28)";
-  const fill = hi ? "linear-gradient(155deg,rgba(212,175,55,.3),rgba(212,175,55,.1)),#131317" : "#22232a";
+  const fill = hi ? "linear-gradient(155deg,rgba(212,175,55,.3),rgba(212,175,55,.1)),#0F1A33" : "#22232a";
   return `<span class="ob" style="--c:10px;--ol:${ol};display:inline-block;vertical-align:top;"><span class="i" style="display:block;--c:9px;--fill:${fill};--pad:5px 11px 4px;text-align:center;min-width:48px;"><b class="h-font" style="display:block;font-size:${hi ? 20 : 17}px;font-weight:700;line-height:1.05;color:${hi ? "#E8C93A" : "#F5F2EA"};">${esc(String(v))}</b><span class="h-font" style="display:block;font-size:9px;letter-spacing:1.2px;color:${hi ? "#D4AF37" : "#9A9AA2"};margin-top:2px;">${esc(String(l))}</span></span></span>`;
 }
 function tapeFighter(f, right){
@@ -1037,7 +1038,7 @@ async function sendChat(){
 }
 
 /* ---------- octagon box (same construction as the league screens) ---------- */
-const ob = (html, o = {}) => `<div class="ob ${o.cls || "md"}" style="--ol:${o.ol || "#D4AF37aa"};${o.st || ""}"><div class="i" style="--pad:${o.pad || "18px"};--fill:${o.fill || "linear-gradient(155deg,rgba(212,175,55,.12),rgba(0,0,0,0) 60%),#131317"}">${html}</div></div>`;
+const ob = (html, o = {}) => `<div class="ob ${o.cls || "md"}" style="--ol:${o.ol || "#D4AF37aa"};${o.st || ""}"><div class="i" style="--pad:${o.pad || "18px"};--fill:${o.fill || "linear-gradient(155deg,rgba(212,175,55,.12),rgba(0,0,0,0) 60%),#0F1A33"}">${html}</div></div>`;
 
 /* ---------- draft order helpers ---------- */
 function roomSeat(pick){
@@ -1196,7 +1197,7 @@ function renderNoRoom(){
   const tys = { snake: "Snake", linear: "Linear", "3rr": "Third-round reversal" };
   const secs = (L && +L.pick_seconds) || 45, clock = Math.floor(secs / 60) + ":" + String(secs % 60).padStart(2, "0");
   const isComm = L && L.commissioner_user_id === userId;
-  const rows = ord.map((id, i) => { const t = teamById(id); return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;${i ? "border-top:1px solid #26262C;" : ""}"><div style="width:22px;color:#6E6E78;font-size:13px;">${i + 1}</div><div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;">${esc(t.name)}${t.owner_user_id === userId ? " (you)" : ""} ${activeDot(id)}</div><div style="font-size:12px;color:#9A9AA2;">${t.owner_user_id ? "Manager" : "Open"}</div></div>`; }).join("");
+  const rows = ord.map((id, i) => { const t = teamById(id); return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;${i ? "border-top:1px solid #1F2D52;" : ""}"><div style="width:22px;color:#6E6E78;font-size:13px;">${i + 1}</div><div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;">${esc(t.name)}${t.owner_user_id === userId ? " (you)" : ""} ${activeDot(id)}</div><div style="font-size:12px;color:#9A9AA2;">${t.owner_user_id ? "Manager" : "Open"}</div></div>`; }).join("");
   const stat = (k, v) => `<div style="flex:1;min-width:120px;"><div style="font-size:11px;letter-spacing:1.5px;color:#6E6E78;">${k}</div><div class="h-font" style="font-size:20px;font-weight:700;">${v}</div></div>`;
   content.innerHTML = `
     <div class="dr-header"><div class="dr-header-left">${backBtn()}<div class="h-font" style="font-size:22px;font-weight:700;letter-spacing:1px;color:var(--gold);">COMBAT</div><div class="vrule"></div><div class="h-font dr-header-subtitle" style="font-size:15px;letter-spacing:2px;color:#9A9AA2;">DRAFT LOBBY</div></div></div>
@@ -1664,7 +1665,7 @@ function renderProfile(){
   ensurePerf(f.id);
   const dc = fighterDc(f), champ = isChamp(f), cc = CC_BY_NAME[f.nationality] || "";
   const flag = cc && FL[cc] ? `url(${FD(cc)})` : "";
-  const box = (l, v, c) => ob(`<div class="tiny" style="letter-spacing:1.5px;color:var(--gold2)">${esc(l)}</div><div class="h" style="font-size:22px;line-height:1.15">${esc(String(v))}</div>`, { cls: "sm", pad: "9px 12px", ol: (c || "#D4AF37") + "aa", fill: `linear-gradient(155deg,${c || "#D4AF37"}38,${c || "#D4AF37"}10 60%,rgba(0,0,0,0)),#131317` });
+  const box = (l, v, c) => ob(`<div class="tiny" style="letter-spacing:1.5px;color:var(--gold2)">${esc(l)}</div><div class="h" style="font-size:22px;line-height:1.15">${esc(String(v))}</div>`, { cls: "sm", pad: "9px 12px", ol: (c || "#D4AF37") + "aa", fill: `linear-gradient(155deg,${c || "#D4AF37"}38,${c || "#D4AF37"}10 60%,rgba(0,0,0,0)),#0F1A33` });
   const age = f.date_of_birth ? Math.floor((Date.now() - new Date(f.date_of_birth).getTime()) / 31557600000) : null;
   const ht = f.height_cm ? (() => { const t = Math.round(f.height_cm / 2.54); return Math.floor(t / 12) + "'" + (t % 12) + '"'; })() : "—";
   const reach = f.reach_cm ? Math.round(f.reach_cm / 2.54) + '"' : "—";
@@ -1699,7 +1700,7 @@ function renderProfile(){
   <div class="pad col" style="gap:10px;margin-top:12px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${box("AGE", age ?? "—")}${box("HEIGHT", ht)}${box("WEIGHT", lbs)}${box("REACH", reach)}${box("STANCE", f.stance || "—")}${box("RECORD", fmtRecord(f))}${box("COUNTRY", f.nationality || "—")}${box("TEAM", f.team || "—")}</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${box((f.announced_weight_class || "DIVISION").toUpperCase() + " BLOCK RANK", divRank ? "#" + divRank : "—", dc)}${box("OVERALL BLOCK RANK", fmtRank(overallRankById[f.id]), dc)}${box("PROJ FP", fmtNum(projectedFPById[f.id], 1), dc)}${box("STATUS", pk ? "Pick " + pk.pick_number : "Available", dc)}</div>
   <div class="sh"><span class="h" style="font-size:18px;color:var(--fg)">CAREER STATS</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${cs.map((c) => box(c[0], c[1], dc)).join("")}</div>
-  <div class="sh"><span class="h" style="font-size:18px;color:var(--fg)">FIGHT LOG</span><span>Fantasy points per fight</span></div>${ob(`<div class="scroll"><table class="tbl"><tr><th>DATE</th><th style="text-align:left">OPPONENT</th><th>RES</th><th>METHOD</th><th>FPTS</th></tr>${logRows || `<tr><td colspan="5" class="dim" style="text-align:center">${perf === null ? "Loading fights…" : "No fight history on file."}</td></tr>`}</table></div>`, { cls: "md", pad: "8px 12px", ol: dc + "aa", fill: `linear-gradient(155deg,${dc}38,${dc}10 60%,rgba(0,0,0,0)),#131317` })}
+  <div class="sh"><span class="h" style="font-size:18px;color:var(--fg)">FIGHT LOG</span><span>Fantasy points per fight</span></div>${ob(`<div class="scroll"><table class="tbl"><tr><th>DATE</th><th style="text-align:left">OPPONENT</th><th>RES</th><th>METHOD</th><th>FPTS</th></tr>${logRows || `<tr><td colspan="5" class="dim" style="text-align:center">${perf === null ? "Loading fights…" : "No fight history on file."}</td></tr>`}</table></div>`, { cls: "md", pad: "8px 12px", ol: dc + "aa", fill: `linear-gradient(155deg,${dc}38,${dc}10 60%,rgba(0,0,0,0)),#0F1A33` })}
   </div></div>`;
 }
 document.getElementById("profRoot").addEventListener("click", (e) => {
