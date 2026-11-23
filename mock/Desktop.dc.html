@@ -173,7 +173,7 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
         <!-- hero plane -->
         <div style="flex:1.5;position:relative;min-height:470px">
           <div style="position:absolute;left:-30px;right:-30px;bottom:-24px;height:240px;background-image:linear-gradient({{accentLine}} 1px,transparent 1px),linear-gradient(90deg,{{accentLine}} 1px,transparent 1px);background-size:56px 34px;transform:perspective(420px) rotateX(58deg);transform-origin:50% 100%;-webkit-mask-image:linear-gradient(to top,#000 10%,transparent 95%);mask-image:linear-gradient(to top,#000 10%,transparent 95%)"></div>
-          <div style="position:absolute;left:10px;right:20px;top:6px;transform:perspective(1400px) rotateX(4deg) rotateY(-5deg);transform-origin:50% 100%;filter:drop-shadow(0 0 16px {{accent}}88) drop-shadow(0 6px 22px rgba(0,0,0,.5))">
+          <div style="position:absolute;left:10px;right:20px;top:6px;transform:{{ hs.tilt }};transform-origin:50% 100%;filter:drop-shadow(0 0 16px {{accent}}88) drop-shadow(0 6px 22px rgba(0,0,0,.5))">
             <div style="{{ hs.outer }}">
               <div style="{{ hs.inner }}">
               <div style="{{ hs.kick }}">{{ heroKicker }}</div>
@@ -545,7 +545,7 @@ class Component extends DCLogic {
     const OCT = 'polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)';
     const STAR = 'polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)';
     const orgShape = (k, on) => {
-      const S = 84, c = O[k].c, op = on ? 1 : .42;
+      const S = 112, c = O[k].c, op = on ? 1 : .42;
       const bg = 'radial-gradient(circle at 35% 28%,#fff 0%,' + c + ' 55%,#000 130%)';
       const base = 'position:relative;width:' + S + 'px;height:' + S + 'px;box-sizing:border-box;opacity:' + op + ';filter:' + (on ? 'drop-shadow(0 0 10px ' + c + ')' : 'none') + ';';
       const lbl = 'width:100%;height:100%;background:#0F0F12;display:flex;align-items:center;justify-content:center;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:' + Math.round(S * .24) + 'px;letter-spacing:.06em;color:' + (on ? c : '#B6C6E6') + ';';
@@ -806,15 +806,15 @@ class Component extends DCLogic {
         r = { outer: base + 'padding:' + m + 'px;border-radius:18px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 2px,transparent 2px ' + (S / 4) + 'px),repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 2px,transparent 2px ' + (S / 4) + 'px),linear-gradient(135deg,#241855,#0F0B2A);box-shadow:inset 0 0 0 3px ' + oc + ',inset 0 0 0 8px rgba(168,123,255,.25)', inner: innerBase + 'border-radius:50%;border:3px solid ' + oc + ';padding:' + (PH ? '46px 44px' : '62px 62px'), deco, line: 'position:absolute;inset:' + Math.round(S / 2 - (Rr - d * .75)) + 'px;border-radius:50%;border:1.5px solid rgba(232,240,255,.4);box-sizing:border-box;pointer-events:none' };
       }
       const bh = PH ? 34 : 46, bf = PH ? 9.5 : 11.5, cut = PH ? 8 : 10;
-      return { ...r, showSub: !PH,
+      return { ...r, tilt: org === 'ufc' ? 'perspective(1400px) rotateX(4deg) rotateY(-5deg)' : 'none', showSub: !PH,
         kick: "font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:" + (PH ? 10.5 : 13) + 'px;letter-spacing:.12em;color:' + oc,
         title: "font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:" + (PH ? 21 : 34) + 'px;line-height:1.05;color:#E8F0FF',
         sub: 'font-size:14px;color:#9FB2D6',
         status: 'display:flex;align-items:center;justify-content:center;gap:7px;font-size:' + (PH ? 11 : 13) + 'px;color:#E8F0FF',
-        btns: 'display:flex;gap:8px;margin-top:' + (PH ? 2 : 6) + 'px;justify-content:center',
-        b1: 'min-height:' + bh + 'px;padding:0 ' + (PH ? 14 : 22) + 'px;border:0;background:' + oc + ";color:#0A1124;font-family:'Orbitron',sans-serif;font-weight:800;font-size:" + bf + 'px;letter-spacing:.08em;clip-path:polygon(' + cut + 'px 0,100% 0,calc(100% - ' + cut + 'px) 100%,0 100%)',
+        btns: 'display:flex;gap:8px;margin-top:' + (PH ? 2 : 6) + 'px;justify-content:center' + (org === 'ufc' ? '' : ';flex-direction:column;align-items:center'),
+        b1: 'min-height:' + bh + 'px;padding:0 ' + (PH ? 14 : 22) + 'px;border:0;background:' + oc + ";color:#0A1124;font-family:'Orbitron',sans-serif;font-weight:800;font-size:" + bf + 'px;letter-spacing:.08em;white-space:nowrap;clip-path:polygon(' + cut + 'px 0,100% 0,calc(100% - ' + cut + 'px) 100%,0 100%)',
         b2: 'min-height:' + bh + 'px;padding:0 ' + (PH ? 14 : 22) + 'px;border:0;background:' + oc + ';color:' + oc + ";font-family:'Orbitron',sans-serif;font-weight:800;font-size:" + bf + 'px;letter-spacing:.08em;clip-path:polygon(' + cut + 'px 0,100% 0,calc(100% - ' + cut + 'px) 100%,0 100%)',
-        b2i: 'display:flex;align-items:center;justify-content:center;margin:1.5px;min-height:' + (bh - 3) + 'px;padding:0 ' + (PH ? 12 : 20) + 'px;background:#0F1A33;clip-path:polygon(' + (cut - 1) + 'px 0,100% 0,calc(100% - ' + (cut - 1) + 'px) 100%,0 100%)' };
+        b2i: 'white-space:nowrap;display:flex;align-items:center;justify-content:center;margin:1.5px;min-height:' + (bh - 3) + 'px;padding:0 ' + (PH ? 12 : 20) + 'px;background:#0F1A33;clip-path:polygon(' + (cut - 1) + 'px 0,100% 0,calc(100% - ' + (cut - 1) + 'px) 100%,0 100%)' };
     };
     return {
       isHome: false, notHome: true, pageTitle: titles[page] || '',
