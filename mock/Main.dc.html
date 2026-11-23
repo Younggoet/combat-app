@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Combat home, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Orbitron:wght@600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A1124}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
+.scroll::-webkit-scrollbar{display:none}
+.lift:hover{filter:brightness(1.12)}
+</style>
+</helmet>
+<div style="width:100%%;height:100dvh;box-sizing:border-box;background:#0A1124;color:#E8F0FF;font-family:'Barlow',system-ui,sans-serif;position:relative;overflow:hidden;display:flex;flex-direction:column">
+
+  <!-- ambient glow -->
+  <div style="position:absolute;left:-80px;top:-120px;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,{{accentSoft}} 0%,rgba(10,17,36,0) 70%);pointer-events:none"></div>
+
+  <!-- top bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 10px;position:relative">
+    <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:900;letter-spacing:.16em;background:linear-gradient(180deg,#F6E08A,#D4AF37 58%,#9C7A1E);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 14px rgba(232,201,58,.35));font-size:26px">COMBAT</div>
+    <div style="display:flex;gap:10px">
+      <button aria-label="Notifications" style="width:44px;height:44px;border-radius:12px;border:1px solid rgba(120,170,255,.2);background:#0F1A33;color:#E8F0FF;display:flex;align-items:center;justify-content:center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- main tabs: Fantasy / Scores (Home only) -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;gap:6px;padding:0 20px;position:relative">
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="2">
+        <button onClick="{{ t.pick }}" aria-pressed="{{ t.on }}" class="lift" style="{{ t.style }}">{{ t.label }}</button>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ notHome }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:2px 20px 0;position:relative;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:26px;letter-spacing:.04em">{{ pageTitle }}</div>
+  </sc-if>
+
+  <div class="scroll" style="flex:1;overflow-y:auto;padding:16px 20px 24px;position:relative">
+
+    <!-- ============ COMBAT (home) ============ -->
+    <sc-if value="{{ isCombat }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ sl.wrap }}">
+        <div style="{{ sl.outer }}">
+          <div style="{{ sl.inner }}">
+            <div style="{{ sl.kickS }}">{{ sl.kicker }}</div>
+            <div style="{{ sl.titleS }}">{{ sl.title }}</div>
+            <div style="{{ sl.subS }}">{{ sl.sub }}</div>
+            <div style="margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <button class="lift" onClick="{{ sl.view }}" style="{{ sl.btn }}">VIEW CARD</button>
+              <div style="display:flex;gap:8px">
+                <button aria-label="Previous card" onClick="{{ sl.prev }}" style="{{ sl.arrow }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+                <button aria-label="Next card" onClick="{{ sl.next }}" style="{{ sl.arrow }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;justify-content:center;margin:14px 0 22px">
+        <sc-for list="{{ slideDots }}" as="d" hint-placeholder-count="4"><button aria-label="Show card" onClick="{{ d.pick }}" style="{{ d.style }}"></button></sc-for>
+      </div>
+
+      <!-- mock draft -->
+      <div style="padding:22px 18px;background:linear-gradient(160deg,#14224A 0%,#0C1630 70%);border:1px solid rgba(212,175,55,.45);border-radius:16px;margin-bottom:26px;display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'Orbitron',sans-serif;font-weight:900;font-size:25px;line-height:1.1;letter-spacing:.06em;background:linear-gradient(180deg,#F6E08A,#D4AF37 58%,#9C7A1E);-webkit-background-clip:text;background-clip:text;color:transparent">TRY A MOCK DRAFT TODAY</div>
+        <div style="font-size:14px;color:#9FB2D6;line-height:1.45">Practice a UFC card, a BKFC fight night or an RAF Face-Off. No league needed.</div>
+        <button class="lift" onClick="{{ goMock }}" style="margin-top:6px;min-height:52px;border:0;background:linear-gradient(135deg,#F6E08A,#D4AF37 60%,#9C7A1E);color:#14120A;font-family:'Orbitron',sans-serif;font-weight:800;font-size:13px;letter-spacing:.12em;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">START A MOCK DRAFT</button>
+      </div>
+
+      <!-- watch live -->
+      <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">Watch live</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:26px">
+        <div style="padding:16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:14px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#2CE6FF;box-shadow:0 0 10px #2CE6FF"></span><span style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:17px">Live feed</span></div>
+          <div style="font-size:14px;color:#9FB2D6;line-height:1.45">Follow every fight and match as it happens, round by round.</div>
+          <div style="font-size:13px;color:#E8F0FF;padding:10px 12px;background:rgba(44,230,255,.08);border-radius:10px">Prochazka vs Stirling · R3 0:42 · Prochazka lands a spinning back kick</div>
+        </div>
+        <div style="padding:16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:14px;display:flex;flex-direction:column;gap:8px">
+          <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:17px">Live reactions</div>
+          <div style="font-size:14px;color:#9FB2D6;line-height:1.45">React to each fight or match with other fans while it plays out.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:#E8F0FF"><span style="padding:6px 10px;border:1px solid rgba(120,170,255,.3);border-radius:999px">Fire 2.1k</span><span style="padding:6px 10px;border:1px solid rgba(120,170,255,.3);border-radius:999px">Shock 980</span><span style="padding:6px 10px;border:1px solid rgba(120,170,255,.3);border-radius:999px">Respect 640</span></div>
+        </div>
+        <button class="lift" onClick="{{ sl.view }}" style="min-height:48px;border:1px dashed rgba(120,170,255,.35);background:transparent;color:#C9D8F5;border-radius:12px;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.05em">Open upcoming and live</button>
+      </div>
+
+      <!-- promotions -->
+      <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Keep watch of your favorite promotions</div>
+      <div style="font-size:13px;color:#9FB2D6;margin-bottom:12px;line-height:1.4">Follow a promotion to get its cards, results and live fights in your feed.</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px">
+        <sc-for list="{{ promos }}" as="p" hint-placeholder-count="10">
+          <div style="{{ p.card }}">
+            <div style="flex:1;min-width:0;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:14px;color:{{ p.color }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</div>
+            <button onClick="{{ p.toggle }}" aria-pressed="{{ p.on }}" style="{{ p.btn }}">{{ p.label }}</button>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- ============ MOCK DRAFT: PICK A COMBAT SPORT ============ -->
+    <sc-if value="{{ isMock }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size:14px;color:#9FB2D6;line-height:1.5;margin-top:-6px;margin-bottom:20px">Choose a sport to start a practice draft.</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <sc-for list="{{ mockTiles }}" as="m" hint-placeholder-count="3">
+          <button class="lift" onClick="{{ m.go }}" style="display:flex;align-items:center;gap:16px;padding:14px;text-align:left;color:inherit;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:16px;cursor:pointer">
+            <div style="{{ m.box }}"><div style="{{ m.scale }}"><div style="{{ m.outer }}"><div style="{{ m.line }}"></div><sc-for list="{{ m.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ m.inner }}">{{ m.label }}</div></div></div></div>
+            <div style="min-width:0">
+              <div style="font-family:'Orbitron',sans-serif;font-weight:800;font-size:15px;letter-spacing:.04em;color:{{ m.color }}">{{ m.title }}</div>
+              <div style="font-size:13px;color:#9FB2D6;margin-top:4px;line-height:1.4">{{ m.body }}</div>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- ============ HOME · FANTASY ============ -->
+    <sc-if value="{{ isFantasy }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;gap:14px;justify-content:center;margin-bottom:18px">
+        <sc-for list="{{orgs}}" as="o" hint-placeholder-count="3">
+          <button onClick="{{ o.pick }}" aria-pressed="{{ o.on }}" aria-label="{{ o.label }}" style="{{ o.btn }}"><div style="{{ o.outer }}"><div style="{{ o.line }}"></div><sc-for list="{{ o.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ o.inner }}">{{ o.label }}</div></div></button>
+        </sc-for>
+      </div>
+
+      <!-- hero: tilted event plane over a grid floor -->
+      <div style="position:relative;height:350px;margin-bottom:20px">
+        <div style="position:absolute;left:-20px;right:-20px;bottom:-10px;height:150px;background-image:linear-gradient({{accentLine}} 1px,transparent 1px),linear-gradient(90deg,{{accentLine}} 1px,transparent 1px);background-size:36px 24px;transform:perspective(220px) rotateX(58deg);transform-origin:50% 100%;-webkit-mask-image:linear-gradient(to top,#000 10%,transparent 95%);mask-image:linear-gradient(to top,#000 10%,transparent 95%)"></div>
+        <div style="position:absolute;left:6px;right:6px;top:6px;transform:perspective(900px) rotateX(5deg) rotateY(-7deg);transform-origin:50% 100%;filter:drop-shadow(0 0 16px {{accent}}88) drop-shadow(0 6px 22px rgba(0,0,0,.5))">
+          <div style="{{ hs.outer }}">
+            <div style="{{ hs.inner }}">
+            <div style="{{ hs.kick }}">{{ heroKicker }}</div>
+            <div style="{{ hs.title }}">{{ heroTitle }}</div>
+            <sc-if value="{{ hs.showSub }}" hint-placeholder-val="{{ true }}"><div style="{{ hs.sub }}">{{ heroSub }}</div></sc-if>
+            <div style="{{ hs.status }}"><span style="width:8px;height:8px;border-radius:50%;background:{{accent}};box-shadow:0 0 10px {{accent}}"></span>{{ heroStatus }}</div>
+            <div style="{{ hs.btns }}">
+              <button class="lift" onClick="{{ heroGo }}" style="{{ hs.b1 }}">{{ heroCta }}</button>
+              <button class="lift" onClick="{{ heroView }}" style="{{ hs.b2 }}"><span style="{{ hs.b2i }}">VIEW UPCOMING CARDS</span></button>
+            </div>
+          </div>
+            <sc-for list="{{ hs.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ hs.line }}"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- public leagues -->
+      <sc-if value="{{ showPublic }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-bottom:22px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+            <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase">Join a public league</div>
+            <div style="font-size:13px;color:#9FB2D6">Open spots</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ publicLeagues }}" as="p" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#0F1A33;border:1px solid rgba(120,170,255,.14);border-radius:12px">
+                <div style="flex:1;min-width:0">
+                  <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</div>
+                  <div style="font-size:12px;color:#9FB2D6;margin-top:2px">{{ p.meta }}</div>
+                </div>
+                <button onClick="{{ p.pick }}" class="lift" style="flex-shrink:0;min-height:40px;padding:0 16px;border:1px solid {{accent}};background:transparent;color:{{accent}};border-radius:10px;font-family:'Orbitron',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em">JOIN</button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- game modes -->
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+        <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase">Game modes</div>
+        <div style="font-size:13px;color:#9FB2D6">{{ orgName }}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:22px">
+        <sc-for list="{{modes}}" as="m" hint-placeholder-count="2">
+          <div style="display:flex;gap:12px;align-items:center;padding:13px 14px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-left:3px solid {{accent}};border-radius:4px 12px 12px 4px">
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px">{{ m.name }}</div>
+              <div style="font-size:12.5px;color:#9FB2D6;margin-top:2px;line-height:1.4">{{ m.desc }}</div>
+            </div>
+            <div style="{{ m.badge }}">{{ m.status }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- leagues -->
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+        <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase">Your leagues</div>
+        <div style="font-size:13px;color:#9FB2D6">{{ orgName }}</div>
+      </div>
+      <sc-if value="{{ hasLeagues }}" hint-placeholder-val="{{ true }}">
+        <div style="position:relative;display:flex;gap:14px;align-items:center;padding:14px 16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-left:3px solid {{accent}};border-radius:4px 14px 14px 4px">
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:17px">its gon be good</div>
+            <div style="font-size:13px;color:#9FB2D6;margin-top:2px">Dynasty · Card redraft · Block 1</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:20px;color:{{accent}}">Block 1</div>
+            <div style="font-size:12px;color:#9FB2D6">Doha is live Saturday</div>
+          </div>
+        </div>
+        <button class="lift" style="margin-top:10px;width:100%;min-height:48px;border:1px dashed rgba(120,170,255,.35);background:transparent;color:#C9D8F5;border-radius:12px;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.05em">Join or create a league</button>
+      </sc-if>
+      <sc-if value="{{ noLeagues }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:22px 18px;background:#0F1A33;border:1px dashed {{accentLine}};border-radius:14px;display:flex;flex-direction:column;gap:10px">
+          <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px">{{ emptyTitle }}</div>
+          <div style="font-size:14px;color:#9FB2D6;line-height:1.45">{{ emptyBody }}</div>
+          <button class="lift" style="align-self:flex-start;min-height:44px;padding:0 20px;border:0;background:{{accent}};color:#0A1124;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:14px;letter-spacing:.06em;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%)">Get notified</button>
+        </div>
+      </sc-if>
+      <!-- get started -->
+      <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;margin:26px 0 12px">Get started</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start">
+        <sc-for list="{{cardsStyled}}" as="c" hint-placeholder-count="5">
+          <button onClick="{{ c.pick }}" aria-label="{{ c.title }}" class="lift" style="{{ c.cell }}">
+            <div style="{{ c.outer }}">
+              <div style="{{ c.inner }}">
+                <div style="{{ c.iconBox }}"><svg width="{{ c.isz }}" height="{{ c.isz }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ c.icon }}"/></svg></div>
+                <div style="{{ c.tstyle }}">{{ c.title }}</div>
+                <sc-if value="{{ c.showBody }}" hint-placeholder-val="{{ true }}"><div style="{{ c.bstyle }}">{{ c.body }}</div></sc-if>
+                <sc-if value="{{ c.showCta }}" hint-placeholder-val="{{ true }}"><div style="margin-top:auto;display:flex;align-items:center;gap:8px;color:{{accent}};font-family:'Orbitron',sans-serif;font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase">{{ c.cta }}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div></sc-if>
+              </div>
+              <sc-for list="{{ c.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for>
+              <div style="{{ c.line }}"></div>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- ============ HOME · SCORES ============ -->
+    <sc-if value="{{ isScores }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll" style="display:flex;gap:6px;overflow-x:auto;margin:0 -20px 16px;padding:0 20px">
+        <sc-for list="{{filters}}" as="f" hint-placeholder-count="8">
+          <button onClick="{{ f.pick }}" aria-pressed="{{ f.on }}" class="lift" style="{{ f.style }}">{{ f.label }}</button>
+        </sc-for>
+      </div>
+      <sc-for list="{{sections}}" as="sec" hint-placeholder-count="3">
+        <div style="margin-bottom:24px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="{{ sec.mark }}"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:800;font-size:16px;letter-spacing:.08em;color:{{ sec.color }}">{{ sec.title }}</div>
+              <div style="font-size:12px;color:#9FB2D6;margin-top:1px">{{ sec.sub }}</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ sec.heads }}" as="h" hint-placeholder-count="2">
+              <div style="{{ h.card }}">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                  <div style="display:flex;align-items:center;gap:8px;min-width:0"><div style="{{ h.chip }}">{{ h.org }}</div><div style="font-size:12px;color:#9FB2D6;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.event }}</div></div>
+                  <div style="{{ h.badge }}">{{ h.status }}</div>
+                </div>
+                <div style="display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px">
+                  <div style="min-width:0"><div style="{{ h.nA }}">{{ h.a }}</div><div style="{{ h.sA }}">{{ h.as }}</div></div>
+                  <div style="font-size:11px;color:#9FB2D6;text-align:center;max-width:84px">{{ h.mid }}</div>
+                  <div style="min-width:0;text-align:right"><div style="{{ h.nB }}">{{ h.b }}</div><div style="{{ h.sB }}">{{ h.bs }}</div></div>
+                </div>
+                <button class="lift" style="{{ h.btnO }}"><span style="{{ h.btnI }}">VIEW FULL CARD</span></button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+      <div style="font-size:12px;color:#7F93B8;line-height:1.45">Layout sample. Names and results are placeholders until the feeds are connected.</div>
+    </sc-if>
+
+    <!-- ============ LEAGUES ============ -->
+    <sc-if value="{{ isLeagues }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{leagueRows}}" as="l" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;align-items:center;padding:14px 16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-left:3px solid {{ l.c }};border-radius:4px 14px 14px 4px">
+            <div style="{{ l.chip }}">{{ l.org }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px">{{ l.name }}</div>
+              <div style="font-size:12.5px;color:#9FB2D6;margin-top:2px">{{ l.meta }}</div>
+            </div>
+            <div style="{{ l.badge }}">{{ l.status }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="lift" style="flex:1;min-height:48px;border:0;background:#2CE6FF;color:#0A1124;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:14px;letter-spacing:.06em;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%)">CREATE</button>
+        <button class="lift" style="flex:1;min-height:48px;border:1px solid rgba(120,170,255,.35);background:transparent;color:#C9D8F5;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:14px;letter-spacing:.06em;border-radius:12px">JOIN</button>
+      </div>
+    </sc-if>
+
+    <!-- ============ PICK YOUR USERNAME ============ -->
+    <sc-if value="{{ isUsername }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size:14px;color:#9FB2D6;line-height:1.5;margin-top:-6px">This becomes your team name. If your username is Rasta Willy, your team is Team Rasta Willy.</div>
+      <div style="margin-top:28px">
+        <div style="font-size:13px;color:#2CE6FF">Username</div>
+        <input value="Rasta Willy" maxlength="30" autocomplete="off" placeholder="Username" style="width:100%;box-sizing:border-box;background:none;border:0;border-bottom:2px solid #2CE6FF;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:24px;padding:8px 0;outline:none">
+      </div>
+      <button class="lift" style="margin-top:30px;width:100%;min-height:52px;border:0;background:#2CE6FF;color:#0A1124;font-family:'Orbitron',sans-serif;font-weight:800;font-size:13px;letter-spacing:.12em;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">SAVE</button>
+    </sc-if>
+
+    <!-- ============ FIGHTS ============ -->
+    <sc-if value="{{ isFights }}" hint-placeholder-val="{{ false }}">
+      <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;margin:10px 0 12px;flex-shrink:0">Browse fights</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:0 14px;min-height:46px;background:#0F1A33;border:1px solid rgba(120,170,255,.2);border-radius:12px;color:#8FA3C7;font-size:14px;margin-bottom:14px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Search fighters and events
+      </div>
+      <div style="display:flex;gap:4px;margin-bottom:16px">
+        <sc-for list="{{fightTabs}}" as="t" hint-placeholder-count="2">
+          <button onClick="{{ t.pick }}" aria-pressed="{{ t.on }}" class="lift" style="{{ t.style }}">{{ t.label }}</button>
+        </sc-for>
+      </div>
+      <sc-if value="{{ showEvents }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{events}}" as="e" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#0F1A33;border:1px solid rgba(120,170,255,.14);border-radius:12px">
+              <div style="{{ e.chip }}">{{ e.org }}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.name }}</div>
+                <div style="font-size:12px;color:#9FB2D6;margin-top:2px">{{ e.meta }}</div>
+              </div>
+              <div style="font-size:12px;color:#B6C6E6;white-space:nowrap">{{ e.date }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ showFighters }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{fighters}}" as="f" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#0F1A33;border:1px solid rgba(120,170,255,.14);border-radius:12px">
+              <div style="{{ f.av }}"></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:15px">{{ f.name }}</div>
+                <div style="font-size:12px;color:#9FB2D6;margin-top:2px">{{ f.meta }}</div>
+              </div>
+              <div style="{{ f.chip }}">{{ f.org }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- ============ FEED ============ -->
+    <sc-if value="{{ isNews }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll" style="display:flex;gap:6px;overflow-x:auto;margin:0 -20px 14px;padding:0 20px">
+        <sc-for list="{{feedFilters}}" as="f" hint-placeholder-count="4"><button onClick="{{ f.pick }}" class="lift" style="{{ f.style }}">{{ f.label }}</button></sc-for>
+      </div>
+      <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Creators</div>
+      <div class="scroll" style="display:flex;gap:14px;overflow-x:auto;margin:0 -20px 18px;padding:0 20px">
+        <sc-for list="{{creators}}" as="c" hint-placeholder-count="4">
+          <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;width:72px"><div style="{{ c.av }}">?</div><div style="font-size:12px;color:#E8F0FF">{{ c.n }}</div><div style="font-size:11px;color:#9FB2D6">{{ c.src }}</div></div>
+        </sc-for>
+        <button onClick="{{ goConnect }}" class="lift" style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;width:72px;border:0;background:transparent;color:#E8F0FF;padding:0"><div style="width:56px;height:56px;border-radius:50%;border:1.5px dashed #2CE6FF;color:#2CE6FF;display:flex;align-items:center;justify-content:center;font-size:26px">+</div><div style="font-size:12px">Connect</div></button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{feedItems}}" as="f" hint-placeholder-count="6">
+          <div style="{{ f.card }}">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="{{ f.av }}">{{ f.init }}</div>
+              <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">{{ f.name }}</div><div style="font-size:12px;color:#9FB2D6">{{ f.handle }} {{ f.when }}</div></div>
+              <div style="{{ f.chip }}">{{ f.org }}</div>
+            </div>
+            <div style="font-size:15px;line-height:1.4">{{ f.text }}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <div style="{{ f.tagS }}">{{ f.tag }}</div>
+              <sc-if value="{{ f.hasLink }}" hint-placeholder-val="{{ true }}"><div style="font-size:12px;color:#2CE6FF">{{ f.link }}</div></sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- ============ CONNECT YOUR ACCOUNT ============ -->
+    <sc-if value="{{ isConnect }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size:14px;color:#9FB2D6;line-height:1.5;margin-top:-6px">Connect a social account to share your combat sports posts on the Combat feed. Your posts show with your name, photo and a link back to the original.</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:20px">
+        <sc-for list="{{connectPlatforms}}" as="c" hint-placeholder-count="5"><button onClick="{{ c.go }}" class="lift" style="display:flex;align-items:center;justify-content:space-between;min-height:52px;padding:0 16px;background:#0F1A33;border:1px solid rgba(120,170,255,.2);border-radius:12px;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:16px"><span>Connect {{ c.p }}</span><span style="color:#2CE6FF;font-size:12px;letter-spacing:.1em">CONNECT</span></button></sc-for>
+      </div>
+      <div style="margin-top:22px;padding:16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:14px;display:flex;flex-direction:column;gap:8px;font-size:14px;color:#9FB2D6;line-height:1.45">
+        <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:16px;color:#E8F0FF">What you share</div>
+        <div>Only your public posts about combat sports, which you pick by sport and promotion.</div>
+        <div>Your name, photo and handle, shown with every post.</div>
+        <div>You can disconnect any time and your posts come down.</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;margin-top:18px;font-size:14px;color:#E8F0FF;line-height:1.4"><span style="width:20px;height:20px;flex-shrink:0;border:1.5px solid #2CE6FF;border-radius:5px;margin-top:1px"></span>I give Combat permission to show my selected posts with credit and a link back.</div>
+      <button class="lift" style="margin-top:22px;width:100%;min-height:52px;border:0;background:#2CE6FF;color:#0A1124;font-family:'Orbitron',sans-serif;font-weight:800;font-size:13px;letter-spacing:.12em;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">CONTINUE</button>
+    </sc-if>
+
+    <!-- ============ ME ============ -->
+    <sc-if value="{{ isMe }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{meRows}}" as="r" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:14px">
+            <div style="width:40px;height:40px;border-radius:10px;background:rgba(44,230,255,.1);color:#2CE6FF;display:flex;align-items:center;justify-content:center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ r.icon }}"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px">{{ r.title }}</div>
+              <div style="font-size:12.5px;color:#9FB2D6;margin-top:2px">{{ r.sub }}</div>
+            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8FA3C7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- footer -->
+    <div style="margin:30px -20px -24px;padding:26px 20px 28px;background:#0B152B;border-top:1px solid rgba(120,170,255,.16)">
+      <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:900;letter-spacing:.16em;background:linear-gradient(180deg,#F6E08A,#D4AF37 58%,#9C7A1E);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 14px rgba(232,201,58,.35));font-size:22px;display:inline-block">COMBAT</div>
+      <div style="font-size:13px;color:#9FB2D6;margin:8px 0 20px;line-height:1.4;max-width:290px">Fantasy MMA that scores live. Draft fighters from every card and follow the points as they happen.</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 16px">
+        <sc-for list="{{footCols}}" as="col" hint-placeholder-count="4">
+          <div>
+            <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#E8C93A;margin-bottom:8px">{{ col.title }}</div>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ col.links }}" as="l" hint-placeholder-count="5">
+                <button style="border:0;background:none;padding:0;text-align:left;color:#B6C6E6;font-size:14px;min-height:30px;cursor:pointer">{{ l.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top:22px;padding-top:16px;border-top:1px solid rgba(120,170,255,.14);font-size:12px;color:#7F93B8;line-height:1.5">Free to play. No cash prizes.<br>© 2026 Combat · Terms · Privacy</div>
+    </div>
+  </div>
+
+  <!-- phone bottom nav -->
+  <div style="display:flex;border-top:1px solid rgba(120,170,255,.16);background:#0B152B;padding:6px 6px 14px">
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="5">
+      <button onClick="{{ n.pick }}" aria-current="{{ n.on }}" style="{{ n.style }}">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ n.icon }}"/></svg>
+        <span style="font-size:11px;margin-top:3px">{{ n.label }}</span>
+      </button>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { page: 'home', tab: 'fantasy', slide: 0, follow: { UFC: true }, org: 'ufc', filter: 'all', fightTab: 'events' }; }
+  renderVals() {
+    const { page, tab, org, filter, fightTab } = this.state;
+    const O = {
+      ufc:  { label:'UFC',  name:'UFC',  c:'#FF3B4E', c2:'#FF8A5B', soft:'rgba(255,59,78,.22)',  line:'rgba(255,59,78,.35)',
+              kicker:'UFC FIGHT NIGHT · DOHA', title:'Prochazka vs Stirling', sub:'Light heavyweight main event · Block 1 card', status:'Block 1 scoring live Saturday', cta:'CREATE A LEAGUE', leagues:true,
+              modes:[['Card Redraft','Draft each card, score live by fight. Block by block.','Live'],['Dynasty','Season-long leagues with titles and a post-draft dashboard.','Live']] },
+      bkfc: { label:'BKFC', name:'BKFC', c:'#FF8A1F', c2:'#FFC23D', soft:'rgba(255,138,31,.22)', line:'rgba(255,138,31,.35)',
+              kicker:'BKFC · NEXT EVENT', title:'Fight Night Hershey', sub:'Dec 4 · Pague vs Richman · 13 bouts so far', status:'Fantasy opens soon', cta:'GET NOTIFIED', leagues:false,
+              eTitle:'No BKFC leagues yet', eBody:'Punch-based scoring is planned for BKFC. Be first to know when leagues open.',
+              modes:[['Card Redraft','Blocks of 3 cards. Punches, knockdowns, round wins and finishes score.','Planned'],['Face-Off','Two players, one card. Pick fighters head to head.','Later']] },
+      raf:  { label:'RAF',  name:'RAF',  c:'#A87BFF', c2:'#5CC8FF', soft:'rgba(168,123,255,.22)', line:'rgba(168,123,255,.35)',
+              kicker:'RAF · NEXT EVENT', title:'RAF 15', sub:'Nov 28 · Cejudo vs Song · Chicago · 13 bouts', status:'Results-based fantasy planned', cta:'GET NOTIFIED', leagues:false,
+              eTitle:'No RAF leagues yet', eBody:'Wrestling scores on takedowns, match points, win and method. Be first to know when leagues open.',
+              modes:[['Face-Off','Two players alternate picks from one event. Takedowns, points, wins and a method call score.','Planned']] }
+    };
+    const ORG = { UFC:'#FF3B4E', BKFC:'#FF8A1F', RAF:'#A87BFF', PFL:'#5CC8FF', ONE:'#E8F0FF', KSW:'#7CE38B', RIZIN:'#FF6FB5', OKTAGON:'#B0E04B', 'Cage Warriors':'#FFA07A', LFA:'#8FA3C7' };
+    const cur = O[org];
+    const accent = page === 'home' ? cur.soft : 'rgba(44,230,255,.16)';
+    const shape = 'clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);';
+    const tabBtn = (on) => 'flex:1;min-height:56px;border:0;font-family:Orbitron,"Chakra Petch",sans-serif;font-weight:800;font-size:15px;letter-spacing:.14em;clip-path:polygon(16px 0,100% 0,calc(100% - 16px) 100%,0 100%);' + (on ? 'background:linear-gradient(135deg,#F6E08A,#D4AF37 60%,#9C7A1E);color:#14120A;filter:drop-shadow(0 0 10px rgba(232,201,58,.35));' : 'background:#0F1A33;color:#B6C6E6;');
+    const orgBtn = (k, on) => 'flex:1;min-height:44px;border:0;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:14px;letter-spacing:.08em;' + shape + (on ? 'background:' + O[k].c + ';color:#0A1124;' : 'background:#0F1A33;color:#B6C6E6;');
+    const OCT = 'polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)';
+    const STAR = 'polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)';
+    const orgShape = (k, on) => {
+      const S = 76, c = O[k].c, op = on ? 1 : .42;
+      const bg = 'radial-gradient(circle at 35% 28%,#fff 0%,' + c + ' 55%,#000 130%)';
+      const base = 'position:relative;width:' + S + 'px;height:' + S + 'px;box-sizing:border-box;opacity:' + op + ';filter:' + (on ? 'drop-shadow(0 0 10px ' + c + ')' : 'none') + ';';
+      const lbl = 'width:100%;height:100%;background:#0F0F12;display:flex;align-items:center;justify-content:center;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:' + Math.round(S * .24) + 'px;letter-spacing:.06em;color:' + (on ? c : '#B6C6E6') + ';';
+      const btn = 'border:0;background:transparent;padding:0;cursor:pointer;min-width:44px;min-height:44px';
+      if (k === 'ufc') {
+        const pad = Math.round(S * .036);
+        return { btn, deco: [], line: 'display:none', outer: base + 'padding:' + pad + 'px;clip-path:' + OCT + ';background:' + bg, inner: lbl + 'clip-path:' + OCT };
+      }
+      if (k === 'bkfc') {
+        const pad = Math.round(S * .085), d = Math.round(S * .115), R = S / 2 - d / 2 + .5, deco = [];
+        for (let i = 0; i < 8; i++) deco.push({ style: 'position:absolute;left:50%;top:50%;width:' + d + 'px;height:' + d + 'px;margin:' + (-d / 2) + 'px 0 0 ' + (-d / 2) + 'px;border-radius:50%;box-sizing:border-box;background:#0A1124;border:1.5px solid #FFC23D;transform:rotate(' + (i * 45) + 'deg) translateY(' + (-R) + 'px)' });
+        return { btn, deco, line: 'position:absolute;left:' + Math.round(pad * .45) + 'px;top:' + Math.round(pad * .45) + 'px;right:' + Math.round(pad * .45) + 'px;bottom:' + Math.round(pad * .45) + 'px;border-radius:50%;border:1.5px solid #FFC23D;box-sizing:border-box;pointer-events:none', outer: base + 'padding:' + pad + 'px;border-radius:50%;background:' + bg, inner: lbl + 'border-radius:50%' };
+      }
+      const pad = Math.round(S * .12), d = Math.max(3, Math.round(pad * .62)), R = S / 2 - pad / 2, deco = [];
+      for (let i = 0; i < 50; i++) deco.push({ style: 'position:absolute;left:50%;top:50%;width:' + d + 'px;height:' + d + 'px;margin:' + (-d / 2) + 'px 0 0 ' + (-d / 2) + 'px;background:#E8F0FF;clip-path:' + STAR + ';transform:rotate(' + (i * 7.2).toFixed(1) + 'deg) translateY(' + (-R).toFixed(1) + 'px)' });
+      return { btn, deco, line: 'position:absolute;left:' + Math.round(pad * .95) + 'px;top:' + Math.round(pad * .95) + 'px;right:' + Math.round(pad * .95) + 'px;bottom:' + Math.round(pad * .95) + 'px;border-radius:50%;border:1.5px solid rgba(232,240,255,.45);box-sizing:border-box;pointer-events:none', outer: base + 'padding:' + pad + 'px;border-radius:50%;background:' + bg, inner: lbl + 'border-radius:50%' };
+    };
+    const pill = (on, c) => 'flex:0 0 auto;min-height:36px;padding:0 14px;border-radius:999px;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:12px;letter-spacing:.06em;' + (on ? 'border:1px solid ' + (c || '#2CE6FF') + ';background:' + (c || '#2CE6FF') + ';color:#0A1124;' : 'border:1px solid rgba(120,170,255,.3);background:transparent;color:#B6C6E6;');
+    const chip = (c) => 'min-width:46px;text-align:center;padding:5px 6px;border-radius:6px;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:11px;letter-spacing:.04em;background:' + c + ';color:#0A1124;flex-shrink:0';
+    const badge = (t) => t === 'LIVE' || t === 'Live' ? 'font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:11px;letter-spacing:.08em;color:#0A1124;background:#2CE6FF;padding:5px 8px;border-radius:6px;white-space:nowrap'
+      : t === 'Planned' ? 'font-size:11px;color:#E8F0FF;border:1px solid rgba(120,170,255,.5);padding:4px 8px;border-radius:6px;white-space:nowrap'
+      : 'font-size:11px;color:#B6C6E6;border:1px solid rgba(120,170,255,.3);padding:4px 8px;border-radius:6px;white-space:nowrap';
+    const row = (o, fight, note, status) => ({ org:o, o, chip:chip(ORG[o]), fight, note, status, badge:badge(status) });
+
+    // ---------- Scores: spread out per organization, headliners with VIEW FULL CARD ----------
+    const SP = true;
+    const CAT = {
+      'MMA': { c: '#FF3B4E', sub: 'UFC, PFL, ONE, KSW, RIZIN and every other organization', heads: [
+        ['UFC', 'UFC Fight Night · Doha', 'LIVE', 'Prochazka', 'Stirling', '41.5', '28.0', 'Round 3', 'a'],
+        ['UFC', 'UFC Fight Night · Abu Dhabi', 'Final', 'Mitchell', 'Yousaf', '52.0', '9.5', 'KO R1 3:50', 'a'],
+        ['PFL', 'PFL · latest event', 'Results', '[Fighter A]', '[Fighter B]', '–', '–', 'Result', ''],
+        ['ONE', 'ONE · latest event', 'Results', '[Fighter A]', '[Fighter B]', '–', '–', 'Result', ''],
+        ['KSW', 'KSW · latest event', 'Results', '[Fighter A]', '[Fighter B]', '–', '–', 'Result', ''],
+        ['RIZIN', 'RIZIN · latest event', 'Results', '[Fighter A]', '[Fighter B]', '–', '–', 'Result', '']] },
+      'Bare Knuckle': { c: '#FF8A1F', sub: 'BKFC · punch stats from the BKFC feed', heads: [
+        ['BKFC', 'BKFC Hershey · Dec 4', 'Dec 4', 'Pague', 'Richman', '–', '–', 'Upcoming', ''],
+        ['BKFC', 'BKFC Myrtle Beach · Nov 20', 'Final', 'Richardson', 'Oxendine', '38.0', '17.5', 'Decision', 'a']] },
+      'Wrestling': { c: '#A87BFF', sub: 'RAF · takedowns and points', heads: [
+        ['RAF', 'RAF 15 · Chicago · Nov 28', 'Nov 28', 'Cejudo', 'Song', '–', '–', 'Upcoming', ''],
+        ['RAF', 'RAF · Abu Dhabi', 'Final', 'Chimaev', 'Weidman', '44.0', '6.0', 'Tech fall 10-0', 'a']] }
+    };
+    const mark = (k) => k === 'MMA' ? 'width:26px;height:26px;flex-shrink:0;clip-path:polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%);background:' + CAT[k].c
+      : 'width:26px;height:26px;flex-shrink:0;border-radius:50%;background:' + CAT[k].c + ';box-shadow:inset 0 0 0 5px #0A1124,inset 0 0 0 7px ' + CAT[k].c;
+    const headCard = (k, h) => {
+      const [org, event, status, a, b, as, bs, mid, win] = h, c = ORG[org];
+      const nm = (w) => 'font-weight:700;font-size:' + (SP ? 16 : 19) + 'px;color:' + (w ? '#fff' : '#B6C6E6') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      const sc = (w) => "font-family:'Orbitron',sans-serif;font-weight:800;font-size:" + (SP ? 22 : 28) + 'px;margin-top:2px;color:' + (w ? '#F6E08A' : '#E8F0FF');
+      const cut = SP ? 10 : 12;
+      return { org, chip: chip(c), event, status, badge: badge(status), a, b, as, bs, mid, nA: nm(win === 'a'), nB: nm(win === 'b'), sA: sc(win === 'a'), sB: sc(win === 'b'),
+        card: 'background:#0F1A33;border:1px solid rgba(120,170,255,.14);border-left:3px solid ' + c + ';border-radius:14px;padding:' + (SP ? '14px 14px 14px' : '18px 20px 18px') + ';display:flex;flex-direction:column;gap:' + (SP ? 12 : 14) + 'px',
+        btnO: 'display:block;width:100%;min-height:' + (SP ? 44 : 48) + 'px;padding:0;border:0;background:' + c + ';clip-path:polygon(' + cut + 'px 0,100% 0,calc(100% - ' + cut + 'px) 100%,0 100%);cursor:pointer',
+        btnI: "display:flex;align-items:center;justify-content:center;margin:1.5px;min-height:" + (SP ? 41 : 45) + 'px;background:#0F1A33;clip-path:polygon(' + (cut - 1) + 'px 0,100% 0,calc(100% - ' + (cut - 1) + 'px) 100%,0 100%);color:' + c + ";font-family:'Orbitron',sans-serif;font-weight:800;font-size:" + (SP ? 11 : 12) + 'px;letter-spacing:.1em' };
+    };
+    const filterNames = ['all','MMA','Bare Knuckle','Wrestling'];
+    const filters = filterNames.map(k => ({ label: k === 'all' ? 'All' : k, on: filter === k, style: pill(filter === k, k === 'all' ? null : CAT[k].c), pick: () => this.setState({ filter: k }) }));
+    const sections = Object.keys(CAT).filter(k => filter === 'all' || filter === k).map(k => ({ title: k, color: CAT[k].c, mark: mark(k), sub: CAT[k].sub, heads: CAT[k].heads.map(h => headCard(k, h)) }));
+
+    // ---------- Leagues ----------
+    const leagueRows = [
+      { org:'UFC', c:'#FF3B4E', chip:chip('#FF3B4E'), name:'its gon be good', meta:'Dynasty · Card redraft · Block 1', status:'Live', badge:badge('Live') },
+      { org:'BKFC', c:'#FF8A1F', chip:chip('#FF8A1F'), name:'No BKFC leagues yet', meta:'Card Redraft planned', status:'Planned', badge:badge('Planned') },
+      { org:'RAF', c:'#A87BFF', chip:chip('#A87BFF'), name:'No RAF leagues yet', meta:'Face-Off planned', status:'Planned', badge:badge('Planned') }
+    ];
+
+    // ---------- Fights ----------
+    const events = [
+      { org:'RAF', chip:chip('#A87BFF'), name:'RAF 15: Cejudo vs Song', meta:'Chicago · 13 bouts', date:'Nov 28' },
+      { org:'BKFC', chip:chip('#FF8A1F'), name:'Hershey: Pague vs Richman', meta:'Fight Night · 13 bouts', date:'Dec 4' },
+      { org:'UFC', chip:chip('#FF3B4E'), name:'Adesanya vs Magomedov', meta:'Fight Night · 13 bouts', date:'Dec 5' },
+      { org:'BKFC', chip:chip('#FF8A1F'), name:'BKFC 97 Hollywood: Henry vs Collard', meta:'8 bouts so far', date:'Dec 11' },
+      { org:'UFC', chip:chip('#FF3B4E'), name:'UFC 335: Oliveira vs Lopes', meta:'Numbered event', date:'Dec 12' }
+    ];
+    const fav = (c) => 'width:40px;height:40px;flex-shrink:0;clip-path:polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%);background:radial-gradient(circle at 35% 28%,#fff 0%,' + c + ' 55%,#000 130%)';
+    const fighters = [
+      { name:'Jiri Prochazka', meta:'Light heavyweight', org:'UFC', chip:chip('#FF3B4E'), av:fav('#FF3B4E') },
+      { name:'[BKFC fighter]', meta:'Weight class · record', org:'BKFC', chip:chip('#FF8A1F'), av:fav('#FF8A1F') },
+      { name:'Khamzat Chimaev', meta:'Light heavyweight crossover', org:'RAF', chip:chip('#A87BFF'), av:fav('#A87BFF') },
+      { name:'[Fighter]', meta:'Weight class · record', org:'PFL', chip:chip('#5CC8FF'), av:fav('#5CC8FF') }
+    ];
+    const fightTabs = [['events','EVENTS'],['fighters','FIGHTERS']].map(([k, l]) => ({ label:l, on:fightTab===k, style:orgBtn('ufc', false).replace('background:#0F1A33;color:#B6C6E6;', fightTab===k ? 'background:#E8F0FF;color:#0A1124;' : 'background:#0F1A33;color:#B6C6E6;'), pick:() => this.setState({ fightTab:k }) }));
+
+    // ---------- News ----------
+    const news = [
+      { org:'UFC', chip:chip('#FF3B4E'), title:'[UFC headline: roster move or card change]', when:'Today' },
+      { org:'BKFC', chip:chip('#FF8A1F'), title:'[BKFC headline: card announcement]', when:'Yesterday' },
+      { org:'RAF', chip:chip('#A87BFF'), title:'[RAF headline: RAF 15 card update]', when:'2 days ago' },
+      { org:'PFL', chip:chip('#5CC8FF'), title:'[PFL headline]', when:'3 days ago' }
+    ];
+
+    // ---------- Me ----------
+    const meRows = [
+      { title:'My Team', sub:'Roster, lineups and waivers', icon:'M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 20a6 6 0 0 1 12 0M14 20a6 6 0 0 1 8 0' },
+      { title:'Notifications', sub:'Draft, live scoring and league alerts', icon:'M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9zM10 20a2 2 0 0 0 4 0' },
+      { title:'Settings', sub:'Account, league settings and sign out', icon:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-2-4-2 1a7 7 0 0 0-2-1l-.5-2h-5L9 8a7 7 0 0 0-2 1L5 8 3 12l2 1a7 7 0 0 0 0 2l-2 1 2 4 2-1a7 7 0 0 0 2 1l.5 2h5l.5-2a7 7 0 0 0 2-1l2 1 2-4-2-1a7 7 0 0 0 0-2z' }
+    ];
+
+    // ---------- Nav ----------
+    const navDef = [
+      ['home','Combat','M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z'],
+      ['leagues','Fantasy','M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3'],
+      ['fights','Upcoming/Live','M4 20L20 4M14 4h6v6M4 4l6 6'],
+      ['news','Feed','M5 4h14v16H5zM9 8h6M9 12h6M9 16h4'],
+      ['me','Me','M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0']
+    ];
+    const nav = navDef.map(([k, label, icon]) => ({ label, icon, on: page === k, pick: () => this.setState({ page: k }),
+      style: 'flex:1;min-height:48px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;color:' + (page === k ? '#2CE6FF' : '#8FA3C7') }));
+    // ---------- Combat home: slideshow, mock draft, live, promotions ----------
+    const HP = true;
+    const SLIDES = [
+      { k:'RAF',  kicker:'RAF 15 · CHICAGO',    title:'Cejudo vs Song',        sub:'Nov 28 · Wrestling',                    c:'#A87BFF', c2:'#5CC8FF' },
+      { k:'BKFC', kicker:'BKFC HERSHEY',         title:'Pague vs Richman',      sub:'Dec 4 · Bare knuckle',                  c:'#FF8A1F', c2:'#FFC23D' },
+      { k:'UFC',  kicker:'UFC FIGHT NIGHT',      title:'Adesanya vs Magomedov', sub:'Dec 5 · Middleweight main event',       c:'#FF3B4E', c2:'#FF8A5B' },
+      { k:'UFC',  kicker:'UFC 335',              title:'Oliveira vs Lopes',     sub:'Dec 12 · Pay-per-view card',            c:'#FF3B4E', c2:'#FF8A5B' }
+    ];
+    const si = (((this.state.slide || 0) % SLIDES.length) + SLIDES.length) % SLIDES.length, sl = SLIDES[si];
+    const hcut = HP ? 24 : 40;
+    const hpoly = (c) => 'polygon(0 0,calc(100% - ' + c + 'px) 0,100% ' + c + 'px,100% 100%,' + c + 'px 100%,0 calc(100% - ' + c + 'px))';
+    const slideV = {
+      kicker: sl.kicker, title: sl.title, sub: sl.sub,
+      wrap: 'position:relative;filter:drop-shadow(0 0 16px ' + sl.c + '66) drop-shadow(0 6px 20px rgba(0,0,0,.5))',
+      outer: 'box-sizing:border-box;height:' + (HP ? 230 : 340) + 'px;padding:2px;clip-path:' + hpoly(hcut) + ';background:linear-gradient(135deg,' + sl.c + ',' + sl.c2 + ')',
+      inner: 'box-sizing:border-box;height:100%;clip-path:' + hpoly(hcut - 1) + ';background:radial-gradient(circle at 88% 12%,' + sl.c + '55 0%,transparent 55%),linear-gradient(160deg,#14224A 0%,#0C1630 70%);padding:' + (HP ? '20px 20px 18px' : '40px 52px 34px') + ';display:flex;flex-direction:column;gap:' + (HP ? 6 : 10) + 'px',
+      kickS: "font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:" + (HP ? 12 : 15) + 'px;letter-spacing:.14em;color:' + sl.c,
+      titleS: "font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:" + (HP ? 28 : 58) + 'px;line-height:1.04;color:#E8F0FF',
+      subS: 'font-size:' + (HP ? 14 : 18) + 'px;color:#9FB2D6',
+      btn: 'min-height:' + (HP ? 44 : 54) + 'px;padding:0 ' + (HP ? 20 : 34) + 'px;border:0;background:' + sl.c + ";color:#0A1124;font-family:'Orbitron',sans-serif;font-weight:800;font-size:" + (HP ? 11 : 13) + 'px;letter-spacing:.1em;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%)',
+      arrow: 'width:' + (HP ? 42 : 54) + 'px;height:' + (HP ? 42 : 54) + 'px;border-radius:50%;border:1px solid rgba(232,240,255,.35);background:rgba(10,17,36,.7);color:#E8F0FF;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer',
+      prev: () => this.setState({ slide: si - 1 }), next: () => this.setState({ slide: si + 1 }), view: () => this.setState({ page: 'fights' })
+    };
+    const slideDots = SLIDES.map((s, i) => ({ style: 'height:8px;border-radius:4px;border:0;padding:0;cursor:pointer;width:' + (i === si ? 34 : 14) + 'px;background:' + (i === si ? sl.c : 'rgba(232,240,255,.25)'), pick: () => this.setState({ slide: i }) }));
+    const MD = [
+      ['ufc', 'UFC', 'Card Redraft mock draft', 'Draft fighters from an upcoming UFC card.'],
+      ['bkfc', 'BKFC', 'Bare Knuckle mock draft', 'Draft from a BKFC fight night.'],
+      ['raf', 'RAF', 'Face-Off mock draft', 'Draft wrestlers head to head.']
+    ];
+    const mockTiles = MD.map(([k, lab, t, d]) => { const sh = orgShape(k, true); const F = HP ? 1.7 : 2.0, S0 = HP ? 76 : 84; return { ...sh, label: lab, title: t, body: d, color: O[k].c, box: 'width:' + Math.round(S0 * F) + 'px;height:' + Math.round(S0 * F) + 'px;flex-shrink:0;position:relative', scale: 'transform:scale(' + F + ');transform-origin:0 0;width:' + S0 + 'px;height:' + S0 + 'px', go: () => {} }; });
+    const follow = this.state.follow || { UFC: true };
+    const promos = ['UFC','BKFC','RAF','PFL','ONE','KSW','RIZIN','OKTAGON','Cage Warriors','LFA'].map(k => { const on = !!follow[k]; return { name: k, color: ORG[k], on, label: on ? 'FOLLOWING' : 'FOLLOW',
+      card: 'display:flex;align-items:center;gap:10px;padding:' + (HP ? '10px 12px' : '14px 16px') + ';background:#0F1A33;border:1px solid ' + (on ? ORG[k] : 'rgba(120,170,255,.14)') + ';border-left:3px solid ' + ORG[k] + ';border-radius:12px',
+      btn: 'flex-shrink:0;min-height:' + (HP ? 36 : 40) + 'px;padding:0 ' + (HP ? 10 : 14) + 'px;border-radius:8px;font-family:"Orbitron",sans-serif;font-weight:800;font-size:' + (HP ? 9.5 : 10.5) + 'px;letter-spacing:.08em;cursor:pointer;' + (on ? 'border:1px solid ' + ORG[k] + ';background:' + ORG[k] + ';color:#0A1124' : 'border:1px solid rgba(120,170,255,.35);background:transparent;color:#C9D8F5'),
+      toggle: () => this.setState({ follow: { ...follow, [k]: !on } }) }; });
+    // ---------- Feed: official Combat news + creator posts (with permission) ----------
+    const FP = true;
+    const feedF = this.state.feedF || 'all';
+    const CATC = { 'MMA': '#FF3B4E', 'Bare Knuckle': '#FF8A1F', 'Wrestling': '#A87BFF' };
+    const FEED = [
+      { cat:'MMA', org:'UFC', official:false, name:'[Creator name]', handle:'@handle', src:'X', text:'[Creator post about Prochazka vs Stirling]', when:'2h' },
+      { cat:'MMA', org:'UFC', official:true, name:'Combat News', handle:'', src:'Combat', text:'[Roster move or card change]', when:'3h' },
+      { cat:'Bare Knuckle', org:'BKFC', official:false, name:'[Creator name]', handle:'@handle', src:'Instagram', text:'[Creator post about BKFC Hershey]', when:'5h' },
+      { cat:'Wrestling', org:'RAF', official:false, name:'[Creator name]', handle:'@handle', src:'YouTube', text:'[Creator video about RAF 15]', when:'8h' },
+      { cat:'MMA', org:'PFL', official:false, name:'[Creator name]', handle:'@handle', src:'TikTok', text:'[Creator post about a PFL result]', when:'1d' },
+      { cat:'Bare Knuckle', org:'BKFC', official:true, name:'Combat News', handle:'', src:'Combat', text:'[BKFC card announcement]', when:'1d' }
+    ];
+    const feedItems = FEED.filter(f => feedF === 'all' || f.cat === feedF).map(f => { const c = ORG[f.org];
+      return { ...f, chip: chip(c),
+        av: 'width:' + (FP ? 40 : 48) + 'px;height:' + (FP ? 40 : 48) + 'px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:"Orbitron",sans-serif;font-weight:800;font-size:' + (FP ? 14 : 17) + 'px;color:#0A1124;background:' + (f.official ? 'linear-gradient(135deg,#F6E08A,#D4AF37)' : 'radial-gradient(circle at 35% 28%,#fff 0%,' + c + ' 60%,#000 150%)'),
+        init: f.official ? 'C' : '?',
+        tag: f.official ? 'Official' : 'Posted with permission',
+        tagS: 'font-size:' + (FP ? 11 : 12) + 'px;padding:3px 8px;border-radius:6px;white-space:nowrap;' + (f.official ? 'background:rgba(212,175,55,.18);color:#F6E08A;border:1px solid rgba(212,175,55,.5)' : 'color:#9FB2D6;border:1px solid rgba(120,170,255,.3)'),
+        link: f.official ? '' : 'View original on ' + f.src,
+        hasLink: !f.official,
+        card: 'padding:' + (FP ? '14px' : '20px') + ';background:#0F1A33;border:1px solid rgba(120,170,255,.14);border-left:3px solid ' + c + ';border-radius:14px;display:flex;flex-direction:column;gap:' + (FP ? 10 : 12) + 'px' }; });
+    const feedFilters = ['all','MMA','Bare Knuckle','Wrestling'].map(k => ({ label: k === 'all' ? 'All' : k, style: pill(feedF === k, k === 'all' ? null : CATC[k]), pick: () => this.setState({ feedF: k }) }));
+    const creators = [['[Creator]','X','#FF3B4E'],['[Creator]','Instagram','#FF8A1F'],['[Creator]','YouTube','#A87BFF'],['[Creator]','TikTok','#5CC8FF']].map(([n, src, c]) => ({ n, src,
+      av: 'width:' + (FP ? 56 : 68) + 'px;height:' + (FP ? 56 : 68) + 'px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#fff 0%,' + c + ' 60%,#000 150%);display:flex;align-items:center;justify-content:center;font-family:"Orbitron",sans-serif;font-weight:800;font-size:' + (FP ? 18 : 22) + 'px;color:#0A1124' }));
+    const connectPlatforms = ['X','Instagram','YouTube','TikTok','Facebook'].map(p => ({ p, go: () => {} }));
+    const publicLeagues = cur.leagues ? [
+      { name:'Bayou Brawlers', meta:'Card Redraft · 8/12 teams · Dec 5 to Jan 23', pick:() => this.setState({ page:'username' }) },
+      { name:'Octagon Alley', meta:'Card Redraft · 5/10 teams · Dec 12 to Jan 30', pick:() => this.setState({ page:'username' }) },
+      { name:'Late Stoppage Club', meta:'Dynasty · 11/12 teams · Season long', pick:() => this.setState({ page:'username' }) }
+    ] : [];
+    const titles = { home:'Combat', connect:'Connect your account', mock:'Pick a combat sport', leagues:'Fantasy', username:'Pick your username', fights:'Upcoming / Live', news:'Feed', me:'Me' };
+
+
+    const cards = [
+      { title:'Start a league today', body:'Pick a format, set your size and open the draft room.', cta:'Create a league', icon:'M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3', pick:() => this.setState({ page:'username' }) },
+      { title:'Invite friends', body:'Share a link or code. Friends join your league in seconds.', cta:'Send an invite', icon:'M15 19a6 6 0 0 0-12 0M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M16 11h6', pick:() => this.setState({ page:'leagues' }) },
+      { title:'Catch up on the feed', body:'Roster moves, card changes and results from every org.', cta:'Open the feed', icon:'M5 4h14v16H5zM9 8h6M9 12h6M9 16h4', pick:() => this.setState({ page:'news' }) },
+      { title:'Watch live points', body:'Follow every strike, takedown and point as fights happen.', cta:'Open live scores', icon:'M3 12h4l3-8 4 16 3-8h4', pick:() => this.setState({ page:'fights' }) },
+      { title:'Upcoming and live', body:'Events, cards, records and fighter stats for every org.', cta:'See upcoming cards', icon:'M4 20L20 4M14 4h6v6M4 4l6 6', pick:() => this.setState({ page:'fights' }) }
+    ];
+    const footCols = [
+      { title:'Play', links:['Fantasy','Card Redraft','Dynasty','Face-Off','Start a league'].map(label => ({ label })) },
+      { title:'Watch', links:['Live scores','Live points','Results','All orgs','Fight cards'].map(label => ({ label })) },
+      { title:'Learn', links:['What is Combat','FAQ','About','Scoring','Feed'].map(label => ({ label })) },
+      { title:'Organizations', links:['UFC','BKFC','RAF','PFL','ONE','KSW','RIZIN','OKTAGON','Cage Warriors','LFA'].map(label => ({ label })) }
+    ];
+    const PH = true;
+    const OCTC = 'polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)';
+    const STARP = 'polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)';
+    const oc = cur.c, oc2 = cur.c2;
+    const bgR = 'radial-gradient(circle at 35% 28%,#fff 0%,' + oc + ' 55%,#000 130%)';
+    // ---- Get started cards: same shapes as the org switcher ----
+    const cardCfg = () => {
+      const col = 'display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;width:100%;height:100%;background:#0F0F12;gap:' + (PH ? 6 : 8) + 'px;';
+      if (org === 'ufc') return { outer: 'width:100%;aspect-ratio:1/1;box-sizing:border-box;padding:3.6%;clip-path:' + OCTC + ';background:' + bgR, inner: col + 'clip-path:' + OCTC + ';padding:0 ' + (PH ? '16%' : '18%'), deco: [], line: 'display:none' };
+      if (org === 'bkfc') {
+        const deco = [];
+        for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; deco.push({ style: 'position:absolute;left:' + (50 + 44.4 * Math.sin(a)).toFixed(2) + '%;top:' + (50 - 44.4 * Math.cos(a)).toFixed(2) + '%;width:11.5%;aspect-ratio:1/1;transform:translate(-50%,-50%);border-radius:50%;box-sizing:border-box;background:#0A1124;border:1.5px solid #FFC23D' }); }
+        return { outer: 'position:relative;width:100%;aspect-ratio:1/1;box-sizing:border-box;padding:8.5%;border-radius:50%;background:' + bgR, inner: col + 'border-radius:50%;padding:0 ' + (PH ? '13%' : '15%'), deco, line: 'position:absolute;inset:3.8%;border-radius:50%;border:1.5px solid #FFC23D;box-sizing:border-box;pointer-events:none' };
+      }
+      const deco = [];
+      for (let i = 0; i < 50; i++) { const a = i * 2 * Math.PI / 50; deco.push({ style: 'position:absolute;left:' + (50 + 44 * Math.sin(a)).toFixed(2) + '%;top:' + (50 - 44 * Math.cos(a)).toFixed(2) + '%;width:6.4%;aspect-ratio:1/1;transform:translate(-50%,-50%) rotate(' + (i * 7.2).toFixed(1) + 'deg);background:#E8F0FF;clip-path:' + STARP }); }
+      return { outer: 'position:relative;width:100%;aspect-ratio:1/1;box-sizing:border-box;padding:12%;border-radius:50%;background:' + bgR, inner: col + 'border-radius:50%;padding:0 ' + (PH ? '10%' : '12%'), deco, line: 'position:absolute;inset:11.4%;border-radius:50%;border:1.5px solid rgba(232,240,255,.45);box-sizing:border-box;pointer-events:none' };
+    };
+    const cc = cardCfg();
+    const circ = org !== 'ufc';
+    const cardsStyled = cards.map((c, i) => ({ ...c,
+      cell: 'filter:drop-shadow(0 0 9px ' + oc + '66);text-align:left;border:0;padding:0;background:transparent;cursor:pointer;color:inherit;display:block;width:100%' + (PH && i === 4 ? ';grid-column:1/-1;width:calc(50% - 5px);justify-self:center' : ''),
+      outer: cc.outer, inner: cc.inner, deco: cc.deco, line: cc.line,
+      iconBox: 'display:flex;align-items:center;justify-content:center;color:' + oc,
+      isz: PH ? 26 : 34,
+      tstyle: "font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:" + (PH ? (circ ? 10.5 : 11.5) : (circ ? 13 : 14)) + 'px;letter-spacing:.03em;line-height:1.2;color:#E8F0FF',
+      bstyle: 'font-size:11.5px;color:#9FB2D6;line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden',
+      showBody: !PH, showCta: false }));
+    // ---- Headliner: UFC octagon / BKFC ring / RAF mat with star circle ----
+    const heroCfg = () => {
+      const S = PH ? 330 : 440;
+      const base = 'width:' + S + 'px;height:' + S + 'px;margin:0 auto;position:relative;box-sizing:border-box;';
+      const innerBase = 'display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;width:100%;height:100%;gap:' + (PH ? 6 : 10) + 'px;background:linear-gradient(160deg,#14224A 0%,#0C1630 70%);';
+      let r;
+      if (org === 'ufc') {
+        r = { outer: base + 'padding:' + Math.round(S * .036) + 'px;clip-path:' + OCTC + ';background:' + bgR, inner: innerBase + 'clip-path:' + OCTC + ';padding:' + (PH ? '58px 54px' : '78px 72px'), deco: [], line: 'display:none' };
+      } else if (org === 'bkfc') {
+        const p = Math.round(S * .085), d = Math.round(S * .115), R = S / 2 - d / 2 + .5, deco = [];
+        for (let i = 0; i < 8; i++) deco.push({ style: 'position:absolute;left:50%;top:50%;width:' + d + 'px;height:' + d + 'px;margin:' + (-d / 2) + 'px 0 0 ' + (-d / 2) + 'px;border-radius:50%;box-sizing:border-box;background:#0A1124;border:2.5px solid #FFC23D;transform:rotate(' + (i * 45) + 'deg) translateY(' + (-R) + 'px)' });
+        r = { outer: base + 'padding:' + p + 'px;border-radius:50%;background:' + bgR, inner: innerBase + 'border-radius:50%;padding:' + (PH ? '40px 42px' : '54px 60px'), deco, line: 'position:absolute;inset:' + Math.round(p * .45) + 'px;border-radius:50%;border:2px solid #FFC23D;box-sizing:border-box;pointer-events:none' };
+      } else {
+        const m = Math.round(S * .07), D = S - 2 * m, d = Math.round(D * .07), Rr = D / 2 - d * .9 - 4, deco = [];
+        for (let i = 0; i < 50; i++) { const a = i * 2 * Math.PI / 50; deco.push({ style: 'position:absolute;left:' + ((S / 2 + Rr * Math.sin(a)) / S * 100).toFixed(2) + '%;top:' + ((S / 2 - Rr * Math.cos(a)) / S * 100).toFixed(2) + '%;width:' + d + 'px;height:' + d + 'px;transform:translate(-50%,-50%) rotate(' + (i * 7.2).toFixed(1) + 'deg);background:#E8F0FF;clip-path:' + STARP }); }
+        r = { outer: base + 'padding:' + m + 'px;border-radius:18px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 2px,transparent 2px ' + (S / 4) + 'px),repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 2px,transparent 2px ' + (S / 4) + 'px),linear-gradient(135deg,#241855,#0F0B2A);box-shadow:inset 0 0 0 3px ' + oc + ',inset 0 0 0 8px rgba(168,123,255,.25)', inner: innerBase + 'border-radius:50%;border:3px solid ' + oc + ';padding:' + (PH ? '46px 44px' : '62px 62px'), deco, line: 'position:absolute;inset:' + Math.round(S / 2 - (Rr - d * .75)) + 'px;border-radius:50%;border:1.5px solid rgba(232,240,255,.4);box-sizing:border-box;pointer-events:none' };
+      }
+      const bh = PH ? 34 : 46, bf = PH ? 9.5 : 12, cut = PH ? 8 : 10;
+      return { ...r, showSub: !PH,
+        kick: "font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:" + (PH ? 10.5 : 13) + 'px;letter-spacing:.12em;color:' + oc,
+        title: "font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:" + (PH ? 21 : 34) + 'px;line-height:1.05;color:#E8F0FF',
+        sub: 'font-size:14px;color:#9FB2D6',
+        status: 'display:flex;align-items:center;justify-content:center;gap:7px;font-size:' + (PH ? 11 : 13) + 'px;color:#E8F0FF',
+        btns: 'display:flex;flex-direction:' + (PH ? 'column' : 'row') + ';gap:' + (PH ? 6 : 8) + 'px;margin-top:' + (PH ? 2 : 6) + 'px;justify-content:center;align-items:stretch',
+        b1: 'min-height:' + bh + 'px;padding:0 ' + (PH ? 14 : 22) + 'px;border:0;background:' + oc + ";color:#0A1124;font-family:'Orbitron',sans-serif;font-weight:800;font-size:" + bf + 'px;letter-spacing:.08em;clip-path:polygon(' + cut + 'px 0,100% 0,calc(100% - ' + cut + 'px) 100%,0 100%)',
+        b2: 'min-height:' + bh + 'px;padding:0 ' + (PH ? 14 : 22) + 'px;border:0;background:' + oc + ';color:' + oc + ";font-family:'Orbitron',sans-serif;font-weight:800;font-size:" + bf + 'px;letter-spacing:.08em;clip-path:polygon(' + cut + 'px 0,100% 0,calc(100% - ' + cut + 'px) 100%,0 100%)',
+        b2i: 'display:flex;align-items:center;justify-content:center;margin:1.5px;min-height:' + (bh - 3) + 'px;padding:0 ' + (PH ? 12 : 20) + 'px;background:#0F1A33;clip-path:polygon(' + (cut - 1) + 'px 0,100% 0,calc(100% - ' + (cut - 1) + 'px) 100%,0 100%)' };
+    };
+    return {
+      isHome: false, notHome: true, pageTitle: titles[page] || '',
+      isFantasy: page === 'leagues', isScores: page === 'fights', isCombat: page === 'home',
+      isLeagues: false, isConnect: page === 'connect', feedItems, feedFilters, creators, connectPlatforms, goConnect: () => this.setState({ page: 'connect' }), goMock: () => this.setState({ page: 'mock' }), isMock: page === 'mock', sl: slideV, slideDots, mockTiles, promos, publicLeagues, showPublic: cur.leagues, isUsername: page === 'username', isFights: page === 'fights', isNews: page === 'news', isMe: page === 'me',
+      tabs: [['fantasy','FANTASY'],['scores','SCORES']].map(([k, l]) => ({ label:l, on:tab===k, style:tabBtn(tab===k), pick:() => this.setState({ tab:k }) })),
+      orgs: ['ufc','bkfc','raf'].map(k => ({ label:O[k].label, on:org===k, ...orgShape(k, org===k), pick:() => this.setState({ org:k }) })),
+      accent:cur.c, accent2:cur.c2, accentSoft:accent, accentLine:cur.line,
+      heroKicker:cur.kicker, heroTitle:cur.title, heroSub:cur.sub, heroStatus:cur.status, heroCta:cur.cta, heroGo:() => { if (cur.leagues) this.setState({ page:'username' }); }, heroView:() => this.setState({ page:'fights' }),
+      orgName:cur.name, hasLeagues:cur.leagues, noLeagues:!cur.leagues, emptyTitle:cur.eTitle || '', emptyBody:cur.eBody || '',
+      modes: cur.modes.map(([name, desc, status]) => ({ name, desc, status, badge: badge(status) })),
+      cards, cardsStyled, hs: heroCfg(), footCols, filters, sections, leagueRows, events, fighters, fightTabs, news, meRows, nav,
+      showEvents: fightTab === 'events', showFighters: fightTab === 'fighters'
+    };
+  }
+}
+</script>
+</body>
+</html>

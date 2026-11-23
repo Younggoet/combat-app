@@ -11,202 +11,51 @@
 <link rel="icon" href="icons/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="auth.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Orbitron:wght@600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{margin:0;background:#0A1124;color:#E8F0FF;font-family:'Barlow',system-ui,sans-serif;min-height:100vh}
-a{color:inherit;text-decoration:none}
-button{font-family:inherit;cursor:pointer}
-button:focus-visible,a:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
-.lift:hover{filter:brightness(1.12)}
-.glow{position:fixed;left:-80px;top:-120px;width:360px;height:360px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(255,59,78,.16) 0%,rgba(10,17,36,0) 70%)}
-.wrap{position:relative;max-width:1120px;margin:0 auto;padding:0 20px 110px}
-.top{display:flex;align-items:center;justify-content:space-between;padding:18px 0 10px;gap:16px}
-.logo{font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:900;letter-spacing:.16em;font-size:26px;background:linear-gradient(180deg,#F6E08A,#D4AF37 58%,#9C7A1E);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 14px rgba(232,201,58,.35))}
-.dnav{display:none;gap:6px;align-items:center}
-.dnav a{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:15px;letter-spacing:.05em;color:#8FA3C7;padding:10px 14px;border-radius:10px}
-.dnav a.on{color:#2CE6FF;background:rgba(44,230,255,.08)}
-.dnav a:hover{color:#E8F0FF}
-.bell{width:44px;height:44px;border-radius:12px;border:1px solid rgba(120,170,255,.2);background:#0F1A33;color:#E8F0FF;display:flex;align-items:center;justify-content:center}
-.h2{font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 12px}
-.subtxt{font-size:13px;color:#9FB2D6;margin:-8px 0 12px;line-height:1.4}
-#slideWrap{position:relative}
-.slide{position:relative}
-.sOuter{box-sizing:border-box;height:230px;padding:2px;clip-path:polygon(0 0,calc(100% - 24px) 0,100% 24px,100% 100%,24px 100%,0 calc(100% - 24px))}
-.sInner{box-sizing:border-box;height:100%;clip-path:polygon(0 0,calc(100% - 23px) 0,100% 23px,100% 100%,23px 100%,0 calc(100% - 23px));padding:20px 20px 18px;display:flex;flex-direction:column;gap:6px}
-.kick{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.14em}
-.stitle{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:28px;line-height:1.04;color:#E8F0FF}
-.ssub{font-size:14px;color:#9FB2D6}
-.srow{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.sbtn{min-height:44px;padding:0 20px;border:0;color:#0A1124;font-family:'Orbitron',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);display:inline-flex;align-items:center}
-.arr{display:flex;gap:8px}
-.arr button{width:42px;height:42px;border-radius:50%;border:1px solid rgba(232,240,255,.35);background:rgba(10,17,36,.7);color:#E8F0FF;display:flex;align-items:center;justify-content:center;padding:0}
-.dots{display:flex;gap:6px;justify-content:center;margin:14px 0 22px}
-.dots button{height:8px;border-radius:4px;border:0;padding:0;background:rgba(232,240,255,.25);width:14px}
-.mock{padding:22px 18px;background:linear-gradient(160deg,#14224A 0%,#0C1630 70%);border:1px solid rgba(212,175,55,.45);border-radius:16px;margin-bottom:26px;display:flex;flex-direction:column;gap:10px}
-.mock .t{font-family:'Orbitron',sans-serif;font-weight:900;font-size:25px;line-height:1.1;letter-spacing:.06em;background:linear-gradient(180deg,#F6E08A,#D4AF37 58%,#9C7A1E);-webkit-background-clip:text;background-clip:text;color:transparent}
-.mock .d{font-size:14px;color:#9FB2D6;line-height:1.45}
-.gbtn{margin-top:6px;min-height:52px;border:0;background:linear-gradient(135deg,#F6E08A,#D4AF37 60%,#9C7A1E);color:#14120A;font-family:'Orbitron',sans-serif;font-weight:800;font-size:13px;letter-spacing:.12em;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%);display:flex;align-items:center;justify-content:center}
-.card{padding:16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:14px;display:flex;flex-direction:column;gap:8px}
-.card .ct{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:17px;display:flex;align-items:center;gap:8px}
-.card .cd{font-size:14px;color:#9FB2D6;line-height:1.45}
-.dash{min-height:48px;border:1px dashed rgba(120,170,255,.35);background:transparent;color:#C9D8F5;border-radius:12px;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.05em;display:flex;align-items:center;justify-content:center}
-.stack{display:flex;flex-direction:column;gap:10px;margin-bottom:26px}
-.promos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
-.promo{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0F1A33;border:1px solid rgba(120,170,255,.14);border-left:3px solid;border-radius:12px}
-.promo .n{flex:1;min-width:0;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.promo button{flex-shrink:0;min-height:36px;padding:0 10px;border-radius:8px;font-family:'Orbitron',sans-serif;font-weight:800;font-size:9.5px;letter-spacing:.08em;border:1px solid rgba(120,170,255,.35);background:transparent;color:#C9D8F5}
-#sports{display:none;margin-bottom:26px}
-#sports.open{display:block}
-.mt{display:flex;align-items:center;gap:16px;padding:14px;text-align:left;color:inherit;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:16px;width:100%}
-.mt + .mt{margin-top:14px}
-.mtt{font-family:'Orbitron',sans-serif;font-weight:800;font-size:15px;letter-spacing:.04em}
-.mtd{font-size:13px;color:#9FB2D6;margin-top:4px;line-height:1.4}
-.mtb{width:128px;height:128px;flex-shrink:0;position:relative}
-.nav{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;background:rgba(10,17,36,.96);border-top:1px solid rgba(120,170,255,.16);padding-bottom:env(safe-area-inset-bottom)}
-.nav a{flex:1;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#8FA3C7;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:11px;letter-spacing:.04em}
-.nav a.on{color:#2CE6FF}
-.nav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-footer{margin:34px 0 0;text-align:center;color:#5F7299;font-size:12px;line-height:1.5}
-footer a{margin:0 8px}
-@media (min-width:900px){
-  .dnav{display:flex}.nav{display:none}.wrap{padding-bottom:60px}
-  .top{padding:26px 0 18px}
-  .sOuter{height:340px}.sInner{padding:40px 52px 34px;gap:10px}.kick{font-size:15px}.stitle{font-size:58px}.ssub{font-size:18px}
-  .sbtn{min-height:54px;padding:0 34px;font-size:13px}.arr button{width:54px;height:54px}
-  .promos{grid-template-columns:repeat(4,minmax(0,1fr))}.promo{padding:14px 16px}
-  .cols{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start}
-  .mock{margin-bottom:0}
-  .mtb{width:144px;height:144px}
-  #sports .list{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-  #sports .mt + .mt{margin-top:0}
-}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-</style>
+<style>html,body{margin:0;background:#0A1124}#app{min-height:100vh}</style>
 </head>
 <body>
-<div class="glow"></div>
-<div class="wrap">
-  <div class="top">
-    <a class="logo" href="index.html">COMBAT</a>
-    <nav class="dnav" aria-label="Main">
-      <a href="index.html" class="on">Combat</a><a href="league.html">Fantasy</a><a href="live.html">Upcoming/Live</a><a href="news.html">Feed</a><a href="settings.html">Me</a>
-    </nav>
-    <a class="bell" href="notifications.html" aria-label="Notifications"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></a>
-  </div>
-
-  <div id="slideWrap"></div>
-  <div class="dots" id="dots"></div>
-
-  <div class="cols">
-    <div class="mock">
-      <div class="t">TRY A MOCK DRAFT TODAY</div>
-      <div class="d">Practice a UFC card, a BKFC fight night or an RAF Face-Off. No league needed.</div>
-      <button class="gbtn lift" id="mockBtn" type="button">START A MOCK DRAFT</button>
-    </div>
-    <div>
-      <div class="h2">Watch live</div>
-      <div class="stack">
-        <div class="card"><div class="ct"><span style="width:8px;height:8px;border-radius:50%;background:#2CE6FF;box-shadow:0 0 10px #2CE6FF"></span>Live feed</div><div class="cd">Follow every fight and match as it happens, round by round.</div></div>
-        <div class="card"><div class="ct">Live reactions</div><div class="cd">React to each fight or match with other fans while it plays out.</div></div>
-        <a class="dash lift" href="live.html">Open upcoming and live</a>
-      </div>
-    </div>
-  </div>
-
-  <div id="sports">
-    <div class="h2">Pick a combat sport</div>
-    <div class="subtxt">Choose a sport to start a practice draft.</div>
-    <div class="list" id="sportList"></div>
-  </div>
-
-  <div class="h2" style="margin-bottom:4px">Keep watch of your favorite promotions</div>
-  <div class="subtxt" style="margin-top:0">Follow a promotion to get its cards, results and live fights in your feed.</div>
-  <div class="promos" id="promos"></div>
-
-  <footer>
-    Combat is an independent fan game. Free to play, no prizes. Not affiliated with or endorsed by the UFC or any fighter.<br>
-    <a href="terms.html">Terms</a><a href="privacy.html">Privacy</a>
-  </footer>
-</div>
-
-<nav class="nav" aria-label="Main">
-  <a href="index.html" class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Combat</a>
-  <a href="league.html"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>Fantasy</a>
-  <a href="live.html"><svg viewBox="0 0 24 24"><path d="M4 20L20 4M14 4h6v6M4 4l6 6"/></svg>Upcoming/Live</a>
-  <a href="news.html"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h4"/></svg>Feed</a>
-  <a href="settings.html"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/></svg>Me</a>
-</nav>
-
+<div id="app"></div>
+<script src="dc-runtime.js"></script>
 <script>
-(function(){
-  var STARP='polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)';
-  var OCT='polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)';
-  var ORG={UFC:'#FF3B4E',BKFC:'#FF8A1F',RAF:'#A87BFF',PFL:'#2CE6FF',ONE:'#F6E08A',KSW:'#5CC8FF',RIZIN:'#FF8A5B',OKTAGON:'#7DE08A',"Cage Warriors":'#C9A0FF',LFA:'#FFC23D'};
-  var G2={UFC:'#FF8A5B',BKFC:'#FFC23D',RAF:'#5CC8FF'};
-  var $=function(id){return document.getElementById(id)};
-  var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]})};
+(async function(){
   var todayStr=function(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
   var fmt=function(s){return new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})};
   var last=function(n){return (n||'').trim().split(/\s+/).slice(-1)[0]};
-
-  /* ---- slideshow: real upcoming cards, headliner per card ---- */
-  var slides=[],si=0,timer=null;
-  function paint(){
-    var w=$('slideWrap');
-    if(!slides.length){w.innerHTML='<div class="card"><div class="ct">Cards are being booked</div><div class="cd">Fights show up here as soon as they are officially announced.</div></div>';$('dots').innerHTML='';return}
-    var s=slides[si];
-    w.innerHTML='<div class="slide" style="filter:drop-shadow(0 0 16px '+s.c+'66) drop-shadow(0 6px 20px rgba(0,0,0,.5))"><div class="sOuter" style="background:linear-gradient(135deg,'+s.c+','+s.c2+')"><div class="sInner" style="background:radial-gradient(circle at 88% 12%,'+s.c+'55 0%,transparent 55%),linear-gradient(160deg,#14224A 0%,#0C1630 70%)"><div class="kick" style="color:'+s.c+'">'+esc(s.kicker)+'</div><div class="stitle">'+esc(s.title)+'</div><div class="ssub">'+esc(s.sub)+'</div><div class="srow"><a class="sbtn lift" style="background:'+s.c+'" href="live.html">VIEW CARD</a><div class="arr"><button type="button" id="pv" aria-label="Previous card"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button><button type="button" id="nx" aria-label="Next card"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button></div></div></div></div></div>';
-    $('dots').innerHTML=slides.map(function(x,i){return '<button type="button" aria-label="Show card" data-i="'+i+'" style="width:'+(i===si?34:14)+'px;'+(i===si?'background:'+s.c:'')+'"></button>'}).join('');
-    $('pv').onclick=function(){go(si-1,1)};$('nx').onclick=function(){go(si+1,1)};
-  }
-  function go(i,manual){si=(i+slides.length)%slides.length;if(manual)stop();paint()}
-  function stop(){if(timer){clearInterval(timer);timer=null}}
-  $('dots').addEventListener('click',function(e){var b=e.target.closest('[data-i]');if(b)go(+b.dataset.i,1)});
-  async function load(){
-    var sb=window.CombatAuth?window.CombatAuth.client:null;
-    if(sb){try{
+  /* real upcoming cards -> the home slideshow */
+  var slides=[];
+  try{
+    var sb=window.CombatAuth&&window.CombatAuth.client;
+    if(sb){
       var r=await sb.from('bouts').select('id,event_name,bout_date,bout_order,is_title_fight,status,fighter_a,fighter_b').gte('bout_date',todayStr()).in('status',['scheduled','confirmed','rumored','live']).order('bout_date',{ascending:true}).limit(200);
-      var bouts=r.data||[];var ids=[];bouts.forEach(function(b){ids.push(b.fighter_a,b.fighter_b)});ids=Array.from(new Set(ids));var F={};
+      var bouts=r.data||[],ids=[];bouts.forEach(function(b){ids.push(b.fighter_a,b.fighter_b)});ids=Array.from(new Set(ids));var F={};
       for(var i=0;i<ids.length;i+=80){var q=await sb.from('fighters').select('id,full_name,announced_weight_class').in('id',ids.slice(i,i+80));(q.data||[]).forEach(function(f){F[f.id]=f})}
       var map={};
       bouts.forEach(function(b){if(!F[b.fighter_a]||!F[b.fighter_b])return;var k=b.bout_date+'|'+b.event_name;(map[k]=map[k]||{name:b.event_name,date:b.bout_date,bouts:[]}).bouts.push(b)});
-      var evs=Object.keys(map).map(function(k){return map[k]}).sort(function(a,b){return a.date<b.date?-1:1}).slice(0,6);
-      evs.forEach(function(ev){
-        ev.bouts.sort(function(a,b){var sc=function(x){var A=F[x.fighter_a],B=F[x.fighter_b],s=x.is_title_fight?1000:0,en=(ev.name||'').toLowerCase();if(en.indexOf(last(A.full_name).toLowerCase())>-1)s+=250;if(en.indexOf(last(B.full_name).toLowerCase())>-1)s+=250;if(x.bout_order!=null)s+=100-x.bout_order;return s};return sc(b)-sc(a)});
+      Object.keys(map).map(function(k){return map[k]}).sort(function(a,b){return a.date<b.date?-1:1}).slice(0,6).forEach(function(ev){
+        var sc=function(x){var A=F[x.fighter_a],B=F[x.fighter_b],s=x.is_title_fight?1000:0,en=(ev.name||'').toLowerCase();if(en.indexOf(last(A.full_name).toLowerCase())>-1)s+=250;if(en.indexOf(last(B.full_name).toLowerCase())>-1)s+=250;if(x.bout_order!=null)s+=100-x.bout_order;return s};
+        ev.bouts.sort(function(a,b){return sc(b)-sc(a)});
         var m=ev.bouts[0],A=F[m.fighter_a],B=F[m.fighter_b],wc=A.announced_weight_class||B.announced_weight_class||'';
-        slides.push({c:ORG.UFC,c2:G2.UFC,kicker:(ev.name||'UFC').toUpperCase(),title:last(A.full_name)+' vs '+last(B.full_name),sub:fmt(ev.date)+' · '+(m.is_title_fight?'Title fight':wc?wc+' main event':'Main event')});
+        slides.push({k:'UFC',kicker:(ev.name||'UFC').toUpperCase(),title:last(A.full_name)+' vs '+last(B.full_name),sub:fmt(ev.date)+' · '+(m.is_title_fight?'Title fight':wc?wc+' main event':'Main event'),c:'#FF3B4E',c2:'#FF8A5B'});
       });
-    }catch(e){slides=[]}}
-    si=0;paint();
-    if(slides.length>1&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches)timer=setInterval(function(){go(si+1)},6500);
+    }
+  }catch(e){slides=[]}
+  window.__SLIDES=slides;
+  window.__PUBLIC=[];
+  try{var sb2=window.CombatAuth&&window.CombatAuth.client;if(sb2){var pr=await sb2.from('leagues').select('id,name,team_count,teams(id)').eq('is_public',true).eq('archived',false).eq('status','setup').not('team_count','is',null).order('created_at',{ascending:false}).limit(6);
+    window.__PUBLIC=(pr.data||[]).map(function(l){return {name:l.name,meta:'Card Redraft \u00b7 '+((l.teams||[]).length)+'/'+l.team_count+' teams'}})}}catch(e){}
+  var desk=window.matchMedia('(min-width:900px)').matches;
+  var CREATE="(location.href='league.html?create=1')",LOBBY="(location.href='league.html?lobby=1')";
+  function patch(s){
+    s=s.replace(/const SLIDES = \[[\s\S]*?\n    \];/,"const SLIDES = (window.__SLIDES&&window.__SLIDES.length)?window.__SLIDES:[{k:'UFC',kicker:'UFC',title:'Cards are being booked',sub:'Fights show up here once they are announced',c:'#FF3B4E',c2:'#FF8A5B'}];");
+    s=s.replace(/(name:'(?:Bayou Brawlers|Octagon Alley|Late Stoppage Club)'[^\n]*?pick:\s*\(\)\s*=>\s*)this\.setState\(\{\s*page:\s*'username'\s*\}\)/g,'$1'+LOBBY);
+    s=s.replace(/cur\.leagues \? \[[\s\S]*?\] : \[\];/,"cur.leagues ? (window.__PUBLIC||[]).map(l => ({ name:l.name, meta:l.meta, pick:() => "+LOBBY+" })) : [];");
+    s=s.replace("kicker:'UFC FIGHT NIGHT · DOHA'","kicker:((window.__SLIDES||[])[0]||{kicker:'UFC'}).kicker").replace("title:'Prochazka vs Stirling'","title:((window.__SLIDES||[])[0]||{title:'Cards are being booked'}).title").replace("sub:'Light heavyweight main event · Block 1 card'","sub:((window.__SLIDES||[])[0]||{sub:''}).sub").replace("status:'Block 1 scoring live Saturday'","status:'Next card'");
+    s=s.replace(/this\.setState\(\{\s*page:\s*'username'\s*\}\)/g,CREATE);
+    s=s.replace(/go: \(\) => \{\}/g,"go: () => { if (k === 'ufc') "+CREATE+"; }");
+    return s;
   }
-
-  /* ---- org shapes (same as the mockup) ---- */
-  function orgShape(k){
-    var bg=function(c){return 'radial-gradient(circle at 35% 28%,#fff 0%,'+c+' 55%,#000 130%)'};
-    var core='position:absolute;display:flex;align-items:center;justify-content:center;background:#0F0F12;font-family:Chakra Petch,sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;color:#E8F0FF';
-    if(k==='ufc')return '<div style="position:absolute;inset:0;padding:4.6%;clip-path:'+OCT+';background:'+bg(ORG.UFC)+'"><div style="'+core+';inset:4.6%;clip-path:'+OCT+'">UFC</div></div>';
-    if(k==='bkfc'){var p='';for(var i=0;i<8;i++){var a=i*Math.PI/4;p+='<i style="position:absolute;left:'+(50+44.4*Math.sin(a)).toFixed(2)+'%;top:'+(50-44.4*Math.cos(a)).toFixed(2)+'%;width:11.5%;aspect-ratio:1/1;transform:translate(-50%,-50%);border-radius:50%;box-sizing:border-box;background:#0A1124;border:2.5px solid #FFC23D"></i>'}
-      return '<div style="position:absolute;inset:0;border-radius:50%;background:'+bg(ORG.BKFC)+'"></div><div style="position:absolute;inset:3.8%;border-radius:50%;border:2px solid #FFC23D;pointer-events:none"></div>'+p+'<div style="'+core+';inset:8.5%;border-radius:50%">BKFC</div>'}
-    var st='';for(var j=0;j<50;j++){var b=j*2*Math.PI/50;st+='<i style="position:absolute;left:'+(50+44*Math.sin(b)).toFixed(2)+'%;top:'+(50-44*Math.cos(b)).toFixed(2)+'%;width:6.4%;aspect-ratio:1/1;transform:translate(-50%,-50%) rotate('+(j*7.2).toFixed(1)+'deg);background:#E8F0FF;clip-path:'+STARP+'"></i>'}
-    return '<div style="position:absolute;inset:0;border-radius:50%;background:'+bg(ORG.RAF)+'"></div>'+st+'<div style="position:absolute;inset:11.4%;border-radius:50%;border:1.5px solid rgba(232,240,255,.45);pointer-events:none"></div><div style="'+core+';inset:12%;border-radius:50%">RAF</div>';
-  }
-  var MD=[['ufc','UFC','Card Redraft mock draft','Draft fighters from an upcoming UFC card.'],['bkfc','BKFC','Bare Knuckle mock draft','Draft from a BKFC fight night.'],['raf','RAF','Face-Off mock draft','Draft wrestlers head to head.']];
-  $('sportList').innerHTML=MD.map(function(m){var live=m[0]==='ufc';
-    var inner='<div class="mtb">'+orgShape(m[0])+'</div><div style="min-width:0"><div class="mtt" style="color:'+ORG[m[1]]+'">'+m[2]+'</div><div class="mtd">'+m[3]+(live?'':' Coming soon.')+'</div></div>';
-    return live?'<a class="mt lift" href="league.html?create=1">'+inner+'</a>':'<div class="mt" style="opacity:.62">'+inner+'</div>'}).join('');
-  $('mockBtn').addEventListener('click',function(){var s=$('sports');s.classList.add('open');s.scrollIntoView({behavior:'smooth',block:'start'})});
-
-  /* ---- promotions ---- */
-  var F2={};try{F2=JSON.parse(localStorage.getItem('cb_follow')||'{"UFC":true}')}catch(e){F2={UFC:true}}
-  function drawP(){$('promos').innerHTML=Object.keys(ORG).map(function(k){var on=!!F2[k],c=ORG[k];
-    return '<div class="promo" style="border-left-color:'+c+';'+(on?'border-color:'+c+';border-left-color:'+c:'')+'"><div class="n" style="color:'+c+'">'+esc(k)+'</div><button type="button" data-p="'+esc(k)+'" aria-pressed="'+on+'" style="'+(on?'border-color:'+c+';background:'+c+';color:#0A1124':'')+'">'+(on?'FOLLOWING':'FOLLOW')+'</button></div>'}).join('')}
-  $('promos').addEventListener('click',function(e){var b=e.target.closest('[data-p]');if(!b)return;F2[b.dataset.p]=!F2[b.dataset.p];try{localStorage.setItem('cb_follow',JSON.stringify(F2))}catch(x){}drawP()});
-  drawP();
-  load();
+  var inst=await DCRuntime.mount({url:desk?'mock/Desktop.dc.html':'mock/Main.dc.html',root:document.getElementById('app'),patch:patch,patchText:function(t){return t.replace(/<div style="font-size:13px;color:#E8F0FF;padding:10px 12px;background:rgba\(44,230,255,\.08\)[^>]*>[^<]*<\/div>/g,'')}});
+  /* the design files are fixed-size boards; here they fill the screen */
 })();
 </script>
 <script src="auto-refresh.js"></script>
