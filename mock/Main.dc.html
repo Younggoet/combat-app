@@ -249,6 +249,7 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
         <sc-for list="{{cardsStyled}}" as="c" hint-placeholder-count="5">
           <div role="button" tabindex="0" onClick="{{ c.pick }}" aria-label="{{ c.title }}" class="lift" style="{{ c.cell }}">
             <div style="{{ c.outer }}">
+                <div style="padding-top:100%"></div>
               <div style="{{ c.inner }}">
                 <div style="{{ c.iconBox }}"><svg width="{{ c.isz }}" height="{{ c.isz }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ c.icon }}"/></svg></div>
                 <div style="{{ c.tstyle }}">{{ c.title }}</div>
@@ -761,15 +762,15 @@ class Component extends DCLogic {
     // ---- Get started cards: same shapes as the org switcher ----
     const cardCfg = () => {
       const col = 'display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;width:100%;height:100%;background:#0F0F12;gap:' + (PH ? 6 : 8) + 'px;';
-      if (org === 'ufc') return { outer: 'width:100%;aspect-ratio:1/1;box-sizing:border-box;padding:3.6%;clip-path:' + OCTC + ';background:' + bgR, inner: col + 'clip-path:' + OCTC + ';padding:0 ' + (PH ? '16%' : '18%'), deco: [], line: 'display:none' };
+      if (org === 'ufc') return { outer: 'position:relative;width:100%;box-sizing:border-box;clip-path:' + OCTC + ';background:' + bgR, inner: col + 'position:absolute;inset:3.6%;width:auto;height:auto;clip-path:' + OCTC + ';padding:0 ' + (PH ? '14.8%' : '16.7%'), deco: [], line: 'display:none' };
       if (org === 'bkfc') {
         const deco = [];
         for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; deco.push({ style: 'position:absolute;left:' + (50 + 44.4 * Math.sin(a)).toFixed(2) + '%;top:' + (50 - 44.4 * Math.cos(a)).toFixed(2) + '%;width:11.5%;aspect-ratio:1/1;transform:translate(-50%,-50%);border-radius:50%;box-sizing:border-box;background:#0A1124;border:1.5px solid #FFC23D' }); }
-        return { outer: 'position:relative;width:100%;aspect-ratio:1/1;box-sizing:border-box;padding:8.5%;border-radius:50%;background:' + bgR, inner: col + 'border-radius:50%;padding:0 ' + (PH ? '13%' : '15%'), deco, line: 'position:absolute;inset:3.8%;border-radius:50%;border:1.5px solid #FFC23D;box-sizing:border-box;pointer-events:none' };
+        return { outer: 'position:relative;width:100%;box-sizing:border-box;border-radius:50%;background:' + bgR, inner: col + 'position:absolute;inset:8.5%;width:auto;height:auto;border-radius:50%;padding:0 ' + (PH ? '10.8%' : '12.5%'), deco, line: 'position:absolute;inset:3.8%;border-radius:50%;border:1.5px solid #FFC23D;box-sizing:border-box;pointer-events:none' };
       }
       const deco = [];
       for (let i = 0; i < 50; i++) { const a = i * 2 * Math.PI / 50; deco.push({ style: 'position:absolute;left:' + (50 + 44 * Math.sin(a)).toFixed(2) + '%;top:' + (50 - 44 * Math.cos(a)).toFixed(2) + '%;width:6.4%;aspect-ratio:1/1;transform:translate(-50%,-50%) rotate(' + (i * 7.2).toFixed(1) + 'deg);background:#E8F0FF;clip-path:' + STARP }); }
-      return { outer: 'position:relative;width:100%;aspect-ratio:1/1;box-sizing:border-box;padding:12%;border-radius:50%;background:' + bgR, inner: col + 'border-radius:50%;padding:0 ' + (PH ? '10%' : '12%'), deco, line: 'position:absolute;inset:11.4%;border-radius:50%;border:1.5px solid rgba(232,240,255,.45);box-sizing:border-box;pointer-events:none' };
+      return { outer: 'position:relative;width:100%;box-sizing:border-box;border-radius:50%;background:' + bgR, inner: col + 'position:absolute;inset:12%;width:auto;height:auto;border-radius:50%;padding:0 ' + (PH ? '7.6%' : '9.1%'), deco, line: 'position:absolute;inset:11.4%;border-radius:50%;border:1.5px solid rgba(232,240,255,.45);box-sizing:border-box;pointer-events:none' };
     };
     const cc = cardCfg();
     const circ = org !== 'ufc';
