@@ -449,7 +449,7 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
       <!-- profile: shape, photo, color, username -->
       <div style="padding:18px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:16px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:22px;align-items:center;flex-shrink:0">
         <div style="margin:0 auto;{{ pv.box }}">
-          <div style="{{ pv.outer }}"><div style="{{ pv.line }}"></div><sc-for list="{{ pv.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ pv.inner }}">{{ pv.initial }}</div></div>
+          <div style="{{ pv.outer }}"><div style="{{ pv.inner }}">{{ pv.initial }}</div><sc-for list="{{ pv.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ pv.line }}"></div></div>
         </div>
         <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:16px">
           <div>
@@ -461,7 +461,7 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
             <div style="display:flex;gap:10px">
               <sc-for list="{{ shapeOpts }}" as="o" hint-placeholder-count="3">
                 <button aria-label="{{ o.label }}" aria-pressed="{{ o.on }}" onClick="{{ o.pick }}" style="{{ o.btn }}">
-                  <div style="{{ o.box }}"><div style="{{ o.outer }}"><div style="{{ o.line }}"></div><sc-for list="{{ o.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ o.inner }}"></div></div></div>
+                  <div style="{{ o.box }}"><div style="{{ o.outer }}"><div style="{{ o.inner }}"></div><sc-for list="{{ o.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ o.line }}"></div></div></div>
                 </button>
               </sc-for>
             </div>
@@ -722,7 +722,7 @@ class Component extends DCLogic {
       if (kind === 'octagon') return { box, outer: base + 'padding:3.6%;clip-path:' + OCTP + ';background:' + bg, inner: innerB + 'clip-path:' + OCTP, deco: [], line: 'display:none', initial: ini };
       const deco = [];
       if (kind === 'ring') {
-        for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; deco.push({ style: 'position:absolute;left:' + (50 + 44.4 * Math.sin(a)).toFixed(2) + '%;top:' + (50 - 44.4 * Math.cos(a)).toFixed(2) + '%;width:11.5%;aspect-ratio:1/1;transform:translate(-50%,-50%);border-radius:50%;box-sizing:border-box;background:#0A1124;border:2px solid #FFC23D' }); }
+        for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; deco.push({ style: 'position:absolute;left:' + (50 + 44.4 * Math.sin(a)).toFixed(2) + '%;top:' + (50 - 44.4 * Math.cos(a)).toFixed(2) + '%;width:11.5%;aspect-ratio:1/1;transform:translate(-50%,-50%);border-radius:50%;box-sizing:border-box;background:#0A1124;border:' + (S > 120 ? 2.5 : 1.5) + 'px solid #FFC23D' }); }
         return { box, outer: base + 'padding:8.5%;border-radius:50%;background:' + bg, inner: innerB + 'border-radius:50%', deco, line: 'position:absolute;inset:3.8%;border-radius:50%;border:2px solid #FFC23D;box-sizing:border-box;pointer-events:none', initial: ini };
       }
       for (let i = 0; i < 50; i++) { const a = i * 2 * Math.PI / 50; deco.push({ style: 'position:absolute;left:' + (50 + 44 * Math.sin(a)).toFixed(2) + '%;top:' + (50 - 44 * Math.cos(a)).toFixed(2) + '%;width:6.4%;aspect-ratio:1/1;transform:translate(-50%,-50%) rotate(' + (i * 7.2).toFixed(1) + 'deg);background:#E8F0FF;clip-path:' + STP }); }
