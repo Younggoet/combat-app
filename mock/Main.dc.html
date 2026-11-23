@@ -69,6 +69,37 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
         <sc-for list="{{ slideDots }}" as="d" hint-placeholder-count="4"><button aria-label="Show card" onClick="{{ d.pick }}" style="{{ d.style }}"></button></sc-for>
       </div>
 
+      <!-- your leagues (signed in with a Combat username) -->
+      <sc-if value="{{ showMine }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-bottom:26px;flex-shrink:0">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px">
+            <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase">View your current leagues</div>
+            <button onClick="{{ viewAll }}" style="background:none;border:0;padding:6px 0;color:#2CE6FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.05em">View all</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px">
+            <sc-for list="{{ myLeagues }}" as="l" hint-placeholder-count="2">
+              <div style="padding:14px 16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-left:3px solid #D4AF37;border-radius:14px;display:flex;align-items:center;gap:12px">
+                <div style="flex:1;min-width:0">
+                  <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.name }}</div>
+                  <div style="font-size:13px;color:#9FB2D6;margin-top:3px;line-height:1.35">{{ l.meta }}</div>
+                  <div style="font-size:12px;color:#D4AF37;margin-top:3px">{{ l.when }}</div>
+                </div>
+                <button class="lift" onClick="{{ l.open }}" style="flex-shrink:0;min-height:40px;padding:0 18px;border:0;background:linear-gradient(135deg,#F6E08A,#D4AF37 60%,#9C7A1E);color:#14120A;font-family:'Orbitron',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%)">OPEN</button>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ noMine }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:16px;background:#0F1A33;border:1px dashed rgba(120,170,255,.35);border-radius:14px;display:flex;flex-direction:column;gap:12px">
+              <div style="font-size:14px;color:#9FB2D6;line-height:1.45">You are not in a league yet. Start one or join an open league.</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="lift" onClick="{{ mineCreate }}" style="min-height:44px;padding:0 20px;border:0;background:#FF3B4E;color:#0A1124;font-family:'Orbitron',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%)">CREATE A LEAGUE</button>
+                <button class="lift" onClick="{{ mineJoin }}" style="min-height:44px;padding:0 20px;border:1px solid rgba(120,170,255,.35);background:transparent;color:#C9D8F5;border-radius:8px;font-family:'Orbitron',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em">JOIN A PUBLIC LEAGUE</button>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
       <!-- mock draft -->
       <div style="padding:22px 18px;background:linear-gradient(160deg,#14224A 0%,#0C1630 70%);border:1px solid rgba(212,175,55,.45);border-radius:16px;margin-bottom:26px;display:flex;flex-direction:column;gap:10px">
         <div style="font-family:'Orbitron',sans-serif;font-weight:900;font-size:25px;line-height:1.1;letter-spacing:.06em;background:linear-gradient(180deg,#F6E08A,#D4AF37 58%,#9C7A1E);-webkit-background-clip:text;background-clip:text;color:transparent">TRY A MOCK DRAFT TODAY</div>
@@ -629,6 +660,12 @@ class Component extends DCLogic {
     const creators = [['[Creator]','X','#FF3B4E'],['[Creator]','Instagram','#FF8A1F'],['[Creator]','YouTube','#A87BFF'],['[Creator]','TikTok','#5CC8FF']].map(([n, src, c]) => ({ n, src,
       av: 'width:' + (FP ? 56 : 68) + 'px;height:' + (FP ? 56 : 68) + 'px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#fff 0%,' + c + ' 60%,#000 150%);display:flex;align-items:center;justify-content:center;font-family:"Orbitron",sans-serif;font-weight:800;font-size:' + (FP ? 18 : 22) + 'px;color:#0A1124' }));
     const connectPlatforms = ['X','Instagram','YouTube','TikTok','Facebook'].map(p => ({ p, go: () => {} }));
+    const ME = (typeof window !== 'undefined' && window.__ME) || { signedIn: true, label: 'SIGN IN', leagues: [
+      { name:'Bayou Brawlers', meta:'Card Redraft · Drafting · 8/12 teams', when:'Draft Dec 3, 7:00 PM' },
+      { name:'Octagon Alley', meta:'Card Redraft · Setting up · 5/10 teams', when:'Draft time not set' }
+    ] };
+    const myLeagues = ME.leagues.map(l => ({ name: l.name, meta: l.meta, when: l.when || '', open: () => (ME.open ? ME.open(l) : this.setState({ page: 'leagues' })) }));
+    const mineVals = { showMine: !!ME.signedIn, myLeagues, noMine: !myLeagues.length, viewAll: () => (ME.viewAll ? ME.viewAll() : this.setState({ page: 'leagues' })), mineCreate: () => (ME.create ? ME.create() : this.setState({ page: 'username' })), mineJoin: () => (ME.join ? ME.join() : this.setState({ page: 'leagues' })), signLabel: ME.label || 'SIGN IN', signGo: () => (ME.signGo ? ME.signGo() : null) };
     const publicLeagues = cur.leagues ? [
       { name:'Bayou Brawlers', meta:'Card Redraft · 8/12 teams · Dec 5 to Jan 23', pick:() => this.setState({ page:'username' }) },
       { name:'Octagon Alley', meta:'Card Redraft · 5/10 teams · Dec 12 to Jan 30', pick:() => this.setState({ page:'username' }) },
@@ -709,7 +746,7 @@ class Component extends DCLogic {
     return {
       isHome: false, notHome: true, pageTitle: titles[page] || '',
       isFantasy: page === 'leagues', isScores: page === 'fights', isCombat: page === 'home',
-      isLeagues: false, isConnect: page === 'connect', feedItems, feedFilters, creators, connectPlatforms, goConnect: () => this.setState({ page: 'connect' }), goMock: () => this.setState({ page: 'mock' }), isMock: page === 'mock', sl: slideV, slideDots, mockTiles, promos, publicLeagues, showPublic: cur.leagues, isUsername: page === 'username', isFights: page === 'fights', isNews: page === 'news', isMe: page === 'me',
+      ...mineVals, isLeagues: false, isConnect: page === 'connect', feedItems, feedFilters, creators, connectPlatforms, goConnect: () => this.setState({ page: 'connect' }), goMock: () => this.setState({ page: 'mock' }), isMock: page === 'mock', sl: slideV, slideDots, mockTiles, promos, publicLeagues, showPublic: cur.leagues, isUsername: page === 'username', isFights: page === 'fights', isNews: page === 'news', isMe: page === 'me',
       tabs: [['fantasy','FANTASY'],['scores','SCORES']].map(([k, l]) => ({ label:l, on:tab===k, style:tabBtn(tab===k), pick:() => this.setState({ tab:k }) })),
       orgs: ['ufc','bkfc','raf'].map(k => ({ label:O[k].label, on:org===k, ...orgShape(k, org===k), pick:() => this.setState({ org:k }) })),
       accent:cur.c, accent2:cur.c2, accentSoft:accent, accentLine:cur.line,

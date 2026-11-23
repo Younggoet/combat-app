@@ -43,6 +43,24 @@
   window.__PUBLIC=[];
   try{var sb2=window.CombatAuth&&window.CombatAuth.client;if(sb2){var pr=await sb2.from('leagues').select('id,name,team_count,teams(id)').eq('is_public',true).eq('archived',false).eq('status','setup').not('team_count','is',null).order('created_at',{ascending:false}).limit(6);
     window.__PUBLIC=(pr.data||[]).map(function(l){return {name:l.name,meta:'Card Redraft \u00b7 '+((l.teams||[]).length)+'/'+l.team_count+' teams'}})}}catch(e){}
+  /* signed-in players with a Combat username: their leagues on the homepage */
+  var ME={signedIn:false,label:'SIGN IN',leagues:[],signGo:function(){location.href='login.html?redirect=index.html'},create:function(){location.href='league.html?create=1'},join:function(){location.href='league.html?lobby=1'},viewAll:function(){location.href='league.html'},open:function(l){location.href='league.html?open='+encodeURIComponent(l.id)}};
+  try{
+    var A=window.CombatAuth,u=A&&await A.getUser();
+    if(u){
+      ME.label='MY LEAGUES';ME.signGo=function(){location.href='league.html'};
+      var prof=await A.getProfile(u.id);
+      if(prof&&prof.display_name){
+        ME.signedIn=true;
+        var sb3=A.client,tr=await sb3.from('teams').select('id,league_id,leagues!inner(*)').eq('owner_user_id',u.id);
+        var ls=((tr.data||[]).map(function(r){return r.leagues})).filter(function(l){return l.team_count&&!l.archived}).sort(function(x,y){return y.created_at.localeCompare(x.created_at)});
+        var ids=ls.map(function(l){return l.id}),cnt={};
+        if(ids.length){var tc=await sb3.from('teams').select('league_id').in('league_id',ids);(tc.data||[]).forEach(function(x){cnt[x.league_id]=(cnt[x.league_id]||0)+1})}
+        ME.leagues=ls.map(function(l){return {id:l.id,name:l.name,meta:'Card Redraft \u00b7 '+(l.status==='setup'?'Setting up':l.status==='drafting'?'Drafting':'In season')+' \u00b7 '+(cnt[l.id]||1)+'/'+l.team_count+' teams',when:l.draft_time?'Draft '+new Date(l.draft_time).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Draft time not set'}});
+      }
+    }
+  }catch(e){}
+  window.__ME=ME;
   var desk=window.matchMedia('(min-width:900px)').matches;
   var CREATE="(location.href='league.html?create=1')",LOBBY="(location.href='league.html?lobby=1')";
   function patch(s){
