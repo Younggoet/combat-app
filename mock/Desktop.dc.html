@@ -446,6 +446,40 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
 
     <!-- ============ ME ============ -->
     <sc-if value="{{ isMe }}" hint-placeholder-val="{{ false }}">
+      <!-- profile: shape, photo, color, username -->
+      <div style="padding:18px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:16px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:22px;align-items:center;flex-shrink:0">
+        <div style="margin:0 auto;{{ pv.box }}">
+          <div style="{{ pv.outer }}"><div style="{{ pv.line }}"></div><sc-for list="{{ pv.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ pv.inner }}">{{ pv.initial }}</div></div>
+        </div>
+        <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:16px">
+          <div>
+            <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;color:#2CE6FF;margin-bottom:4px">USERNAME</div>
+            <input value="{{ pf.name }}" onInput="{{ pf.setName }}" maxlength="30" autocomplete="off" placeholder="Username" style="width:100%;box-sizing:border-box;background:none;border:0;border-bottom:2px solid #2CE6FF;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:22px;padding:8px 0;outline:none">
+          </div>
+          <div>
+            <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;color:#2CE6FF;margin-bottom:8px">PROFILE SHAPE</div>
+            <div style="display:flex;gap:10px">
+              <sc-for list="{{ shapeOpts }}" as="o" hint-placeholder-count="3">
+                <button aria-label="{{ o.label }}" aria-pressed="{{ o.on }}" onClick="{{ o.pick }}" style="{{ o.btn }}">
+                  <div style="{{ o.box }}"><div style="{{ o.outer }}"><div style="{{ o.line }}"></div><sc-for list="{{ o.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ o.inner }}"></div></div></div>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;color:#2CE6FF;margin-bottom:8px">COLOR</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <sc-for list="{{ colorOpts }}" as="k" hint-placeholder-count="9"><button aria-label="Color" aria-pressed="{{ k.on }}" onClick="{{ k.pick }}" style="{{ k.style }}"></button></sc-for>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <label class="lift" style="min-height:44px;padding:0 18px;border:1px solid rgba(120,170,255,.35);color:#C9D8F5;border-radius:8px;font-family:'Orbitron',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em;display:inline-flex;align-items:center;cursor:pointer">UPLOAD PHOTO<input type="file" accept="image/*" onChange="{{ pf.pickFile }}" style="display:none"></label>
+            <button class="lift" onClick="{{ pf.noPhoto }}" style="min-height:44px;padding:0 14px;border:0;background:none;color:#8FA3C7;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px">Remove photo</button>
+            <button class="lift" onClick="{{ pf.save }}" style="min-height:44px;padding:0 24px;border:0;background:linear-gradient(135deg,#F6E08A,#D4AF37 60%,#9C7A1E);color:#14120A;font-family:'Orbitron',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);margin-left:auto">SAVE PROFILE</button>
+          </div>
+          <div style="font-size:13px;color:#9FB2D6;min-height:18px">{{ pf.msg }}</div>
+        </div>
+      </div>
       <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;flex-shrink:0">
         <sc-for list="{{meRows}}" as="r" hint-placeholder-count="3">
           <div style="display:flex;align-items:center;gap:16px;padding:22px 20px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:14px">
@@ -673,6 +707,38 @@ class Component extends DCLogic {
     ] };
     const myLeagues = ME.leagues.map(l => ({ name: l.name, meta: l.meta, when: l.when || '', open: () => (ME.open ? ME.open(l) : this.setState({ page: 'leagues' })) }));
     const mineVals = { showMine: !!ME.signedIn, myLeagues, noMine: !myLeagues.length, viewAll: () => (ME.viewAll ? ME.viewAll() : this.setState({ page: 'leagues' })), mineCreate: () => (ME.create ? ME.create() : this.setState({ page: 'username' })), mineJoin: () => (ME.join ? ME.join() : this.setState({ page: 'leagues' })), signLabel: ME.label || 'SIGN IN', signGo: () => (ME.signGo ? ME.signGo() : null) };
+    const pf0 = (ME.profile) || { shape: 'octagon', color: '#FF3B4E', photo: '', name: 'Rasta Willy' };
+    if (!this.state.pf) this.state.pf = { ...pf0, msg: '' };
+    const PF = this.state.pf;
+    const setPf = (p) => this.setState({ pf: { ...this.state.pf, msg: '', ...p } });
+    const avShape = (kind, c, S, photo, initial) => {
+      const OCTP = 'polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)';
+      const STP = 'polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)';
+      const bg = 'radial-gradient(circle at 35% 28%,#fff 0%,' + c + ' 55%,#000 130%)';
+      const base = 'position:relative;width:100%;height:100%;box-sizing:border-box;';
+      const innerB = 'position:relative;width:100%;height:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:Orbitron,sans-serif;font-weight:800;font-size:' + Math.round(S * .3) + 'px;color:' + c + ';background:#0F0F12' + (photo ? ' url("' + photo + '") center/cover no-repeat' : '') + ';';
+      const box = 'width:' + S + 'px;height:' + S + 'px;flex-shrink:0;position:relative';
+      const ini = photo ? '' : initial;
+      if (kind === 'octagon') return { box, outer: base + 'padding:3.6%;clip-path:' + OCTP + ';background:' + bg, inner: innerB + 'clip-path:' + OCTP, deco: [], line: 'display:none', initial: ini };
+      const deco = [];
+      if (kind === 'ring') {
+        for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; deco.push({ style: 'position:absolute;left:' + (50 + 44.4 * Math.sin(a)).toFixed(2) + '%;top:' + (50 - 44.4 * Math.cos(a)).toFixed(2) + '%;width:11.5%;aspect-ratio:1/1;transform:translate(-50%,-50%);border-radius:50%;box-sizing:border-box;background:#0A1124;border:2px solid #FFC23D' }); }
+        return { box, outer: base + 'padding:8.5%;border-radius:50%;background:' + bg, inner: innerB + 'border-radius:50%', deco, line: 'position:absolute;inset:3.8%;border-radius:50%;border:2px solid #FFC23D;box-sizing:border-box;pointer-events:none', initial: ini };
+      }
+      for (let i = 0; i < 50; i++) { const a = i * 2 * Math.PI / 50; deco.push({ style: 'position:absolute;left:' + (50 + 44 * Math.sin(a)).toFixed(2) + '%;top:' + (50 - 44 * Math.cos(a)).toFixed(2) + '%;width:6.4%;aspect-ratio:1/1;transform:translate(-50%,-50%) rotate(' + (i * 7.2).toFixed(1) + 'deg);background:#E8F0FF;clip-path:' + STP }); }
+      return { box, outer: base + 'padding:12%;border-radius:50%;background:' + bg, inner: innerB + 'border-radius:50%', deco, line: 'position:absolute;inset:11.4%;border-radius:50%;border:1.5px solid rgba(232,240,255,.45);box-sizing:border-box;pointer-events:none', initial: ini };
+    };
+    const initial = ((PF.name || '?').trim()[0] || '?').toUpperCase();
+    const pv = avShape(PF.shape, PF.color, 190, PF.photo, initial);
+    const shapeOpts = [['octagon', 'Octagon'], ['ring', 'BKFC ring'], ['stars', 'RAF 50 star circle']].map(([k, label]) => { const on = PF.shape === k; return { label, on, ...avShape(k, PF.color, 64, PF.photo, initial), btn: 'width:84px;height:84px;display:flex;align-items:center;justify-content:center;border-radius:14px;cursor:pointer;background:#0A1124;border:2px solid ' + (on ? '#2CE6FF' : 'rgba(120,170,255,.2)'), pick: () => setPf({ shape: k }) }; });
+    const colorOpts = ['#FF3B4E', '#FF8A1F', '#A87BFF', '#2CE6FF', '#F6E08A', '#7DE08A', '#FF5CA8', '#5C8BFF', '#E8F0FF'].map(c => { const on = PF.color.toLowerCase() === c.toLowerCase(); return { on, style: 'width:36px;height:36px;border-radius:50%;padding:0;cursor:pointer;background:' + c + ';border:3px solid ' + (on ? '#E8F0FF' : 'transparent') + ';box-shadow:0 0 0 1px rgba(120,170,255,.3)', pick: () => setPf({ color: c }) }; });
+    const pfVals = { pv, shapeOpts, colorOpts, pf: {
+      name: PF.name, msg: PF.msg,
+      setName: (e) => { this.state.pf.name = e.target.value; },
+      pickFile: (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; if (ME.upload) { setPf({ msg: 'Uploading photo' }); ME.upload(f).then(u => setPf({ photo: u, msg: 'Photo added. Save to keep it.' })).catch(() => setPf({ msg: 'Could not upload that photo' })); } else setPf({ photo: URL.createObjectURL(f) }); },
+      noPhoto: () => setPf({ photo: '' }),
+      save: () => { const p = this.state.pf; if (ME.saveProfile) { setPf({ msg: 'Saving' }); ME.saveProfile({ shape: p.shape, color: p.color, photo: p.photo, name: (p.name || '').trim() }).then(m => setPf({ msg: m || 'Profile saved' })).catch(er => setPf({ msg: (er && er.message) || 'Could not save your profile' })); } else setPf({ msg: 'Profile saved' }); }
+    } };
     const publicLeagues = cur.leagues ? [
       { name:'Bayou Brawlers', meta:'Card Redraft · 8/12 teams · Dec 5 to Jan 23', pick:() => this.setState({ page:'username' }) },
       { name:'Octagon Alley', meta:'Card Redraft · 5/10 teams · Dec 12 to Jan 30', pick:() => this.setState({ page:'username' }) },
@@ -753,7 +819,7 @@ class Component extends DCLogic {
     return {
       isHome: false, notHome: true, pageTitle: titles[page] || '',
       isFantasy: page === 'leagues', isScores: page === 'fights', isCombat: page === 'home',
-      ...mineVals, isLeagues: false, isConnect: page === 'connect', feedItems, feedFilters, creators, connectPlatforms, goConnect: () => this.setState({ page: 'connect' }), goMock: () => this.setState({ page: 'mock' }), isMock: page === 'mock', sl: slideV, slideDots, mockTiles, promos, publicLeagues, showPublic: cur.leagues, isUsername: page === 'username', isFights: page === 'fights', isNews: page === 'news', isMe: page === 'me',
+      ...mineVals, ...pfVals, isLeagues: false, isConnect: page === 'connect', feedItems, feedFilters, creators, connectPlatforms, goConnect: () => this.setState({ page: 'connect' }), goMock: () => this.setState({ page: 'mock' }), isMock: page === 'mock', sl: slideV, slideDots, mockTiles, promos, publicLeagues, showPublic: cur.leagues, isUsername: page === 'username', isFights: page === 'fights', isNews: page === 'news', isMe: page === 'me',
       tabs: [['fantasy','FANTASY'],['scores','SCORES']].map(([k, l]) => ({ label:l, on:tab===k, style:tabBtn(tab===k), pick:() => this.setState({ tab:k }) })),
       orgs: ['ufc','bkfc','raf'].map(k => ({ label:O[k].label, on:org===k, ...orgShape(k, org===k), pick:() => this.setState({ org:k }) })),
       accent:cur.c, accent2:cur.c2, accentSoft, accentLine:cur.line,
