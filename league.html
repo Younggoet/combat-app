@@ -1024,7 +1024,7 @@ document.addEventListener('click',async e=>{let el=e.target.closest('[data-a]');
   else if(a==='join_code'){const code=($('#jc').value||'').replace(/[^A-Za-z0-9]/g,'');if(code.length<4){Z.err='Enter the invite code';render();return}await lookupCode(code)}
   else if(a==='join_id'){const {data}=await sb.from('leagues').select('*,teams(id)').eq('id',v).single();Z.found=data;go('join')}
   else if(a==='do_join')await joinLeague(v);
-  else if(a==='save_name'){const n=(Z.dn||'').trim();if(n.length<2){Z.err='Use at least 2 characters';render();return}const {error}=await sb.from('profiles').upsert({id:Z.uid,display_name:n},{onConflict:'id'});if(error){Z.err='Could not save your username';render();return}Z.dn=n;await loadMine();if(Z.pendingJoin){const c2=Z.pendingJoin;Z.pendingJoin=null;await lookupCode(c2)}else go('home')}
+  else if(a==='save_name'){const n=(Z.dn||'').trim();if(n.length<2){Z.err='Use at least 2 characters';render();return}const {error}=await sb.from('profiles').upsert({id:Z.uid,display_name:n},{onConflict:'id'});if(error){Z.err='Could not save your username';render();return}Z.dn=n;await loadMine();if(Z.pendingJoin){const c2=Z.pendingJoin;Z.pendingJoin=null;await lookupCode(c2)}else if(Z.intent){const i=Z.intent;Z.intent=null;history.replaceState(null,'','league.html');await runIntent(i)}else go('home')}
   else if(a==='start_draft'){if(blockCards().length<2){toast('Waiting for more cards to be announced');return}const {error}=await sb.rpc('cr_start_draft',{p_league:Z.L.id});if(error){toast(error.message||"Couldn't start the draft");return}location.href='cr-draft.html?league='+Z.L.id;return}
   else if(a==='ord_up'||a==='ord_dn'){const ids=ordIds(),i=ids.indexOf(v),j=a==='ord_up'?i-1:i+1;if(i<0||j<0||j>=ids.length)return;[ids[i],ids[j]]=[ids[j],ids[i]];await upd({draft_order:ids},'Draft order updated')}
   else if(a==='start_test_team'){const {error}=await sb.rpc('cr_start_test_draft',{p_league:Z.L.id,p_teams:true});if(error){toast(error.message||"Couldn't start the team test draft");return}location.href='cr-draft.html?league='+Z.L.id;return}
@@ -1129,11 +1129,13 @@ setInterval(async()=>{
 setInterval(()=>{const c=$('#clk');if(!c||!Z.room||!Z.room.current_pick_deadline)return;const t=Math.max(0,Math.ceil((new Date(Z.room.current_pick_deadline)-Date.now())/1000));c.textContent=t}, 250);
 document.addEventListener('input',e=>{if(e.target.id==='rs'){Z.rq=e.target.value;const l=$('#plist');if(l)l.innerHTML=poolRows()}});
 
+async function runIntent(i){if(i==='create'){Z.c={name:'',start:'new',sz:2,dt:'snake'};Z.step='name';go('create')}else if(i==='lobby'){Z.f='all';await loadPublic();await loadMine();go('lobby')}else go('home')}
 /* ---------- start ---------- */
 (async()=>{
   try{
     const user=await CombatAuth.getUser();
     const q=new URLSearchParams(location.search),jc=q.get('join');
+    Z.intent=q.get('create')?'create':q.get('lobby')?'lobby':null;
     if(!user){Z.pendingJoin=jc;return go('signin')}
     Z.uid=user.id;
     const p=await CombatAuth.getProfile(user.id);
@@ -1141,6 +1143,7 @@ document.addEventListener('input',e=>{if(e.target.id==='rs'){Z.rq=e.target.value
     if(!Z.dn){Z.pendingJoin=jc;return go('name')}
     await loadMine();
     if(jc)return await lookupCode(jc);
+    if(Z.intent){const i=Z.intent;Z.intent=null;history.replaceState(null,'','league.html');return await runIntent(i)}
     const oid=q.get('open');if(oid&&Z.leagues.some(l=>l.id===oid)){await openLeague(oid);history.replaceState(null,'','league.html');return}
     try{const sv=JSON.parse(localStorage.getItem('cb_nav')||'null');if(sv&&sv.lid&&Z.leagues.some(l=>l.id===sv.lid)){await openLeague(sv.lid,sv);if(Z.v==='league')return}}catch(e){}
     go('home');
