@@ -263,7 +263,7 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
         <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px">Get started</div>
         <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;align-items:start">
           <sc-for list="{{cardsStyled}}" as="c" hint-placeholder-count="5">
-            <button onClick="{{ c.pick }}" aria-label="{{ c.title }}" class="lift" style="{{ c.cell }}">
+            <div role="button" tabindex="0" onClick="{{ c.pick }}" aria-label="{{ c.title }}" class="lift" style="{{ c.cell }}">
               <div style="{{ c.outer }}">
                 <div style="{{ c.inner }}">
                   <div style="{{ c.iconBox }}"><svg width="{{ c.isz }}" height="{{ c.isz }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ c.icon }}"/></svg></div>
@@ -274,7 +274,7 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
                 <sc-for list="{{ c.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for>
                 <div style="{{ c.line }}"></div>
               </div>
-            </button>
+            </div>
           </sc-for>
         </div>
       </div>
