@@ -123,6 +123,32 @@ button:focus-visible{outline:2px solid #D4AF37;outline-offset:2px}
         <button class="lift" onClick="{{ sl.view }}" style="min-height:48px;border:1px dashed rgba(120,170,255,.35);background:transparent;color:#C9D8F5;border-radius:12px;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.05em">Open upcoming and live</button>
       </div>
 
+      <!-- from the feed -->
+      <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">From the feed</div>
+      <div style="font-size:13px;color:#9FB2D6;margin-bottom:12px;line-height:1.4">Posts from creators and fans, shaped by the sport they are about.</div>
+      <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:12px">
+        <sc-for list="{ homePosts }" as="f" hint-placeholder-count="3">
+          <div style="{{ f.shell }}"><div style="{{ f.wrap }}"><div style="{{ f.card }}">
+            <sc-for list="{{ f.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for>
+            <sc-if value="{{ f.hasStars }}" hint-placeholder-val="{{ false }}"><div style="{{ f.starS }}">{{ f.stars }}</div></sc-if>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="{{ f.av }}">{{ f.init }}</div>
+              <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">{{ f.name }}</div><div style="font-size:12px;color:#9FB2D6">{{ f.meta }}</div></div>
+              <div style="{{ f.chip }}">{{ f.label }}</div>
+            </div>
+            <div style="font-size:15px;line-height:1.4">{{ f.text }}</div>
+            <sc-if value="{{ f.media }}" hint-placeholder-val="{{ true }}"><div style="{{ f.mediaS }}">[Video or image]</div></sc-if>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <div style="{{ f.tagS }}">{{ f.tag }}</div>
+              <sc-if value="{{ f.hasLink }}" hint-placeholder-val="{{ true }}"><div style="font-size:12px;color:#D4AF37">{{ f.link }}</div></sc-if>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button onClick="{{ f.like }}" class="lift" style="{{ f.likeS }}">{{ f.likeLabel }}</button><button class="lift" style="{{ f.actS }}">{{ f.replyLabel }}</button><button class="lift" style="{{ f.actS }}">Share</button></div>
+            <sc-if value="{{ f.hasStars }}" hint-placeholder-val="{{ false }}"><div style="{{ f.starS }}">{{ f.stars }}</div></sc-if>
+          </div></div></div>
+        </sc-for>
+      </div>
+      <button class="lift" onClick="{ goFeed }" style="width:100%;min-height:48px;border:1px dashed rgba(120,170,255,.35);background:transparent;color:#C9D8F5;border-radius:12px;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;margin-bottom:26px">Open the feed</button>
+
       <!-- promotions -->
       <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Keep watch of your favorite promotions</div>
       <div style="font-size:13px;color:#9FB2D6;margin-bottom:12px;line-height:1.4">Follow a promotion to get its cards, results and live fights in your feed.</div>
@@ -374,31 +400,50 @@ button:focus-visible{outline:2px solid #D4AF37;outline-offset:2px}
 
     <!-- ============ FEED ============ -->
     <sc-if value="{{ isNews }}" hint-placeholder-val="{{ false }}">
-      <div class="scroll" style="display:flex;gap:6px;overflow-x:auto;margin:0 -20px 14px;padding:0 20px">
-        <sc-for list="{{feedFilters}}" as="f" hint-placeholder-count="4"><button onClick="{{ f.pick }}" class="lift" style="{{ f.style }}">{{ f.label }}</button></sc-for>
+      <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="flex-shrink:0;padding:14px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:14px;display:flex;flex-direction:column;gap:12px">
+        <input value="{{ cmp.ct }}" onInput="{{ cmp.setText }}" maxlength="280" autocomplete="off" placeholder="Post about combat sports" style="width:100%;box-sizing:border-box;background:none;border:0;border-bottom:2px solid #D4AF37;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:17px;padding:8px 0;outline:none">
+        <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:13px;color:#9FB2D6">What is it about?</div>
+        <div class="scroll" style="display:flex;gap:6px;overflow-x:auto;margin:0 -14px;padding:0 14px">
+          <sc-for list="{{ cmp.sportChips }}" as="c" hint-placeholder-count="4"><button onClick="{{ c.pick }}" class="lift" style="{{ c.style }}">{{ c.label }}</button></sc-for>
+        </div>
+        <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:13px;color:#9FB2D6">Which organization?</div>
+        <sc-if value="{{ cmp.noSport }}" hint-placeholder-val="{{ true }}"><div style="font-size:13px;color:#7F93B8">Pick a sport first, then the organization.</div></sc-if>
+        <sc-if value="{{ cmp.hasSport }}" hint-placeholder-val="{{ false }}"><div class="scroll" style="display:flex;gap:6px;overflow-x:auto;margin:0 -14px;padding:0 14px">
+          <sc-for list="{{ cmp.orgChips }}" as="c" hint-placeholder-count="6"><button onClick="{{ c.pick }}" class="lift" style="{{ c.style }}">{{ c.label }}</button></sc-for>
+        </div></sc-if>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div style="font-size:12px;color:#7F93B8;line-height:1.4">Your post takes the shape of its sport on the feed.</div><button onClick="{{ cmp.post }}" class="lift" style="{{ cmp.postStyle }}">POST</button></div>
       </div>
-      <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Creators</div>
-      <div class="scroll" style="display:flex;gap:14px;overflow-x:auto;margin:0 -20px 18px;padding:0 20px">
+      <div class="scroll" style="display:flex;gap:6px;overflow-x:auto;margin:0 -20px;padding:0 20px"><sc-for list="{{feedFilters}}" as="f" hint-placeholder-count="5"><button onClick="{{ f.pick }}" class="lift" style="{{ f.style }}">{{ f.label }}</button></sc-for></div>
+      <sc-if value="{{ hasOrgFilters }}" hint-placeholder-val="{{ false }}"><div class="scroll" style="display:flex;gap:6px;overflow-x:auto;margin:0 -20px;padding:0 20px"><sc-for list="{{orgFilters}}" as="f" hint-placeholder-count="4"><button onClick="{{ f.pick }}" class="lift" style="{{ f.style }}">{{ f.label }}</button></sc-for></div></sc-if>
+      <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;margin:6px 0 -4px">Creators</div>
+      <div class="scroll" style="display:flex;gap:14px;overflow-x:auto;margin:0 -20px;padding:0 20px">
         <sc-for list="{{creators}}" as="c" hint-placeholder-count="4">
           <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;width:72px"><div style="{{ c.av }}">?</div><div style="font-size:12px;color:#E8F0FF">{{ c.n }}</div><div style="font-size:11px;color:#9FB2D6">{{ c.src }}</div></div>
         </sc-for>
         <button onClick="{{ goConnect }}" class="lift" style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;width:72px;border:0;background:transparent;color:#E8F0FF;padding:0"><div style="width:56px;height:56px;border-radius:50%;border:1.5px dashed #D4AF37;color:#D4AF37;display:flex;align-items:center;justify-content:center;font-size:26px">+</div><div style="font-size:12px">Connect</div></button>
       </div>
-      <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;flex-direction:column;gap:16px">
         <sc-for list="{{feedItems}}" as="f" hint-placeholder-count="6">
-          <div style="{{ f.card }}">
+          <div style="{{ f.shell }}"><div style="{{ f.wrap }}"><div style="{{ f.card }}">
+            <sc-for list="{{ f.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for>
+            <sc-if value="{{ f.hasStars }}" hint-placeholder-val="{{ false }}"><div style="{{ f.starS }}">{{ f.stars }}</div></sc-if>
             <div style="display:flex;align-items:center;gap:10px">
               <div style="{{ f.av }}">{{ f.init }}</div>
-              <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">{{ f.name }}</div><div style="font-size:12px;color:#9FB2D6">{{ f.handle }} {{ f.when }}</div></div>
-              <div style="{{ f.chip }}">{{ f.org }}</div>
+              <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">{{ f.name }}</div><div style="font-size:12px;color:#9FB2D6">{{ f.meta }}</div></div>
+              <div style="{{ f.chip }}">{{ f.label }}</div>
             </div>
             <div style="font-size:15px;line-height:1.4">{{ f.text }}</div>
+            <sc-if value="{{ f.media }}" hint-placeholder-val="{{ true }}"><div style="{{ f.mediaS }}">[Video or image]</div></sc-if>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
               <div style="{{ f.tagS }}">{{ f.tag }}</div>
               <sc-if value="{{ f.hasLink }}" hint-placeholder-val="{{ true }}"><div style="font-size:12px;color:#D4AF37">{{ f.link }}</div></sc-if>
             </div>
-          </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button onClick="{{ f.like }}" class="lift" style="{{ f.likeS }}">{{ f.likeLabel }}</button><button class="lift" style="{{ f.actS }}">{{ f.replyLabel }}</button><button class="lift" style="{{ f.actS }}">Share</button></div>
+            <sc-if value="{{ f.hasStars }}" hint-placeholder-val="{{ false }}"><div style="{{ f.starS }}">{{ f.stars }}</div></sc-if>
+          </div></div></div>
         </sc-for>
+      </div>
       </div>
     </sc-if>
 
@@ -670,28 +715,77 @@ class Component extends DCLogic {
       card: 'display:flex;align-items:center;gap:10px;padding:' + (HP ? '10px 12px' : '14px 16px') + ';background:#0F1A33;border:1px solid ' + (on ? ORG[k] : 'rgba(120,170,255,.14)') + ';border-left:3px solid ' + ORG[k] + ';border-radius:12px',
       btn: 'flex-shrink:0;min-height:' + (HP ? 36 : 40) + 'px;padding:0 ' + (HP ? 10 : 14) + 'px;border-radius:8px;font-family:"Orbitron",sans-serif;font-weight:800;font-size:' + (HP ? 9.5 : 10.5) + 'px;letter-spacing:.08em;cursor:pointer;' + (on ? 'border:1px solid ' + ORG[k] + ';background:' + ORG[k] + ';color:#0A1124' : 'border:1px solid rgba(120,170,255,.35);background:transparent;color:#C9D8F5'),
       toggle: () => this.setState({ follow: { ...follow, [k]: !on } }) }; });
-    // ---------- Feed: official Combat news + creator posts (with permission) ----------
+    // ---------- Feed: sport-shaped posts, composer with sport + organization tags ----------
     const FP = true;
-    const feedF = this.state.feedF || 'all';
-    const CATC = { 'MMA': '#FF3B4E', 'Bare Knuckle': '#FF8A1F', 'Wrestling': '#A87BFF' };
-    const FEED = [
-      { cat:'MMA', org:'UFC', official:false, name:'[Creator name]', handle:'@handle', src:'X', text:'[Creator post about Prochazka vs Stirling]', when:'2h' },
-      { cat:'MMA', org:'UFC', official:true, name:'Combat News', handle:'', src:'Combat', text:'[Roster move or card change]', when:'3h' },
-      { cat:'Bare Knuckle', org:'BKFC', official:false, name:'[Creator name]', handle:'@handle', src:'Instagram', text:'[Creator post about BKFC Hershey]', when:'5h' },
-      { cat:'Wrestling', org:'RAF', official:false, name:'[Creator name]', handle:'@handle', src:'YouTube', text:'[Creator video about RAF 15]', when:'8h' },
-      { cat:'MMA', org:'PFL', official:false, name:'[Creator name]', handle:'@handle', src:'TikTok', text:'[Creator post about a PFL result]', when:'1d' },
-      { cat:'Bare Knuckle', org:'BKFC', official:true, name:'Combat News', handle:'', src:'Combat', text:'[BKFC card announcement]', when:'1d' }
+    const feedF = this.state.feedF || 'all', feedO = this.state.feedO || 'all';
+    const cs = this.state.cs || null, co = this.state.co || null;
+    const SPORTS = { 'MMA': { c:'#FF3B4E', orgs:['UFC','PFL','ONE','KSW','Rizin','Oktagon','Cage Warriors','LFA','Other'] }, 'BKFC': { c:'#FF8A1F', orgs:['BKFC','Other'] }, 'Wrestling': { c:'#A87BFF', orgs:['RAF','WWE','AEW','NCAA','UWW','Other'] }, 'Boxing': { c:'#4DA3FF', orgs:['Top Rank','Matchroom','Golden Boy','PBC','Zuffa Boxing','Other'] } };
+    const SPK = Object.keys(SPORTS);
+    const ORGX = { ...ORG, 'WWE':'#E8F0FF', 'AEW':'#FFC23D', 'NCAA':'#7CE38B', 'UWW':'#5CC8FF', 'Top Rank':'#FF3B4E', 'Matchroom':'#FFC23D', 'Golden Boy':'#D4AF37', 'PBC':'#E8F0FF', 'Zuffa Boxing':'#FF3B4E' };
+    const SRC = { X:'#E8F0FF', Instagram:'#FF6FB5', YouTube:'#FF3B4E', TikTok:'#5CC8FF', Combat:'#F6E08A' };
+    const BASE = [
+      { id:'p1', sport:'MMA', org:'UFC', official:false, name:'[Creator name]', handle:'@handle', src:'X', text:'[Creator post about Prochazka vs Stirling]', when:'2h', media:true, n:[214,18] },
+      { id:'p2', sport:'BKFC', org:'BKFC', official:false, name:'[Creator name]', handle:'@handle', src:'Instagram', text:'[Creator post about BKFC Hershey]', when:'5h', media:true, n:[96,7] },
+      { id:'p3', sport:'Wrestling', org:'RAF', official:false, name:'[Creator name]', handle:'@handle', src:'YouTube', text:'[Creator video about RAF 15]', when:'8h', media:true, n:[58,4] },
+      { id:'p4', sport:'MMA', org:'UFC', official:true, name:'Combat News', handle:'', src:'Combat', text:'[Roster move or card change]', when:'3h', media:false, n:[131,22] },
+      { id:'p5', sport:'Boxing', org:'Top Rank', official:false, name:'[Creator name]', handle:'@handle', src:'TikTok', text:'[Creator post about a boxing card]', when:'1d', media:false, n:[40,3] },
+      { id:'p6', sport:'BKFC', org:'BKFC', official:true, name:'Combat News', handle:'', src:'Combat', text:'[BKFC card announcement]', when:'1d', media:false, n:[77,9] },
+      { id:'p7', sport:'MMA', org:'PFL', official:false, name:'[Creator name]', handle:'@handle', src:'YouTube', text:'[Creator post about a PFL result]', when:'1d', media:false, n:[35,2] }
     ];
-    const feedItems = FEED.filter(f => feedF === 'all' || f.cat === feedF).map(f => { const c = ORG[f.org];
-      return { ...f, chip: chip(c),
-        av: 'width:' + (FP ? 40 : 48) + 'px;height:' + (FP ? 40 : 48) + 'px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:"Orbitron",sans-serif;font-weight:800;font-size:' + (FP ? 14 : 17) + 'px;color:#0A1124;background:' + (f.official ? 'linear-gradient(135deg,#F6E08A,#D4AF37)' : 'radial-gradient(circle at 35% 28%,#fff 0%,' + c + ' 60%,#000 150%)'),
-        init: f.official ? 'C' : '?',
-        tag: f.official ? 'Official' : 'Posted with permission',
-        tagS: 'font-size:' + (FP ? 11 : 12) + 'px;padding:3px 8px;border-radius:6px;white-space:nowrap;' + (f.official ? 'background:rgba(212,175,55,.18);color:#F6E08A;border:1px solid rgba(212,175,55,.5)' : 'color:#9FB2D6;border:1px solid rgba(120,170,255,.3)'),
-        link: f.official ? '' : 'View original on ' + f.src,
-        hasLink: !f.official,
-        card: 'padding:' + (FP ? '14px' : '20px') + ';background:#0F1A33;border:1px solid rgba(120,170,255,.14);border-left:3px solid ' + c + ';border-radius:14px;display:flex;flex-direction:column;gap:' + (FP ? 10 : 12) + 'px' }; });
-    const feedFilters = ['all','MMA','Bare Knuckle','Wrestling'].map(k => ({ label: k === 'all' ? 'All' : k, style: pill(feedF === k, k === 'all' ? null : CATC[k]), pick: () => this.setState({ feedF: k }) }));
+    const ALLP = [...(this.state.posts || []), ...BASE];
+    const likes = this.state.likes || {};
+    const OCTP = (n) => 'polygon(' + n + 'px 0,calc(100% - ' + n + 'px) 0,100% ' + n + 'px,100% calc(100% - ' + n + 'px),calc(100% - ' + n + 'px) 100%,' + n + 'px 100%,0 calc(100% - ' + n + 'px),0 ' + n + 'px)';
+    const pad = FP ? 14 : 20, gap = FP ? 10 : 12, AV = FP ? 42 : 50;
+    const mkPost = (p) => { const sc = SPORTS[p.sport].c, oc = (p.org && ORGX[p.org]) || sc, liked = !!likes[p.id], n0 = p.n[0] + (liked ? 1 : 0);
+      const flex = 'display:flex;flex-direction:column;gap:' + gap + 'px;';
+      let shell = '', wrap = '', card = '', deco = [], stars = false, av = '';
+      const dot = (x, y, bg, bd, r) => ({ style:'position:absolute;left:' + x + ';top:' + y + ';width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:' + (r || '50%') + ';background:' + bg + ';border:2px solid ' + bd });
+      if (p.sport === 'MMA') {
+        shell = 'filter:drop-shadow(0 0 9px ' + sc + '55)';
+        wrap = 'padding:2px;background:linear-gradient(160deg,' + sc + ',' + sc + '66);clip-path:' + OCTP(FP ? 18 : 22);
+        card = 'background:#0F1A33;clip-path:' + OCTP(FP ? 16 : 20) + ';padding:' + (pad + 8) + 'px ' + (pad + 12) + 'px;' + flex;
+        av = 'clip-path:polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%);border-radius:0;';
+      } else if (p.sport === 'BKFC') {
+        wrap = 'padding:6px';
+        card = 'position:relative;background:#0F1A33;border:2px solid ' + sc + ';border-radius:20px;box-shadow:inset 0 0 0 7px #0F1A33,inset 0 0 0 8px ' + sc + '77;padding:' + (pad + 10) + 'px ' + (pad + 12) + 'px;' + flex;
+        deco = [dot('0%','0%','#0A1124','#FFC23D'), dot('50%','0%','#0A1124','#FFC23D'), dot('100%','0%','#0A1124','#FFC23D'), dot('0%','50%','#0A1124','#FFC23D'), dot('100%','50%','#0A1124','#FFC23D'), dot('0%','100%','#0A1124','#FFC23D'), dot('50%','100%','#0A1124','#FFC23D'), dot('100%','100%','#0A1124','#FFC23D')];
+        av = 'border-radius:50%;box-shadow:0 0 0 2px #0F1A33,0 0 0 4px ' + sc + ';';
+      } else if (p.sport === 'Boxing') {
+        wrap = 'padding:7px';
+        card = 'position:relative;background:#0F1A33;border:2px solid ' + sc + ';border-radius:6px;box-shadow:inset 0 0 0 5px #0F1A33,inset 0 0 0 6px ' + sc + '88,inset 0 0 0 10px #0F1A33,inset 0 0 0 11px ' + sc + '55;padding:' + (pad + 14) + 'px ' + (pad + 14) + 'px;' + flex;
+        deco = [dot('0%','0%','#FF3B4E','#0A1124','3px'), dot('100%','0%','#E8F0FF','#0A1124','3px'), dot('0%','100%','#E8F0FF','#0A1124','3px'), dot('100%','100%','#4DA3FF','#0A1124','3px')];
+        av = 'border-radius:8px;';
+      } else {
+        stars = p.org === 'RAF';
+        card = 'background:linear-gradient(180deg,' + sc + '26,#0F1A33 45%);border:2px solid ' + sc + ';border-radius:8px;padding:' + (pad + 2) + 'px ' + (pad + 4) + 'px;' + flex;
+        av = 'border-radius:50%;border:3px dotted ' + sc + ';';
+      }
+      const star25 = Array(25).fill('★').join(' ');
+      return { ...p, shell, wrap, card, deco, hasStars: stars, stars: star25,
+        starS: 'height:' + (FP ? 9 : 11) + 'px;overflow:hidden;line-height:1;font-size:' + (FP ? 8 : 10) + 'px;color:' + sc + ';text-align:justify;text-align-last:justify;white-space:normal',
+        chip: chip(oc), label: p.org || p.sport,
+        av: 'width:' + AV + 'px;height:' + AV + 'px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:"Orbitron",sans-serif;font-weight:800;font-size:' + (FP ? 14 : 17) + 'px;color:#0A1124;' + av + 'background:' + (p.official ? 'linear-gradient(135deg,#F6E08A,#D4AF37)' : 'radial-gradient(circle at 35% 28%,#fff 0%,' + sc + ' 60%,#000 150%)'),
+        init: p.official ? 'C' : (p.name === 'You' ? 'Y' : '?'),
+        meta: (p.handle ? p.handle + ' · ' : '') + p.when,
+        tag: p.official ? 'Official' : (p.src === 'Combat' ? 'Posted on Combat' : 'via ' + p.src),
+        tagS: 'font-size:' + (FP ? 11 : 12) + 'px;padding:3px 8px;border-radius:6px;white-space:nowrap;' + (p.official ? 'background:rgba(212,175,55,.18);color:#F6E08A;border:1px solid rgba(212,175,55,.5)' : 'color:' + SRC[p.src] + ';border:1px solid ' + SRC[p.src] + '66'),
+        hasLink: !p.official && p.src !== 'Combat', link: 'View original on ' + p.src,
+        mediaS: 'height:' + (FP ? 150 : 200) + 'px;border-radius:10px;background:linear-gradient(135deg,' + sc + '40,#0A1124 80%);display:flex;align-items:center;justify-content:center;color:#9FB2D6;font-size:' + (FP ? 13 : 14) + 'px',
+        likeLabel: (liked ? 'Fired up ' : 'Fire ') + n0, replyLabel: 'Replies ' + p.n[1],
+        likeS: 'min-height:34px;padding:0 12px;border-radius:999px;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:' + (FP ? 12 : 13) + 'px;cursor:pointer;' + (liked ? 'border:1px solid ' + sc + ';background:' + sc + '33;color:' + sc : 'border:1px solid rgba(120,170,255,.3);background:transparent;color:#C9D8F5'),
+        actS: 'min-height:34px;padding:0 12px;border-radius:999px;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:' + (FP ? 12 : 13) + 'px;border:1px solid rgba(120,170,255,.3);background:transparent;color:#C9D8F5;cursor:pointer',
+        like: () => this.setState({ likes: { ...likes, [p.id]: !liked } }) }; };
+    const feedItems = ALLP.filter(p => (feedF === 'all' || p.sport === feedF) && (feedO === 'all' || p.org === feedO)).map(mkPost);
+    const homePosts = BASE.slice(0, 3).map(mkPost);
+    const feedFilters = ['all', ...SPK].map(k => ({ label: k === 'all' ? 'All' : k, style: pill(feedF === k, k === 'all' ? null : SPORTS[k].c), pick: () => this.setState({ feedF: k, feedO: 'all' }) }));
+    const hasOrgFilters = feedF !== 'all';
+    const orgFilters = !hasOrgFilters ? [] : ['all', ...SPORTS[feedF].orgs.filter(o => o !== 'Other')].map(o => ({ label: o === 'all' ? 'All organizations' : o, style: pill(feedO === o, o === 'all' ? null : (ORGX[o] || SPORTS[feedF].c)), pick: () => this.setState({ feedO: o }) }));
+    const cmp = { ct: this.state.ct || '', setText: (e) => { this.state.ct = e.target.value; }, hasSport: !!cs, noSport: !cs,
+      sportChips: SPK.map(k => ({ label: k, style: pill(cs === k, SPORTS[k].c), pick: () => this.setState({ cs: cs === k ? null : k, co: null }) })),
+      orgChips: !cs ? [] : SPORTS[cs].orgs.map(o => ({ label: o, style: pill(co === o, (ORGX[o] || SPORTS[cs].c)), pick: () => this.setState({ co: co === o ? null : o }) })),
+      postStyle: 'flex-shrink:0;min-height:' + (FP ? 44 : 48) + 'px;padding:0 ' + (FP ? 26 : 34) + 'px;border:0;font-family:"Orbitron",sans-serif;font-weight:800;font-size:13px;letter-spacing:.12em;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%);cursor:pointer;' + (cs ? 'background:#D4AF37;color:#0A1124' : 'background:rgba(120,170,255,.16);color:#7F93B8'),
+      post: () => { const t = (this.state.ct || '').trim(); if (!cs || !t) return; this.setState({ posts: [{ id:'u' + Date.now(), sport: cs, org: co, official:false, name:'You', handle:'@you', src:'Combat', text: t, when:'now', media:false, n:[0,0] }, ...(this.state.posts || [])], ct:'', cs:null, co:null }); } };
+    const goFeed = () => this.setState({ page: 'news' });
     const creators = [['[Creator]','X','#FF3B4E'],['[Creator]','Instagram','#FF8A1F'],['[Creator]','YouTube','#A87BFF'],['[Creator]','TikTok','#5CC8FF']].map(([n, src, c]) => ({ n, src,
       av: 'width:' + (FP ? 56 : 68) + 'px;height:' + (FP ? 56 : 68) + 'px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#fff 0%,' + c + ' 60%,#000 150%);display:flex;align-items:center;justify-content:center;font-family:"Orbitron",sans-serif;font-weight:800;font-size:' + (FP ? 18 : 22) + 'px;color:#0A1124' }));
     const connectPlatforms = ['X','Instagram','YouTube','TikTok','Facebook'].map(p => ({ p, go: () => {} }));
@@ -813,7 +907,7 @@ class Component extends DCLogic {
     return {
       isHome: false, notHome: true, pageTitle: titles[page] || '',
       isFantasy: page === 'leagues', isScores: page === 'fights', isCombat: page === 'home',
-      ...mineVals, ...pfVals, isLeagues: false, isConnect: page === 'connect', feedItems, feedFilters, creators, connectPlatforms, goConnect: () => this.setState({ page: 'connect' }), goMock: () => this.setState({ page: 'mock' }), isMock: page === 'mock', sl: slideV, slideDots, mockTiles, promos, publicLeagues, showPublic: cur.leagues, isUsername: page === 'username', isFights: page === 'fights', isNews: page === 'news', isMe: page === 'me',
+      ...mineVals, ...pfVals, isLeagues: false, isConnect: page === 'connect', feedItems, feedFilters, creators, homePosts, cmp, orgFilters, hasOrgFilters, goFeed, connectPlatforms, goConnect: () => this.setState({ page: 'connect' }), goMock: () => this.setState({ page: 'mock' }), isMock: page === 'mock', sl: slideV, slideDots, mockTiles, promos, publicLeagues, showPublic: cur.leagues, isUsername: page === 'username', isFights: page === 'fights', isNews: page === 'news', isMe: page === 'me',
       tabs: [['fantasy','FANTASY'],['scores','SCORES']].map(([k, l]) => ({ label:l, on:tab===k, style:tabBtn(tab===k), pick:() => this.setState({ tab:k }) })),
       orgs: ['ufc','bkfc','raf'].map(k => ({ label:O[k].label, on:org===k, ...orgShape(k, org===k), pick:() => this.setState({ org:k }) })),
       accent:cur.c, accent2:cur.c2, accentSoft:accent, accentLine:cur.line,
