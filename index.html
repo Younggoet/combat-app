@@ -52,7 +52,7 @@
       var prof=await A.getProfile(u.id);
       if(prof&&prof.display_name){
         ME.signedIn=true;
-        try{var pr2=await A.client.from('profiles').select('display_name,avatar_shape,avatar_color,avatar_url').eq('id',u.id).single();var d=pr2.data||{};ME.profile={name:d.display_name||prof.display_name,shape:d.avatar_shape||'octagon',color:d.avatar_color||'#FF3B4E',photo:d.avatar_url||''}}catch(e){ME.profile={name:prof.display_name,shape:'octagon',color:'#FF3B4E',photo:''}}
+        try{var pr2=await A.client.from('profiles').select('display_name,avatar_shape,avatar_color,avatar_url,fav_sport,fav_fighter,bio').eq('id',u.id).single();var d=pr2.data||{};ME.profile={name:d.display_name||prof.display_name,shape:d.avatar_shape||'octagon',color:d.avatar_color||'#FF3B4E',photo:d.avatar_url||'',fav:d.fav_sport||'',fighter:d.fav_fighter||'',bio:d.bio||''}}catch(e){ME.profile={name:prof.display_name,shape:'octagon',color:'#FF3B4E',photo:''}}
         var sb3=A.client,tr=await sb3.from('teams').select('id,league_id,leagues!inner(*)').eq('owner_user_id',u.id);
         var ls=((tr.data||[]).map(function(r){return r.leagues})).filter(function(l){return l.team_count&&!l.archived}).sort(function(x,y){return y.created_at.localeCompare(x.created_at)});
         var ids=ls.map(function(l){return l.id}),cnt={};
@@ -77,7 +77,7 @@
     ME.saveProfile=async function(p){
       var n=(p.name||'').trim().replace(/\s+/g,' ');
       if(n.length<2)throw new Error('Use at least 2 characters for your username');
-      var r=await A.client.from('profiles').upsert({id:ME.userId,display_name:n,avatar_shape:p.shape,avatar_color:p.color,avatar_url:p.photo||null},{onConflict:'id'});
+      var r=await A.client.from('profiles').upsert({id:ME.userId,display_name:n,avatar_shape:p.shape,avatar_color:p.color,avatar_url:p.photo||null,fav_sport:p.fav||null,fav_fighter:p.fighter||null,bio:p.bio||null},{onConflict:'id'});
       if(r.error)throw new Error("Could not save your profile");
       return 'Profile saved'};
   })();

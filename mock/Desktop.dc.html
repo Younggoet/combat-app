@@ -27,7 +27,7 @@ button:focus-visible{outline:2px solid #D4AF37;outline-offset:2px}
     <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:900;letter-spacing:.16em;background:linear-gradient(180deg,#F6E08A,#D4AF37 58%,#9C7A1E);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 14px rgba(232,201,58,.35));font-size:38px">COMBAT</div>
     <div style="display:flex;gap:8px">
       <sc-for list="{{nav}}" as="n" hint-placeholder-count="5">
-        <button onClick="{{ n.pick }}" aria-current="{{ n.on }}" style="{{ n.style }}">{{ n.label }}</button>
+        <button onClick="{{ n.pick }}" aria-current="{{ n.on }}" style="{{ n.style }}">{{ n.label }}<sc-if value="{{ n.hasAv }}" hint-placeholder-val="{{ false }}"><div style="{{ n.av.box }}"><div style="{{ n.av.outer }}"><div style="{{ n.av.inner }}">{{ n.av.initial }}</div><sc-for list="{{ n.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ n.av.line }}"></div></div></div></sc-if></button>
       </sc-for>
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
@@ -510,9 +510,13 @@ button:focus-visible{outline:2px solid #D4AF37;outline-offset:2px}
           <div>
             <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;color:#D4AF37;margin-bottom:8px">COLOR</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <sc-for list="{{ colorOpts }}" as="k" hint-placeholder-count="9"><button aria-label="Color" aria-pressed="{{ k.on }}" onClick="{{ k.pick }}" style="{{ k.style }}"></button></sc-for>
+              <sc-for list="{{ colorOpts }}" as="k" hint-placeholder-count="9"><button aria-label="Color" aria-pressed="{{ k.on }}" onClick="{{ k.pick }}" style="{{ k.style }}"></button></sc-for><label aria-label="Pick any color" style="width:36px;height:36px;border-radius:50%;cursor:pointer;position:relative;overflow:hidden;box-shadow:0 0 0 1px rgba(120,170,255,.3);background:conic-gradient(#FF3B4E,#FFC23D,#7DE08A,#5CC8FF,#7C5CFF,#FF5CA8,#FF3B4E);display:block"><input type="color" value="{{ pf.colorVal }}" onChange="{{ pf.pickColor }}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0"></label>
             </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:12px"><span style="font-size:13px;color:#9FB2D6;white-space:nowrap">Color code</span><input value="{{ pf.hex }}" onInput="{{ pf.setHex }}" onChange="{{ pf.applyHex }}" maxlength="7" autocomplete="off" placeholder="#FF3B4E" style="width:130px;box-sizing:border-box;background:#0A1124;border:1px solid rgba(120,170,255,.25);border-radius:8px;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px;letter-spacing:.06em;padding:9px 12px;outline:none"></div>
           </div>
+          <div><div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;color:#D4AF37;margin-bottom:8px">FAVORITE COMBAT SPORT</div><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ favOpts }}" as="o" hint-placeholder-count="4"><button onClick="{{ o.pick }}" class="lift" style="{{ o.style }}">{{ o.label }}</button></sc-for></div></div>
+          <div><div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;color:#D4AF37;margin-bottom:8px">FAVORITE FIGHTER</div><input value="{{ pf.fighter }}" onInput="{{ pf.setFighter }}" maxlength="40" autocomplete="off" placeholder="Who do you never miss?" style="width:100%;box-sizing:border-box;background:#0A1124;border:1px solid rgba(120,170,255,.25);border-radius:8px;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px;padding:10px 12px;outline:none"></div>
+          <div><div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;color:#D4AF37;margin-bottom:8px">BIO</div><input value="{{ pf.bio }}" onInput="{{ pf.setBio }}" maxlength="160" autocomplete="off" placeholder="One line about you as a fan" style="width:100%;box-sizing:border-box;background:#0A1124;border:1px solid rgba(120,170,255,.25);border-radius:8px;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px;padding:10px 12px;outline:none"></div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
             <label class="lift" style="min-height:44px;padding:0 18px;border:1px solid rgba(120,170,255,.35);color:#C9D8F5;border-radius:8px;font-family:'Orbitron',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em;display:inline-flex;align-items:center;cursor:pointer">UPLOAD PHOTO<input type="file" accept="image/*" onChange="{{ pf.pickFile }}" style="display:none"></label>
             <button class="lift" onClick="{{ pf.noPhoto }}" style="min-height:44px;padding:0 14px;border:0;background:none;color:#8FA3C7;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px">Remove photo</button>
@@ -681,7 +685,7 @@ class Component extends DCLogic {
 
     const navDef = [['home','Combat'],['leagues','Fantasy'],['fights','Upcoming/Live'],['news','Feed'],['me','Me']];
     const nav = navDef.map(([k, label]) => ({ label, on: page === k, pick: () => this.setState({ page: k }),
-      style: 'min-height:58px;padding:0 34px;border:0;text-transform:uppercase;font-family:Orbitron,"Chakra Petch",sans-serif;font-weight:800;font-size:15px;letter-spacing:.14em;background:none;cursor:pointer;' + (page === k ? 'color:#D4AF37;' : 'color:#B6C6E6;') }));
+      style: 'min-height:58px;padding:0 34px;border:0;display:inline-flex;align-items:center;gap:12px;text-transform:uppercase;font-family:Orbitron,"Chakra Petch",sans-serif;font-weight:800;font-size:15px;letter-spacing:.14em;background:none;cursor:pointer;' + (page === k ? 'color:#D4AF37;' : 'color:#B6C6E6;') }));
     // ---------- Combat home: slideshow, mock draft, live, promotions ----------
     const HP = false;
     const SLIDES = [
@@ -797,7 +801,7 @@ class Component extends DCLogic {
     ] };
     const myLeagues = ME.leagues.map(l => ({ name: l.name, meta: l.meta, when: l.when || '', open: () => (ME.open ? ME.open(l) : this.setState({ page: 'leagues' })) }));
     const mineVals = { showMine: !!ME.signedIn, myLeagues, noMine: !myLeagues.length, viewAll: () => (ME.viewAll ? ME.viewAll() : this.setState({ page: 'leagues' })), mineCreate: () => (ME.create ? ME.create() : this.setState({ page: 'username' })), mineJoin: () => (ME.join ? ME.join() : this.setState({ page: 'leagues' })), signLabel: ME.label || 'SIGN IN', signGo: () => (ME.signGo ? ME.signGo() : null) };
-    const pf0 = (ME.profile) || { shape: 'octagon', color: '#FF3B4E', photo: '', name: 'Rasta Willy' };
+    const pf0 = (ME.profile) || { shape: 'octagon', color: '#FF3B4E', photo: '', name: 'Rasta Willy', fav: '', fighter: '', bio: '' };
     if (!this.state.pf) this.state.pf = { ...pf0, msg: '' };
     const PF = this.state.pf;
     const setPf = (p) => this.setState({ pf: { ...this.state.pf, msg: '', ...p } });
@@ -821,14 +825,23 @@ class Component extends DCLogic {
     const initial = ((PF.name || '?').trim()[0] || '?').toUpperCase();
     const pv = avShape(PF.shape, PF.color, 190, PF.photo, initial);
     const shapeOpts = [['octagon', 'Octagon'], ['ring', 'BKFC ring'], ['stars', 'RAF 50 star circle']].map(([k, label]) => { const on = PF.shape === k; return { label, on, ...avShape(k, PF.color, 64, PF.photo, initial), btn: 'width:84px;height:84px;display:flex;align-items:center;justify-content:center;border-radius:14px;cursor:pointer;background:#0A1124;border:2px solid ' + (on ? '#D4AF37' : 'rgba(120,170,255,.2)'), pick: () => setPf({ shape: k }) }; });
-    const colorOpts = ['#FF3B4E', '#FF8A1F', '#A87BFF', '#D4AF37', '#F6E08A', '#7DE08A', '#FF5CA8', '#5C8BFF', '#E8F0FF'].map(c => { const on = PF.color.toLowerCase() === c.toLowerCase(); return { on, style: 'width:36px;height:36px;border-radius:50%;padding:0;cursor:pointer;background:' + c + ';border:3px solid ' + (on ? '#E8F0FF' : 'transparent') + ';box-shadow:0 0 0 1px rgba(120,170,255,.3)', pick: () => setPf({ color: c }) }; });
-    const pfVals = { pv, shapeOpts, colorOpts, pf: {
-      name: PF.name, msg: PF.msg,
+    const colorOpts = ['#FF3B4E', '#FF5A5F', '#FF8A1F', '#FFC23D', '#F6E08A', '#D4AF37', '#B8E04B', '#7DE08A', '#2FBF71', '#14B8A6', '#5CC8FF', '#4DA3FF', '#5C8BFF', '#3B5BDB', '#7C5CFF', '#A87BFF', '#C77DFF', '#FF5CA8', '#FF6FB5', '#E83E8C', '#B3263A', '#8B5A2B', '#C9A27A', '#FFFFFF', '#E8F0FF', '#B6C6E6', '#8FA3C7', '#6B7A99'].map(c => { const on = PF.color.toLowerCase() === c.toLowerCase(); return { on, style: 'width:36px;height:36px;border-radius:50%;padding:0;cursor:pointer;background:' + c + ';border:3px solid ' + (on ? '#E8F0FF' : 'transparent') + ';box-shadow:0 0 0 1px rgba(120,170,255,.3)', pick: () => setPf({ color: c }) }; });
+    const favOpts = [['MMA / UFC', '#FF3B4E'], ['BKFC', '#FF8A1F'], ['RAF wrestling', '#A87BFF'], ['Boxing', '#4DA3FF']].map(([k, c]) => ({ label: k, style: pill(PF.fav === k, c), pick: () => setPf({ fav: PF.fav === k ? '' : k }) }));
+    const pfVals = { pv, shapeOpts, colorOpts, favOpts, pf: {
+      name: PF.name, msg: PF.msg, hex: String(PF.color || '').toUpperCase(), colorVal: /^#[0-9a-f]{6}$/i.test(PF.color || '') ? PF.color : '#ff3b4e', fighter: PF.fighter || '', bio: PF.bio || '',
+      setHex: (e) => { this.state.pf.hexTyped = e.target.value; },
+      applyHex: (e) => { let v = String(e.target.value || '').trim().replace(/^#/, ''); if (/^[0-9a-f]{3}$/i.test(v)) v = v.split('').map(x => x + x).join(''); if (/^[0-9a-f]{6}$/i.test(v)) setPf({ color: '#' + v.toUpperCase() }); else setPf({ msg: 'Use a color code like #FF3B4E' }); },
+      pickColor: (e) => setPf({ color: String(e.target.value).toUpperCase() }),
+      setFighter: (e) => { this.state.pf.fighter = e.target.value; },
+      setBio: (e) => { this.state.pf.bio = e.target.value; },
       setName: (e) => { this.state.pf.name = e.target.value; },
       pickFile: (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; if (ME.upload) { setPf({ msg: 'Uploading photo' }); ME.upload(f).then(u => setPf({ photo: u, msg: 'Photo added. Save to keep it.' })).catch(() => setPf({ msg: 'Could not upload that photo' })); } else setPf({ photo: URL.createObjectURL(f) }); },
       noPhoto: () => setPf({ photo: '' }),
-      save: () => { const p = this.state.pf; if (ME.saveProfile) { setPf({ msg: 'Saving' }); ME.saveProfile({ shape: p.shape, color: p.color, photo: p.photo, name: (p.name || '').trim() }).then(m => setPf({ msg: m || 'Profile saved' })).catch(er => setPf({ msg: (er && er.message) || 'Could not save your profile' })); } else setPf({ msg: 'Profile saved' }); }
+      save: () => { const p = this.state.pf; if (ME.saveProfile) { setPf({ msg: 'Saving' }); ME.saveProfile({ shape: p.shape, color: p.color, photo: p.photo, name: (p.name || '').trim(), fav: p.fav || '', fighter: (p.fighter || '').trim(), bio: (p.bio || '').trim() }).then(m => setPf({ msg: m || 'Profile saved' })).catch(er => setPf({ msg: (er && er.message) || 'Could not save your profile' })); } else setPf({ msg: 'Profile saved' }); }
     } };
+    const NOAV = {box:'',outer:'',inner:'',initial:'',deco:[],line:'display:none'};
+    const navAv = ME.signedIn ? avShape(PF.shape, PF.color, 34, PF.photo, initial) : null;
+    const navFull = nav.map(n => n.label === 'Me' && navAv ? { ...n, hasAv: true, noAv: false, av: navAv } : { ...n, hasAv: false, noAv: true, av: NOAV });
     const publicLeagues = cur.leagues ? [
       { name:'Bayou Brawlers', meta:'Card Redraft · 8/12 teams · Dec 5 to Jan 23', pick:() => this.setState({ page:'username' }) },
       { name:'Octagon Alley', meta:'Card Redraft · 5/10 teams · Dec 12 to Jan 30', pick:() => this.setState({ page:'username' }) },
@@ -916,7 +929,7 @@ class Component extends DCLogic {
       heroKicker:cur.kicker, heroTitle:cur.title, heroSub:cur.sub, heroStatus:cur.status, heroCta:cur.cta, heroGo:() => { if (cur.leagues) this.setState({ page:'username' }); }, heroView:() => this.setState({ page:'fights' }),
       orgName:cur.name, hasLeagues:cur.leagues, noLeagues:!cur.leagues, emptyTitle:cur.eTitle || '', emptyBody:cur.eBody || '',
       modes: cur.modes.map(([name, desc, status]) => ({ name, desc, status, badge: badge(status) })),
-      cards, cardsStyled, hs: heroCfg(), footCols, filters, sections, leagueRows, events, fighters, fightTabs, news, meRows, nav,
+      cards, cardsStyled, hs: heroCfg(), footCols, filters, sections, leagueRows, events, fighters, fightTabs, news, meRows, nav: navFull,
       showEvents: fightTab === 'events', showFighters: fightTab === 'fighters'
     };
   }
