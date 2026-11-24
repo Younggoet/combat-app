@@ -138,6 +138,7 @@ button:focus-visible{outline:2px solid #D4AF37;outline-offset:2px}
             </div>
             <div style="font-size:15px;line-height:1.4">{{ f.text }}</div>
             <sc-if value="{{ f.media }}" hint-placeholder-val="{{ true }}"><div style="{{ f.mediaS }}">[Video or image]</div></sc-if>
+            <sc-if value="{{ f.hasPoll }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:6px"><div style="{{ f.pollS }}">{{ f.pollA }}</div><div style="{{ f.pollS }}">{{ f.pollB }}</div></div></sc-if>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
               <div style="{{ f.tagS }}">{{ f.tag }}</div>
               <sc-if value="{{ f.hasLink }}" hint-placeholder-val="{{ true }}"><div style="font-size:12px;color:#D4AF37">{{ f.link }}</div></sc-if>
@@ -401,8 +402,14 @@ button:focus-visible{outline:2px solid #D4AF37;outline-offset:2px}
     <!-- ============ FEED ============ -->
     <sc-if value="{{ isNews }}" hint-placeholder-val="{{ false }}">
       <div style="display:flex;flex-direction:column;gap:14px">
-      <div style="flex-shrink:0;padding:14px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:14px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px"><button onClick="{{ cmp.toggle }}" class="lift" style="flex:1;min-height:48px;border:0;background:#D4AF37;color:#0A1124;font-family:'Orbitron',sans-serif;font-weight:800;font-size:13px;letter-spacing:.12em;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">+ {{ cmp.toggleLabel }}</button><button onClick="{{ goConnect }}" class="lift" style="flex:1;min-height:48px;border:1px solid rgba(120,170,255,.35);background:transparent;color:#C9D8F5;border-radius:8px;font-family:'Orbitron',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em">CONNECT ACCOUNT</button></div>
+      <sc-if value="{{ cmp.open }}" hint-placeholder-val="{{ false }}"><div style="flex-shrink:0;padding:14px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:14px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px">New post</div><button onClick="{{ cmp.toggle }}" class="lift" style="border:0;background:none;color:#8FA3C7;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;cursor:pointer">Cancel</button></div>
         <input value="{{ cmp.ct }}" onInput="{{ cmp.setText }}" maxlength="280" autocomplete="off" placeholder="Post about combat sports" style="width:100%;box-sizing:border-box;background:none;border:0;border-bottom:2px solid #D4AF37;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:17px;padding:8px 0;outline:none">
+        <div style="display:flex;gap:8px;overflow-x:auto;flex-wrap:nowrap" class="scroll"><sc-for list="{{ cmp.tools }}" as="t" hint-placeholder-count="7"><button aria-label="{{ t.aria }}" title="{{ t.aria }}" onClick="{{ t.pick }}" class="lift" style="{{ t.style }}"><sc-if value="{{ t.isSvg }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ t.d }}"/></svg></sc-if><sc-if value="{{ t.isTxt }}" hint-placeholder-val="{{ false }}"><span>{{ t.txt }}</span></sc-if><sc-if value="{{ t.showName }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:12px">{{ t.name }}</span></sc-if></button></sc-for></div>
+        <sc-if value="{{ cmp.hasTray }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ cmp.tray }}" as="c" hint-placeholder-count="6"><button onClick="{{ c.pick }}" class="lift" style="{{ c.style }}">{{ c.label }}</button></sc-for></div></sc-if>
+        <sc-if value="{{ cmp.isPoll }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px"><input value="{{ cmp.pa }}" onInput="{{ cmp.setPa }}" maxlength="60" autocomplete="off" placeholder="Poll option one" style="box-sizing:border-box;background:#0A1124;border:1px solid rgba(120,170,255,.25);border-radius:10px;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:15px;padding:0 14px;min-height:42px;outline:none"><input value="{{ cmp.pb }}" onInput="{{ cmp.setPb }}" maxlength="60" autocomplete="off" placeholder="Poll option two" style="box-sizing:border-box;background:#0A1124;border:1px solid rgba(120,170,255,.25);border-radius:10px;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:15px;padding:0 14px;min-height:42px;outline:none"></div></sc-if>
+        <sc-if value="{{ cmp.isSched }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:8px;flex-wrap:wrap"><input type="date" value="{{ cmp.sd }}" onChange="{{ cmp.setSd }}" style="box-sizing:border-box;background:#0A1124;border:1px solid rgba(120,170,255,.25);border-radius:10px;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:15px;padding:0 12px;min-height:42px;color-scheme:dark"><input type="time" value="{{ cmp.st }}" onChange="{{ cmp.setSt }}" style="box-sizing:border-box;background:#0A1124;border:1px solid rgba(120,170,255,.25);border-radius:10px;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:15px;padding:0 12px;min-height:42px;color-scheme:dark"><button onClick="{{ cmp.clearSched }}" class="lift" style="border:0;background:none;color:#8FA3C7;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;cursor:pointer">Clear</button></div><div style="font-size:13px;color:#9FB2D6">{{ cmp.schedHint }}</div></div></sc-if>
         <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:13px;color:#9FB2D6">What is it about?</div>
         <div class="scroll" style="display:flex;gap:6px;overflow-x:auto;margin:0 -14px;padding:0 14px">
           <sc-for list="{{ cmp.sportChips }}" as="c" hint-placeholder-count="4"><button onClick="{{ c.pick }}" class="lift" style="{{ c.style }}">{{ c.label }}</button></sc-for>
@@ -412,8 +419,9 @@ button:focus-visible{outline:2px solid #D4AF37;outline-offset:2px}
         <sc-if value="{{ cmp.hasSport }}" hint-placeholder-val="{{ false }}"><div class="scroll" style="display:flex;gap:6px;overflow-x:auto;margin:0 -14px;padding:0 14px">
           <sc-for list="{{ cmp.orgChips }}" as="c" hint-placeholder-count="6"><button onClick="{{ c.pick }}" class="lift" style="{{ c.style }}">{{ c.label }}</button></sc-for>
         </div></sc-if>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div style="font-size:12px;color:#7F93B8;line-height:1.4">Your post takes the shape of its sport on the feed.</div><button onClick="{{ cmp.post }}" class="lift" style="{{ cmp.postStyle }}">POST</button></div>
-      </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div style="font-size:12px;color:#7F93B8;line-height:1.4">Your post takes the shape of its sport on the feed.</div><button onClick="{{ cmp.post }}" class="lift" style="{{ cmp.postStyle }}">{{ cmp.postLabel }}</button></div>
+      </div></sc-if>
+      <sc-if value="{{ cmp.hasSched }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px;"><div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase">Scheduled posts</div><sc-for list="{{ cmp.schedItems }}" as="s" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#0F1A33;border:1px dashed rgba(212,175,55,.5);border-radius:12px"><div style="{{ s.chip }}">{{ s.label }}</div><div style="flex:1;min-width:0"><div style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.text }}</div><div style="font-size:12px;color:#D4AF37;margin-top:2px">Posts {{ s.at }}</div></div><button onClick="{{ s.cancel }}" class="lift" style="border:0;background:none;color:#8FA3C7;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;cursor:pointer">Cancel</button></div></sc-for></div></sc-if>
       <div class="scroll" style="display:flex;gap:6px;overflow-x:auto;margin:0 -20px;padding:0 20px"><sc-for list="{{feedFilters}}" as="f" hint-placeholder-count="5"><button onClick="{{ f.pick }}" class="lift" style="{{ f.style }}">{{ f.label }}</button></sc-for></div>
       <sc-if value="{{ hasOrgFilters }}" hint-placeholder-val="{{ false }}"><div class="scroll" style="display:flex;gap:6px;overflow-x:auto;margin:0 -20px;padding:0 20px"><sc-for list="{{orgFilters}}" as="f" hint-placeholder-count="4"><button onClick="{{ f.pick }}" class="lift" style="{{ f.style }}">{{ f.label }}</button></sc-for></div></sc-if>
       <div style="display:flex;flex-direction:column;gap:16px">
@@ -428,6 +436,7 @@ button:focus-visible{outline:2px solid #D4AF37;outline-offset:2px}
             </div>
             <div style="font-size:15px;line-height:1.4">{{ f.text }}</div>
             <sc-if value="{{ f.media }}" hint-placeholder-val="{{ true }}"><div style="{{ f.mediaS }}">[Video or image]</div></sc-if>
+            <sc-if value="{{ f.hasPoll }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:6px"><div style="{{ f.pollS }}">{{ f.pollA }}</div><div style="{{ f.pollS }}">{{ f.pollB }}</div></div></sc-if>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
               <div style="{{ f.tagS }}">{{ f.tag }}</div>
               <sc-if value="{{ f.hasLink }}" hint-placeholder-val="{{ true }}"><div style="font-size:12px;color:#D4AF37">{{ f.link }}</div></sc-if>
@@ -776,7 +785,7 @@ class Component extends DCLogic {
       { id:'p2', sport:'BKFC', org:'BKFC', official:false, name:'[Creator name]', handle:'@handle', src:'Instagram', text:'[Creator post about BKFC Hershey]', when:'5h', media:true, n:[96,7] },
       { id:'p3', sport:'Wrestling', org:'RAF', official:false, name:'[Creator name]', handle:'@handle', src:'YouTube', text:'[Creator video about RAF 15]', when:'8h', media:true, n:[58,4] },
       { id:'p4', sport:'MMA', org:'UFC', official:true, name:'Combat News', handle:'', src:'Combat', text:'[Roster move or card change]', when:'3h', media:false, n:[131,22] },
-      { id:'p5', sport:'Boxing', org:'Top Rank', official:false, name:'[Creator name]', handle:'@handle', src:'TikTok', text:'[Creator post about a boxing card]', when:'1d', media:false, n:[40,3] },
+      { id:'p5', sport:'Boxing', org:'Top Rank', official:false, name:'[Creator name]', handle:'@handle', src:'TikTok', text:'[Creator post about a boxing card]', when:'1d', media:false, poll:{ a:'[Option one]', b:'[Option two]' }, n:[40,3] },
       { id:'p6', sport:'BKFC', org:'BKFC', official:true, name:'Combat News', handle:'', src:'Combat', text:'[BKFC card announcement]', when:'1d', media:false, n:[77,9] },
       { id:'p7', sport:'MMA', org:'PFL', official:false, name:'[Creator name]', handle:'@handle', src:'YouTube', text:'[Creator post about a PFL result]', when:'1d', media:false, n:[35,2] }
     ];
@@ -811,10 +820,10 @@ class Component extends DCLogic {
       const star25 = Array(25).fill('★').join(' ');
       return { ...p, shell, wrap, card, deco, hasStars: stars, stars: star25,
         starS: 'height:' + (FP ? 9 : 11) + 'px;overflow:hidden;line-height:1;font-size:' + (FP ? 8 : 10) + 'px;color:' + sc + ';text-align:justify;text-align-last:justify;white-space:normal',
-        chip: chip(oc), label: p.org || p.sport,
+        chip: chip(oc), label: p.org || p.sport, hasPoll: !!p.poll, pollA: p.poll ? p.poll.a : '', pollB: p.poll ? p.poll.b : '', pollS: 'padding:10px 14px;border-radius:10px;border:1px solid ' + sc + '88;background:' + sc + '14;font-size:' + (FP ? 15 : 17) + 'px',
         av: 'width:' + AV + 'px;height:' + AV + 'px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:"Orbitron",sans-serif;font-weight:800;font-size:' + (FP ? 14 : 17) + 'px;color:#0A1124;' + av + 'background:' + (p.official ? 'linear-gradient(135deg,#F6E08A,#D4AF37)' : 'radial-gradient(circle at 35% 28%,#fff 0%,' + sc + ' 60%,#000 150%)'),
         init: p.official ? 'C' : (p.name === 'You' ? 'Y' : '?'),
-        meta: (p.handle ? p.handle + ' · ' : '') + p.when,
+        meta: (p.handle ? p.handle + ' · ' : '') + p.when + (p.aud === 'Friends' ? ' · Friends only' : ''),
         tag: p.official ? 'Official' : (p.src === 'Combat' ? 'Posted on Combat' : 'via ' + p.src),
         tagS: 'font-size:' + (FP ? 11 : 12) + 'px;padding:3px 8px;border-radius:6px;white-space:nowrap;' + (p.official ? 'background:rgba(212,175,55,.18);color:#F6E08A;border:1px solid rgba(212,175,55,.5)' : 'color:' + SRC[p.src] + ';border:1px solid ' + SRC[p.src] + '66'),
         hasLink: !p.official && p.src !== 'Combat', link: 'View original on ' + p.src,
@@ -828,11 +837,33 @@ class Component extends DCLogic {
     const feedFilters = ['all', ...SPK].map(k => ({ label: k === 'all' ? 'All' : k, style: pill(feedF === k, k === 'all' ? null : SPORTS[k].c), pick: () => this.setState({ feedF: k, feedO: 'all' }) }));
     const hasOrgFilters = feedF !== 'all';
     const orgFilters = !hasOrgFilters ? [] : ['all', ...SPORTS[feedF].orgs.filter(o => o !== 'Other')].map(o => ({ label: o === 'all' ? 'All organizations' : o, style: pill(feedO === o, o === 'all' ? null : (ORGX[o] || SPORTS[feedF].c)), pick: () => this.setState({ feedO: o }) }));
-    const cmp = { ct: this.state.ct || '', setText: (e) => { this.state.ct = e.target.value; }, hasSport: !!cs, noSport: !cs,
+    const cOpen = !!this.state.cOpen, cTool = this.state.cTool || null, cMedia = !!this.state.cMedia, cAud = this.state.cAud || 'Everyone';
+    const addTxt = (t) => { const c = this.state.ct || ''; this.setState({ ct: c + (c && !/\s$/.test(c) ? ' ' : '') + t + ' ' }); };
+    const TOOLS = [['media', 'Photo or video', 'M4 5h16v14H4zM4 15l4-4 4 4 3-3 5 5M9 9h.01'], ['tag', 'Hashtag', '', '#'], ['mention', 'Mention', '', '@'], ['emoji', 'Emoji', 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8.5 14a4.5 4.5 0 0 0 7 0M9 9.5h.01M15 9.5h.01'], ['poll', 'Poll', 'M5 20V10M12 20V4M19 20v-7'], ['sched', 'Schedule', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'], ['aud', 'Audience', 'M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 20a6 6 0 0 1 12 0M14 20a6 6 0 0 1 8 0']];
+    const toolV = TOOLS.map(([k, label, d, txt]) => { const on = k === 'media' ? cMedia : k === 'aud' ? cAud === 'Friends' : cTool === k || (k === 'sched' && !!(this.state.sd && this.state.st)) || (k === 'poll' && !!((this.state.pa || '').trim() && (this.state.pb || '').trim()));
+      return { label: k === 'aud' ? 'Audience: ' + cAud : label, d, txt, isSvg: !!d, isTxt: !d, aria: k === 'aud' ? 'Audience: ' + cAud : label,
+        style: 'flex:0 0 auto;min-width:40px;height:40px;display:flex;align-items:center;justify-content:center;gap:6px;padding:0 ' + (k === 'aud' ? 12 : 0) + 'px;border-radius:' + (k === 'aud' ? 999 : 12) + 'px;cursor:pointer;font-family:"Orbitron",sans-serif;font-weight:800;font-size:17px;border:1px solid ' + (on ? '#D4AF37' : 'rgba(120,170,255,.3)') + ';background:' + (on ? 'rgba(212,175,55,.16)' : 'transparent') + ';color:' + (on ? '#F6E08A' : '#C9D8F5'),
+        showName: k === 'aud', name: cAud === 'Friends' ? 'Friends only' : 'Everyone',
+        pick: () => (k === 'media' ? this.setState({ cMedia: !cMedia }) : k === 'aud' ? this.setState({ cAud: cAud === 'Friends' ? 'Everyone' : 'Friends' }) : this.setState({ cTool: cTool === k ? null : k })) }; });
+    const TRAYS = { tag: ['#UFC', '#FightNight', '#CardRedraft', '#MMA', '#BKFC', '#BareKnuckle', '#RAF', '#Wrestling', '#Boxing', '#MuayThai', '#BJJ'], mention: ['@Octagon_Alley', '@KnuckleNate', '@MatGeneral', '@BayouBrawler', '@SubOnly', '@SlapKing'], emoji: ['🔥', '🥊', '🤼', '💥', '👏', '😤', '🏆', '🩸'] };
+    const trayChips = (TRAYS[cTool] || []).map(t => ({ label: t, style: pill(false, null) + 'font-size:' + (cTool === 'emoji' ? 18 : 12) + 'px', pick: () => addTxt(t) }));
+    const schedLabel = (d, t) => { try { return new Date(d + 'T' + t).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (er) { return d + ' ' + t; } };
+    const sd = this.state.sd || '', st = this.state.st || '', isSched = !!(sd && st);
+    const schedItems = (this.state.sched || []).map(s => ({ text: s.text, label: s.org || s.sport, chip: chip((s.org && ORGX[s.org]) || SPORTS[s.sport].c), at: s.at, cancel: () => this.setState({ sched: (this.state.sched || []).filter(x => x.id !== s.id) }) }));
+    const cmp = { ct: this.state.ct || '', setText: (e) => { this.state.ct = e.target.value; }, hasSport: !!cs, noSport: !cs, open: cOpen, toggleLabel: cOpen ? 'CLOSE' : 'POST', toggle: () => this.setState({ cOpen: !cOpen, cTool: null }),
+      tools: toolV, hasTray: trayChips.length > 0, tray: trayChips, isPoll: cTool === 'poll', isSched: cTool === 'sched',
+      pa: this.state.pa || '', pb: this.state.pb || '', setPa: (e) => { this.state.pa = e.target.value; }, setPb: (e) => { this.state.pb = e.target.value; },
+      sd, st, setSd: (e) => this.setState({ sd: e.target.value }), setSt: (e) => this.setState({ st: e.target.value }), clearSched: () => this.setState({ sd: '', st: '' }),
+      schedHint: isSched ? 'Posts ' + schedLabel(sd, st) : 'Pick a date and time, or leave empty to post now.',
+      postLabel: isSched ? 'SCHEDULE' : 'POST', hasSched: schedItems.length > 0, schedItems,
       sportChips: SPK.map(k => ({ label: k, style: pill(cs === k, SPORTS[k].c), pick: () => this.setState({ cs: cs === k ? null : k, co: null }) })),
       orgChips: !cs ? [] : SPORTS[cs].orgs.map(o => ({ label: o, style: pill(co === o, (ORGX[o] || SPORTS[cs].c)), pick: () => this.setState({ co: co === o ? null : o }) })),
       postStyle: 'flex-shrink:0;min-height:' + (FP ? 44 : 48) + 'px;padding:0 ' + (FP ? 26 : 34) + 'px;border:0;font-family:"Orbitron",sans-serif;font-weight:800;font-size:13px;letter-spacing:.12em;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%);cursor:pointer;' + (cs ? 'background:#D4AF37;color:#0A1124' : 'background:rgba(120,170,255,.16);color:#7F93B8'),
-      post: () => { const t = (this.state.ct || '').trim(); if (!cs || !t) return; this.setState({ posts: [{ id:'u' + Date.now(), sport: cs, org: co, official:false, name:'You', handle:'@you', src:'Combat', text: t, when:'now', media:false, n:[0,0] }, ...(this.state.posts || [])], ct:'', cs:null, co:null }); } };
+      post: () => { const t = (this.state.ct || '').trim(); if (!cs || !t) return; const pa = (this.state.pa || '').trim(), pb = (this.state.pb || '').trim();
+        const np = { id: 'u' + Date.now(), sport: cs, org: co, official: false, name: 'You', handle: '@you', src: 'Combat', text: t, when: 'now', media: cMedia, poll: pa && pb ? { a: pa, b: pb } : null, aud: cAud, n: [0, 0] };
+        const base = { ct: '', cs: null, co: null, cMedia: false, cTool: null, pa: '', pb: '', sd: '', st: '', cOpen: false };
+        if (isSched) this.setState({ ...base, sched: [{ ...np, id: 's' + Date.now(), at: schedLabel(sd, st) }, ...(this.state.sched || [])] });
+        else this.setState({ ...base, posts: [np, ...(this.state.posts || [])] }); } };
     const goFeed = () => this.setState({ page: 'news' });
     const creators = [['[Creator]','X','#FF3B4E'],['[Creator]','Instagram','#FF8A1F'],['[Creator]','YouTube','#A87BFF'],['[Creator]','TikTok','#5CC8FF']].map(([n, src, c]) => ({ n, src,
       av: 'width:' + (FP ? 56 : 68) + 'px;height:' + (FP ? 56 : 68) + 'px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#fff 0%,' + c + ' 60%,#000 150%);display:flex;align-items:center;justify-content:center;font-family:"Orbitron",sans-serif;font-weight:800;font-size:' + (FP ? 18 : 22) + 'px;color:#0A1124' }));
