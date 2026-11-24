@@ -40,12 +40,13 @@
     const inst=new C({});
     const nodes=[...xdc.childNodes];
     inst.__render=function(){
+      const sk=(inst.state&&inst.state.page)+'|'+(inst.state&&inst.state.chatId);const sameView=inst.__sk===sk;inst.__sk=sk;
       const sc=[...root.querySelectorAll('.scroll')].map(e=>e.scrollTop);
       const vals=inst.renderVals();
       const frag=document.createDocumentFragment();
       build(nodes,vals,frag);
       root.replaceChildren(frag);
-      root.querySelectorAll('.scroll').forEach((e,i)=>{if(sc[i])e.scrollTop=sc[i]});
+      root.querySelectorAll('.scroll').forEach((e,i)=>{if(sc[i]&&sameView)e.scrollTop=sc[i]});
     };
     inst.__render();
     return inst;
