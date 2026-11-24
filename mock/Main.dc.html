@@ -13,7 +13,7 @@
 <style>
 body{margin:0;background:#0A1124}
 button{font-family:inherit;cursor:pointer}
-button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
+button:focus-visible{outline:2px solid #D4AF37;outline-offset:2px}
 .scroll::-webkit-scrollbar{display:none}
 .lift:hover{filter:brightness(1.12)}
 </style>
@@ -74,7 +74,7 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
         <div style="margin-bottom:26px;flex-shrink:0">
           <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px">
             <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase">View your current leagues</div>
-            <button onClick="{{ viewAll }}" style="background:none;border:0;padding:6px 0;color:#2CE6FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.05em">View all</button>
+            <button onClick="{{ viewAll }}" style="background:none;border:0;padding:6px 0;color:#D4AF37;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.05em">View all</button>
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px">
             <sc-for list="{{ myLeagues }}" as="l" hint-placeholder-count="2">
@@ -111,9 +111,9 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
       <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">Watch live</div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:26px">
         <div style="padding:16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:14px;display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#2CE6FF;box-shadow:0 0 10px #2CE6FF"></span><span style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:17px">Live feed</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#D4AF37;box-shadow:0 0 10px #D4AF37"></span><span style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:17px">Live feed</span></div>
           <div style="font-size:14px;color:#9FB2D6;line-height:1.45">Follow every fight and match as it happens, round by round.</div>
-          <div style="font-size:13px;color:#E8F0FF;padding:10px 12px;background:rgba(44,230,255,.08);border-radius:10px">Prochazka vs Stirling · R3 0:42 · Prochazka lands a spinning back kick</div>
+          <div style="font-size:13px;color:#E8F0FF;padding:10px 12px;background:rgba(212,175,55,.08);border-radius:10px">Prochazka vs Stirling · R3 0:42 · Prochazka lands a spinning back kick</div>
         </div>
         <div style="padding:16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:14px;display:flex;flex-direction:column;gap:8px">
           <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:17px">Live reactions</div>
@@ -316,7 +316,7 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
         </sc-for>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px">
-        <button class="lift" style="flex:1;min-height:48px;border:0;background:#2CE6FF;color:#0A1124;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:14px;letter-spacing:.06em;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%)">CREATE</button>
+        <button class="lift" style="flex:1;min-height:48px;border:0;background:#D4AF37;color:#0A1124;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:14px;letter-spacing:.06em;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%)">CREATE</button>
         <button class="lift" style="flex:1;min-height:48px;border:1px solid rgba(120,170,255,.35);background:transparent;color:#C9D8F5;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:14px;letter-spacing:.06em;border-radius:12px">JOIN</button>
       </div>
     </sc-if>
@@ -325,10 +325,10 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
     <sc-if value="{{ isUsername }}" hint-placeholder-val="{{ false }}">
       <div style="font-size:14px;color:#9FB2D6;line-height:1.5;margin-top:-6px">This becomes your team name. If your username is Rasta Willy, your team is Team Rasta Willy.</div>
       <div style="margin-top:28px">
-        <div style="font-size:13px;color:#2CE6FF">Username</div>
-        <input value="Rasta Willy" maxlength="30" autocomplete="off" placeholder="Username" style="width:100%;box-sizing:border-box;background:none;border:0;border-bottom:2px solid #2CE6FF;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:24px;padding:8px 0;outline:none">
+        <div style="font-size:13px;color:#D4AF37">Username</div>
+        <input value="Rasta Willy" maxlength="30" autocomplete="off" placeholder="Username" style="width:100%;box-sizing:border-box;background:none;border:0;border-bottom:2px solid #D4AF37;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:24px;padding:8px 0;outline:none">
       </div>
-      <button class="lift" style="margin-top:30px;width:100%;min-height:52px;border:0;background:#2CE6FF;color:#0A1124;font-family:'Orbitron',sans-serif;font-weight:800;font-size:13px;letter-spacing:.12em;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">SAVE</button>
+      <button class="lift" style="margin-top:30px;width:100%;min-height:52px;border:0;background:#D4AF37;color:#0A1124;font-family:'Orbitron',sans-serif;font-weight:800;font-size:13px;letter-spacing:.12em;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">SAVE</button>
     </sc-if>
 
     <!-- ============ FIGHTS ============ -->
@@ -382,7 +382,7 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
         <sc-for list="{{creators}}" as="c" hint-placeholder-count="4">
           <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;width:72px"><div style="{{ c.av }}">?</div><div style="font-size:12px;color:#E8F0FF">{{ c.n }}</div><div style="font-size:11px;color:#9FB2D6">{{ c.src }}</div></div>
         </sc-for>
-        <button onClick="{{ goConnect }}" class="lift" style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;width:72px;border:0;background:transparent;color:#E8F0FF;padding:0"><div style="width:56px;height:56px;border-radius:50%;border:1.5px dashed #2CE6FF;color:#2CE6FF;display:flex;align-items:center;justify-content:center;font-size:26px">+</div><div style="font-size:12px">Connect</div></button>
+        <button onClick="{{ goConnect }}" class="lift" style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;width:72px;border:0;background:transparent;color:#E8F0FF;padding:0"><div style="width:56px;height:56px;border-radius:50%;border:1.5px dashed #D4AF37;color:#D4AF37;display:flex;align-items:center;justify-content:center;font-size:26px">+</div><div style="font-size:12px">Connect</div></button>
       </div>
       <div style="display:flex;flex-direction:column;gap:10px">
         <sc-for list="{{feedItems}}" as="f" hint-placeholder-count="6">
@@ -395,7 +395,7 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
             <div style="font-size:15px;line-height:1.4">{{ f.text }}</div>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
               <div style="{{ f.tagS }}">{{ f.tag }}</div>
-              <sc-if value="{{ f.hasLink }}" hint-placeholder-val="{{ true }}"><div style="font-size:12px;color:#2CE6FF">{{ f.link }}</div></sc-if>
+              <sc-if value="{{ f.hasLink }}" hint-placeholder-val="{{ true }}"><div style="font-size:12px;color:#D4AF37">{{ f.link }}</div></sc-if>
             </div>
           </div>
         </sc-for>
@@ -406,7 +406,7 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
     <sc-if value="{{ isConnect }}" hint-placeholder-val="{{ false }}">
       <div style="font-size:14px;color:#9FB2D6;line-height:1.5;margin-top:-6px">Connect a social account to share your combat sports posts on the Combat feed. Your posts show with your name, photo and a link back to the original.</div>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:20px">
-        <sc-for list="{{connectPlatforms}}" as="c" hint-placeholder-count="5"><button onClick="{{ c.go }}" class="lift" style="display:flex;align-items:center;justify-content:space-between;min-height:52px;padding:0 16px;background:#0F1A33;border:1px solid rgba(120,170,255,.2);border-radius:12px;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:16px"><span>Connect {{ c.p }}</span><span style="color:#2CE6FF;font-size:12px;letter-spacing:.1em">CONNECT</span></button></sc-for>
+        <sc-for list="{{connectPlatforms}}" as="c" hint-placeholder-count="5"><button onClick="{{ c.go }}" class="lift" style="display:flex;align-items:center;justify-content:space-between;min-height:52px;padding:0 16px;background:#0F1A33;border:1px solid rgba(120,170,255,.2);border-radius:12px;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:16px"><span>Connect {{ c.p }}</span><span style="color:#D4AF37;font-size:12px;letter-spacing:.1em">CONNECT</span></button></sc-for>
       </div>
       <div style="margin-top:22px;padding:16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:14px;display:flex;flex-direction:column;gap:8px;font-size:14px;color:#9FB2D6;line-height:1.45">
         <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:16px;color:#E8F0FF">What you share</div>
@@ -414,8 +414,8 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
         <div>Your name, photo and handle, shown with every post.</div>
         <div>You can disconnect any time and your posts come down.</div>
       </div>
-      <div style="display:flex;gap:10px;align-items:flex-start;margin-top:18px;font-size:14px;color:#E8F0FF;line-height:1.4"><span style="width:20px;height:20px;flex-shrink:0;border:1.5px solid #2CE6FF;border-radius:5px;margin-top:1px"></span>I give Combat permission to show my selected posts with credit and a link back.</div>
-      <button class="lift" style="margin-top:22px;width:100%;min-height:52px;border:0;background:#2CE6FF;color:#0A1124;font-family:'Orbitron',sans-serif;font-weight:800;font-size:13px;letter-spacing:.12em;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">CONTINUE</button>
+      <div style="display:flex;gap:10px;align-items:flex-start;margin-top:18px;font-size:14px;color:#E8F0FF;line-height:1.4"><span style="width:20px;height:20px;flex-shrink:0;border:1.5px solid #D4AF37;border-radius:5px;margin-top:1px"></span>I give Combat permission to show my selected posts with credit and a link back.</div>
+      <button class="lift" style="margin-top:22px;width:100%;min-height:52px;border:0;background:#D4AF37;color:#0A1124;font-family:'Orbitron',sans-serif;font-weight:800;font-size:13px;letter-spacing:.12em;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">CONTINUE</button>
     </sc-if>
 
     <!-- ============ ME ============ -->
@@ -427,11 +427,11 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
         </div>
         <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:16px">
           <div>
-            <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;color:#2CE6FF;margin-bottom:4px">USERNAME</div>
-            <input value="{{ pf.name }}" onInput="{{ pf.setName }}" maxlength="30" autocomplete="off" placeholder="Username" style="width:100%;box-sizing:border-box;background:none;border:0;border-bottom:2px solid #2CE6FF;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:22px;padding:8px 0;outline:none">
+            <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;color:#D4AF37;margin-bottom:4px">USERNAME</div>
+            <input value="{{ pf.name }}" onInput="{{ pf.setName }}" maxlength="30" autocomplete="off" placeholder="Username" style="width:100%;box-sizing:border-box;background:none;border:0;border-bottom:2px solid #D4AF37;color:#E8F0FF;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:22px;padding:8px 0;outline:none">
           </div>
           <div>
-            <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;color:#2CE6FF;margin-bottom:8px">PROFILE SHAPE</div>
+            <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;color:#D4AF37;margin-bottom:8px">PROFILE SHAPE</div>
             <div style="display:flex;gap:10px">
               <sc-for list="{{ shapeOpts }}" as="o" hint-placeholder-count="3">
                 <button aria-label="{{ o.label }}" aria-pressed="{{ o.on }}" onClick="{{ o.pick }}" style="{{ o.btn }}">
@@ -441,7 +441,7 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
             </div>
           </div>
           <div>
-            <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;color:#2CE6FF;margin-bottom:8px">COLOR</div>
+            <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;color:#D4AF37;margin-bottom:8px">COLOR</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <sc-for list="{{ colorOpts }}" as="k" hint-placeholder-count="9"><button aria-label="Color" aria-pressed="{{ k.on }}" onClick="{{ k.pick }}" style="{{ k.style }}"></button></sc-for>
             </div>
@@ -457,7 +457,7 @@ button:focus-visible{outline:2px solid #2CE6FF;outline-offset:2px}
       <div style="display:flex;flex-direction:column;gap:8px">
         <sc-for list="{{meRows}}" as="r" hint-placeholder-count="3">
           <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:14px">
-            <div style="width:40px;height:40px;border-radius:10px;background:rgba(44,230,255,.1);color:#2CE6FF;display:flex;align-items:center;justify-content:center">
+            <div style="width:40px;height:40px;border-radius:10px;background:rgba(212,175,55,.1);color:#D4AF37;display:flex;align-items:center;justify-content:center">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ r.icon }}"/></svg>
             </div>
             <div style="flex:1;min-width:0">
@@ -521,7 +521,7 @@ class Component extends DCLogic {
     };
     const ORG = { UFC:'#FF3B4E', BKFC:'#FF8A1F', RAF:'#A87BFF', PFL:'#5CC8FF', ONE:'#E8F0FF', KSW:'#7CE38B', RIZIN:'#FF6FB5', OKTAGON:'#B0E04B', 'Cage Warriors':'#FFA07A', LFA:'#8FA3C7' };
     const cur = O[org];
-    const accent = page === 'home' ? cur.soft : 'rgba(44,230,255,.16)';
+    const accent = page === 'home' ? cur.soft : 'rgba(212,175,55,.16)';
     const shape = 'clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);';
     const tabBtn = (on) => 'flex:1;min-height:56px;border:0;font-family:Orbitron,"Chakra Petch",sans-serif;font-weight:800;font-size:15px;letter-spacing:.14em;clip-path:polygon(16px 0,100% 0,calc(100% - 16px) 100%,0 100%);' + (on ? 'background:linear-gradient(135deg,#F6E08A,#D4AF37 60%,#9C7A1E);color:#14120A;filter:drop-shadow(0 0 10px rgba(232,201,58,.35));' : 'background:#0F1A33;color:#B6C6E6;');
     const orgBtn = (k, on) => 'flex:1;min-height:44px;border:0;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:14px;letter-spacing:.08em;' + shape + (on ? 'background:' + O[k].c + ';color:#0A1124;' : 'background:#0F1A33;color:#B6C6E6;');
@@ -546,9 +546,9 @@ class Component extends DCLogic {
       for (let i = 0; i < 50; i++) deco.push({ style: 'position:absolute;left:50%;top:50%;width:' + d + 'px;height:' + d + 'px;margin:' + (-d / 2) + 'px 0 0 ' + (-d / 2) + 'px;background:#E8F0FF;clip-path:' + STAR + ';transform:rotate(' + (i * 7.2).toFixed(1) + 'deg) translateY(' + (-R).toFixed(1) + 'px)' });
       return { btn, deco, line: 'position:absolute;left:' + Math.round(pad * .95) + 'px;top:' + Math.round(pad * .95) + 'px;right:' + Math.round(pad * .95) + 'px;bottom:' + Math.round(pad * .95) + 'px;border-radius:50%;border:1.5px solid rgba(232,240,255,.45);box-sizing:border-box;pointer-events:none', outer: base + 'padding:' + pad + 'px;border-radius:50%;background:' + bg, inner: lbl + 'border-radius:50%' };
     };
-    const pill = (on, c) => 'flex:0 0 auto;min-height:36px;padding:0 14px;border-radius:999px;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:12px;letter-spacing:.06em;' + (on ? 'border:1px solid ' + (c || '#2CE6FF') + ';background:' + (c || '#2CE6FF') + ';color:#0A1124;' : 'border:1px solid rgba(120,170,255,.3);background:transparent;color:#B6C6E6;');
+    const pill = (on, c) => 'flex:0 0 auto;min-height:36px;padding:0 14px;border-radius:999px;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:12px;letter-spacing:.06em;' + (on ? 'border:1px solid ' + (c || '#D4AF37') + ';background:' + (c || '#D4AF37') + ';color:#0A1124;' : 'border:1px solid rgba(120,170,255,.3);background:transparent;color:#B6C6E6;');
     const chip = (c) => 'min-width:46px;text-align:center;padding:5px 6px;border-radius:6px;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:11px;letter-spacing:.04em;background:' + c + ';color:#0A1124;flex-shrink:0';
-    const badge = (t) => t === 'LIVE' || t === 'Live' ? 'font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:11px;letter-spacing:.08em;color:#0A1124;background:#2CE6FF;padding:5px 8px;border-radius:6px;white-space:nowrap'
+    const badge = (t) => t === 'LIVE' || t === 'Live' ? 'font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:11px;letter-spacing:.08em;color:#0A1124;background:#D4AF37;padding:5px 8px;border-radius:6px;white-space:nowrap'
       : t === 'Planned' ? 'font-size:11px;color:#E8F0FF;border:1px solid rgba(120,170,255,.5);padding:4px 8px;border-radius:6px;white-space:nowrap'
       : 'font-size:11px;color:#B6C6E6;border:1px solid rgba(120,170,255,.3);padding:4px 8px;border-radius:6px;white-space:nowrap';
     const row = (o, fight, note, status) => ({ org:o, o, chip:chip(ORG[o]), fight, note, status, badge:badge(status) });
@@ -634,7 +634,7 @@ class Component extends DCLogic {
       ['me','Me','M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0']
     ];
     const nav = navDef.map(([k, label, icon]) => ({ label, icon, on: page === k, pick: () => this.setState({ page: k }),
-      style: 'flex:1;min-height:48px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;color:' + (page === k ? '#2CE6FF' : '#8FA3C7') }));
+      style: 'flex:1;min-height:48px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;color:' + (page === k ? '#D4AF37' : '#8FA3C7') }));
     // ---------- Combat home: slideshow, mock draft, live, promotions ----------
     const HP = true;
     const SLIDES = [
@@ -724,8 +724,8 @@ class Component extends DCLogic {
     };
     const initial = ((PF.name || '?').trim()[0] || '?').toUpperCase();
     const pv = avShape(PF.shape, PF.color, 190, PF.photo, initial);
-    const shapeOpts = [['octagon', 'Octagon'], ['ring', 'BKFC ring'], ['stars', 'RAF 50 star circle']].map(([k, label]) => { const on = PF.shape === k; return { label, on, ...avShape(k, PF.color, 64, PF.photo, initial), btn: 'width:84px;height:84px;display:flex;align-items:center;justify-content:center;border-radius:14px;cursor:pointer;background:#0A1124;border:2px solid ' + (on ? '#2CE6FF' : 'rgba(120,170,255,.2)'), pick: () => setPf({ shape: k }) }; });
-    const colorOpts = ['#FF3B4E', '#FF8A1F', '#A87BFF', '#2CE6FF', '#F6E08A', '#7DE08A', '#FF5CA8', '#5C8BFF', '#E8F0FF'].map(c => { const on = PF.color.toLowerCase() === c.toLowerCase(); return { on, style: 'width:36px;height:36px;border-radius:50%;padding:0;cursor:pointer;background:' + c + ';border:3px solid ' + (on ? '#E8F0FF' : 'transparent') + ';box-shadow:0 0 0 1px rgba(120,170,255,.3)', pick: () => setPf({ color: c }) }; });
+    const shapeOpts = [['octagon', 'Octagon'], ['ring', 'BKFC ring'], ['stars', 'RAF 50 star circle']].map(([k, label]) => { const on = PF.shape === k; return { label, on, ...avShape(k, PF.color, 64, PF.photo, initial), btn: 'width:84px;height:84px;display:flex;align-items:center;justify-content:center;border-radius:14px;cursor:pointer;background:#0A1124;border:2px solid ' + (on ? '#D4AF37' : 'rgba(120,170,255,.2)'), pick: () => setPf({ shape: k }) }; });
+    const colorOpts = ['#FF3B4E', '#FF8A1F', '#A87BFF', '#D4AF37', '#F6E08A', '#7DE08A', '#FF5CA8', '#5C8BFF', '#E8F0FF'].map(c => { const on = PF.color.toLowerCase() === c.toLowerCase(); return { on, style: 'width:36px;height:36px;border-radius:50%;padding:0;cursor:pointer;background:' + c + ';border:3px solid ' + (on ? '#E8F0FF' : 'transparent') + ';box-shadow:0 0 0 1px rgba(120,170,255,.3)', pick: () => setPf({ color: c }) }; });
     const pfVals = { pv, shapeOpts, colorOpts, pf: {
       name: PF.name, msg: PF.msg,
       setName: (e) => { this.state.pf.name = e.target.value; },
