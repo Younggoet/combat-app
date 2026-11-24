@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BKFC card redraft (desktop)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#0A1124}</style>
+</helmet>
+<div style="width:1360px;box-sizing:border-box;background:#0A1124;color:#F5F2EA;font-family:'Barlow',sans-serif;padding:0 36px 40px;position:relative;overflow:hidden">
+  <div style="position:absolute;left:-160px;top:-200px;width:760px;height:760px;border-radius:50%;background:radial-gradient(circle,rgba(255,138,31,.2) 0%,rgba(10,17,36,0) 70%);pointer-events:none"></div>
+  <!-- header -->
+  <div style="position:relative;display:flex;align-items:center;justify-content:space-between;padding:18px 0;border-bottom:1px solid #1C1C20">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:22px;letter-spacing:1px;color:#D4AF37">COMBAT</div><div style="width:1px;height:24px;background:#2A2A30"></div>
+      <div style="font-family:'Oswald',sans-serif;font-size:15px;letter-spacing:2px;color:#9A9AA2">BKFC CARD REDRAFT · BLOCK 1</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:24px">
+      <div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;color:#9A9AA2">TRADE PICKS</div>
+      <div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;color:#9A9AA2">FULL DRAFT BOARD</div>
+      <div style="width:1px;height:24px;background:#2A2A30"></div>
+      <div style="text-align:right"><div style="font-size:10px;letter-spacing:2px;color:#9A9AA2">ROUND</div><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:44px;line-height:1">2<span style="color:#8C8982;font-size:26px"> / 5</span></div><div style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;color:#FF6A7A;margin-top:2px">YOUR PICK · PICK 7 OF 50</div></div>
+      <div style="{{ clock.av.box }}"><div style="{{ clock.av.outer }}"><div style="{{ clock.av.line }}"></div><sc-for list="{{ clock.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ clock.av.inner }}"><svg width="{{ clock.av.g }}" height="{{ clock.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ clock.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div>
+    </div>
+  </div>
+  <!-- tracker -->
+  <div style="position:relative;display:flex;gap:14px;padding:22px 20px;background:#0F0F12;border-bottom:1px solid #18264A;margin:0 -36px;padding-left:36px;padding-right:36px;overflow:hidden">
+    <sc-for list="{{track}}" as="t" hint-placeholder-count="8">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:7px;width:108px;flex-shrink:0">
+        <div style="{{ t.av.box }}"><div style="{{ t.av.outer }}"><div style="{{ t.av.line }}"></div><sc-for list="{{ t.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ t.av.inner }}"><svg width="{{ t.av.g }}" height="{{ t.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ t.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div>
+        <div style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;color:#5A5A62">PICK {{ t.k }} <span style="color:{{ t.tmC }}">· {{ t.tm }}</span></div>
+        <div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:11px;letter-spacing:.5px;text-align:center;color:{{ t.nameC }}">{{ t.info }}</div>
+        <div style="{{ t.tagS }}">{{ t.sh }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- stage -->
+  <div style="position:relative;display:flex;gap:24px;padding:28px 0 6px;align-items:flex-start">
+    <div style="flex:2;min-width:0;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:8px;height:8px;border-radius:50%;background:#E2283C"></span><span style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:3px;color:#E2283C">ON THE CLOCK — YOUR PICK</span></div>
+      <div style="{{ rope }};background:linear-gradient(160deg,#14224A 0%,#0C1630 70%);padding:30px 36px;display:flex;align-items:center;gap:34px">
+        <div style="{{ spot.av.box }}"><div style="{{ spot.av.outer }}"><div style="{{ spot.av.line }}"></div><sc-for list="{{ spot.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ spot.av.inner }}"><svg width="{{ spot.av.g }}" height="{{ spot.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ spot.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+          <div style="font-size:14px;font-weight:600;color:#F4F4F2">Welterweight · 9-3 · 7 finishes</div>
+          <div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:50px;line-height:1.02">PAGUE</div>
+          <div style="font-size:14px;color:#D8D5CC">Next fight: <b>Dec 4</b> vs Richman · BKFC Hershey</div>
+          <div style="display:flex;gap:34px;margin-top:10px">
+            <div><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:64px;line-height:1">38.5</div><div style="font-size:13px;font-weight:600;color:#B8B5AE">Projected points</div></div>
+            <div><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:64px;line-height:1">#1</div><div style="font-size:13px;font-weight:600;color:#B8B5AE">Block rank</div></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px">
+        <sc-for list="{{heroStats}}" as="h" hint-placeholder-count="4"><div style="{{ rope }};background:#0F1A33;padding:18px;text-align:center"><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:30px">{{ h.v }}</div><div style="font-size:12px;letter-spacing:1px;color:#9A9AA2;margin-top:2px">{{ h.l }}</div></div></sc-for>
+      </div>
+      <div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;color:#9A9AA2">MORE DETAILS ▾</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div style="{{ rope }};background:#0F1A33;padding:20px 22px"><div style="font-family:'Oswald',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:12px">LAST 5 FIGHTS</div><div style="display:flex;gap:10px"><sc-for list="{{form}}" as="r" hint-placeholder-count="5"><div style="text-align:center;min-width:58px"><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:20px;color:{{ r.c }};border:2px solid {{ r.c }};border-radius:999px;padding:4px 0">{{ r.r }}</div><div style="font-size:11px;color:#8C8982;margin-top:4px">{{ r.o }}</div></div></sc-for></div></div>
+        <div style="{{ rope }};background:#0F1A33;padding:20px 22px;display:flex;flex-direction:column;gap:10px"><div style="font-family:'Oswald',sans-serif;font-size:20px;letter-spacing:1px">FINISH RATE</div><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:40px;line-height:1">78%</div><div style="height:8px;border-radius:4px;background:#1B2A52;overflow:hidden"><div style="width:78%;height:100%;background:#FF8A1F"></div></div><div style="font-size:13px;color:#9A9AA2">7 finishes in 9 wins · You own 0 Welterweight fighters</div></div>
+      </div>
+      <div style="{{ rope }};background:#0F1A33;padding:20px 22px">
+        <div style="font-family:'Oswald',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:12px">TALE OF THE TAPE</div>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;margin-bottom:12px">
+          <div style="display:flex;flex-direction:column;gap:8px"><div style="{{ tapeA.av.box }}"><div style="{{ tapeA.av.outer }}"><div style="{{ tapeA.av.line }}"></div><sc-for list="{{ tapeA.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ tapeA.av.inner }}"><svg width="{{ tapeA.av.g }}" height="{{ tapeA.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ tapeA.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{tapeAChips}}" as="c" hint-placeholder-count="5"><span style="border-radius:999px;padding:4px 11px;border:1px solid rgba(255,194,61,.5);font-size:12px;color:#F6E08A">{{ c }}</span></sc-for></div></div>
+          <div style="font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:2px;color:#8C8982">VS</div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><div style="{{ tapeB.av.box }}"><div style="{{ tapeB.av.outer }}"><div style="{{ tapeB.av.line }}"></div><sc-for list="{{ tapeB.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ tapeB.av.inner }}"><svg width="{{ tapeB.av.g }}" height="{{ tapeB.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ tapeB.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><sc-for list="{{tapeBChips}}" as="c" hint-placeholder-count="5"><span style="border-radius:999px;padding:4px 11px;border:1px solid rgba(255,255,255,.28);font-size:12px;color:#D8D6CF">{{ c }}</span></sc-for></div></div>
+        </div>
+        <sc-for list="{{tapeRows}}" as="r" hint-placeholder-count="4"><div style="display:grid;grid-template-columns:1fr auto 1fr;padding:8px 0;border-top:1px solid #18264A;font-size:14px"><div style="font-weight:700">{{ r.a }}</div><div style="font-size:11px;letter-spacing:1.5px;color:#8C8982">{{ r.l }}</div><div style="text-align:right;color:#B8B5AE">{{ r.b }}</div></div></sc-for>
+      </div>
+      <div style="{{ rope }};background:#0F1A33;padding:18px 22px">
+        <div style="font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:2px;color:#9A9AA2;margin-bottom:10px">BEST AVAILABLE AFTER THIS PICK</div>
+        <div style="display:flex;gap:26px"><sc-for list="{{upNext}}" as="u" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:10px"><div style="{{ u.av.box }}"><div style="{{ u.av.outer }}"><div style="{{ u.av.line }}"></div><sc-for list="{{ u.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ u.av.inner }}"><svg width="{{ u.av.g }}" height="{{ u.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ u.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div><div><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:15px">{{ u.n }}</div><div style="font-size:11px;color:#9A9AA2">{{ u.w }}</div></div></div></sc-for></div>
+      </div>
+      <div style="min-height:56px;border-radius:999px;background:#E2283C;color:#F5F2EA;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;letter-spacing:2px">LOCK PICK — PAGUE</div>
+    </div>
+
+    <div style="flex:0 0 360px;display:flex;flex-direction:column;gap:14px">
+      <div style="{{ rope }};background:#0F1A33;overflow:hidden">
+        <div style="display:flex;justify-content:space-between;padding:16px 20px 8px"><span style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:2px;color:#D4AF37">YOUR SLIP</span><span style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1px;color:#6A6A72">TEAM RASTA WILLY</span></div>
+        <div style="padding:0 20px 8px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:2px;color:#D4AF37">ROSTER · 1 OF 5</div>
+        <sc-for list="{{slip}}" as="s" hint-placeholder-count="5"><div style="display:flex;align-items:center;justify-content:space-between;padding:7px 20px;border-top:1px solid #18264A"><div style="display:flex;align-items:center;gap:8px"><div style="{{ s.av.box }}"><div style="{{ s.av.outer }}"><div style="{{ s.av.line }}"></div><sc-for list="{{ s.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ s.av.inner }}"><svg width="{{ s.av.g }}" height="{{ s.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ s.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div><span style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;color:{{ s.c }}">{{ s.n }}</span></div><span style="font-family:'Oswald',sans-serif;font-size:13px;color:#9A9AA2">{{ s.p }}</span></div></sc-for>
+        <div style="padding:14px 20px;border-top:1px solid #18264A;display:flex;justify-content:space-between"><span style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;color:#9A9AA2">PROJECTED FANTASY PTS</span><span style="font-family:'Oswald',sans-serif;font-weight:700;font-size:20px">38.5</span></div>
+      </div>
+      <div style="{{ rope }};background:#0F1A33;padding:16px 20px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;color:#9A9AA2">YOUR QUEUE</span><span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;color:#9A9AA2">AUTO-DRAFT: OFF</span></div>
+        <sc-for list="{{queue}}" as="q" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #18264A"><span style="font-family:'Oswald',sans-serif;font-size:11px;color:#5A5A62">{{ q.i }}</span><span style="flex:1;font-family:'Oswald',sans-serif;font-size:13px">{{ q.n }}</span><span style="color:#9A9AA2;font-size:14px">↑ ↓</span></div></sc-for></div>
+      <div style="{{ rope }};background:#0F1A33;padding:16px 20px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="width:7px;height:7px;border-radius:50%;background:#E2283C"></span><span style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;color:#9A9AA2">LIVE FEED</span></div>
+        <sc-for list="{{feed}}" as="f" hint-placeholder-count="4"><div style="padding:6px 0;border-top:1px solid #18264A;font-size:13px;color:#C9C6BD"><span style="font-family:'Oswald',sans-serif;font-size:11px;color:#5A5A62">#{{ f.k }}</span> <span style="color:#D4AF37">{{ f.t }}</span> took {{ f.n }}</div></sc-for></div>
+      <div style="{{ rope }};background:#0F1A33;padding:16px 20px"><div style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;color:#9A9AA2;margin-bottom:8px">DRAFT CHAT</div><div style="font-size:13px;color:#C9C6BD;line-height:1.5"><span style="color:#D4AF37">JB</span> good luck everyone<br><span style="color:#9A9AA2">TK</span> Pague next for me</div><div style="margin-top:10px;border:1px solid #2A2A30;border-radius:999px;padding:9px 16px;font-size:13px;color:#5A5A62">Say something…</div></div>
+      <div style="{{ rope }};background:#0F1A33;padding:16px 20px"><div style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;color:#9A9AA2;margin-bottom:8px">NEWS · PAGUE</div>
+        <sc-for list="{{news}}" as="n" hint-placeholder-count="2"><div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid #18264A"><span style="flex-shrink:0;width:34px;height:34px;border-radius:50%;border:1.5px solid #FFC23D;background:#0F0F12;color:#FF8A1F;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-weight:800;font-size:8px">BKFC</span><span style="font-size:13px;color:#C9C6BD;line-height:1.4">{{ n }}</span></div></sc-for></div>
+    </div>
+  </div>
+
+  <!-- pool -->
+  <div style="position:relative;margin-top:26px">
+    <div style="border:1px solid #2A2A30;border-radius:999px;padding:12px 22px;font-size:14px;color:#5A5A62;margin-bottom:12px">Search fighters…</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px"><span style="border-radius:999px;padding:7px 16px;border:1px solid #D4AF37;background:rgba(212,175,55,.13);color:#D4AF37;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700">ALL</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><sc-for list="{{divChips}}" as="d" hint-placeholder-count="13"><span style="{{ d.s }}">{{ d.n }}</span></sc-for></div>
+    <div style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;color:#7A7A82;margin-bottom:12px">AVAILABLE — ALL FIGHTERS · RANKED BY BLOCK RANK</div>
+    <div style="{{ rope }};background:#0F1A33;overflow:hidden">
+      <div style="display:grid;grid-template-columns:2fr .7fr .8fr .9fr .7fr .7fr .7fr .6fr .7fr .8fr .6fr .4fr;gap:8px;padding:12px 20px;background:#0F0F12;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;color:#6A6A72"><span>FIGHTER</span><span>DIV</span><span>RECORD</span><span>PUNCH/RD</span><span>ACC</span><span>KD</span><span>KO%</span><span>FIN</span><span>FIGHTS/YR</span><span>PROJ FP</span><span>RANK</span><span>★</span></div>
+      <sc-for list="{{pool}}" as="p" hint-placeholder-count="7">
+        <div style="display:grid;grid-template-columns:2fr .7fr .8fr .9fr .7fr .7fr .7fr .6fr .7fr .8fr .6fr .4fr;gap:8px;align-items:center;padding:8px 20px;border-top:1px solid #18264A;font-size:13.5px;color:#C4C1B8">
+          <div style="display:flex;align-items:center;gap:10px"><div style="{{ p.av.box }}"><div style="{{ p.av.outer }}"><div style="{{ p.av.line }}"></div><sc-for list="{{ p.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ p.av.inner }}"><svg width="{{ p.av.g }}" height="{{ p.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ p.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div><span style="font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;color:#F5F2EA">{{ p.n }}</span></div>
+          <span style="{{ p.tag }}">{{ p.sh }}</span><span>{{ p.rec }}</span><span>{{ p.pr }}</span><span>{{ p.acc }}</span><span>{{ p.kd }}</span><span>{{ p.ko }}</span><span>{{ p.fin }}</span><span>{{ p.fpy }}</span><span>{{ p.proj }}</span><span style="font-family:'Oswald',sans-serif;font-weight:700;font-size:17px;color:#D4AF37">{{ p.rk }}</span><span style="color:#D4AF37">☆</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font-size:10px;letter-spacing:1px;color:#5A5A62;margin-top:12px;line-height:1.6">STATS ARE PER-FIGHT CAREER AVERAGES FROM THE BKFC FEED · PUNCH/RD = PUNCHES LANDED PER ROUND · ACC = ACCURACY · KD = KNOCKDOWNS · KO% = SHARE OF WINS BY KO/TKO · NUMBERS SHOWN ARE SAMPLES</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":2300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const DC = { 'Heavyweight':'#E2283C','Ironweight':'#FF6A3D','Cruiserweight':'#B57BFF','Light Heavyweight':'#3A7BFF','Middleweight':'#1FB5A3','Welterweight':'#F4F4F2','Lightweight':'#B5452B','Featherweight':'#9ACD32','Bantamweight':'#FFFDD0','Flyweight':'#6EC6F0',"Women's Featherweight":'#E58CB0',"Women's Flyweight":'#E0239A','Strawweight':'#F6B26B' };
+    const SH = { 'Heavyweight':'HW','Ironweight':'IW','Cruiserweight':'CW','Light Heavyweight':'LHW','Middleweight':'MW','Welterweight':'WW','Lightweight':'LW','Featherweight':'FW','Bantamweight':'BW','Flyweight':'FLW',"Women's Featherweight":'WFW',"Women's Flyweight":'WFLW','Strawweight':'SW' };
+    const ring = (S, c, o) => {
+      o = o || {};
+      const pad = Math.max(3, Math.round(S * .085)), d = Math.max(5, Math.round(S * .115)), R = S / 2 - d / 2 + .5, deco = [];
+      const empty = !!o.empty;
+      for (let i = 0; i < 8; i++) deco.push({ style: 'position:absolute;left:50%;top:50%;width:' + d + 'px;height:' + d + 'px;margin:' + (-d / 2) + 'px 0 0 ' + (-d / 2) + 'px;border-radius:50%;box-sizing:border-box;background:#0A1124;border:' + (S > 70 ? 2 : 1.5) + 'px solid ' + (empty ? '#5A5A62' : '#FFC23D') + ';transform:rotate(' + (i * 45) + 'deg) translateY(' + (-R) + 'px)' });
+      return { sc: empty ? '#4A4A52' : c, g: Math.round(S * .4),
+        box: 'position:relative;width:' + S + 'px;height:' + S + 'px;flex-shrink:0' + (o.glow ? ';filter:drop-shadow(0 0 10px ' + c + '88)' : ''),
+        outer: 'position:relative;width:100%;height:100%;padding:' + pad + 'px;box-sizing:border-box;border-radius:50%;background:' + (empty ? '#22232A' : 'radial-gradient(circle at 35% 28%,#fff 0%,' + c + ' 55%,#000 130%)'),
+        line: 'position:absolute;left:' + Math.round(pad * .45) + 'px;top:' + Math.round(pad * .45) + 'px;right:' + Math.round(pad * .45) + 'px;bottom:' + Math.round(pad * .45) + 'px;border-radius:50%;border:' + (S > 70 ? 2 : 1.5) + 'px solid ' + (empty ? '#5A5A62' : '#FFC23D') + ';box-sizing:border-box;pointer-events:none',
+        inner: 'width:100%;height:100%;border-radius:50%;background:#0F0F12;display:flex;align-items:center;justify-content:center' + (o.txt ? ';color:#FF6A7A;font-family:Orbitron,sans-serif;font-weight:800;font-size:' + Math.round(S * .26) + 'px' : ''), deco };
+    };
+    const rope = (c) => 'border-radius:30px;border:1px solid ' + (c || 'rgba(255,194,61,.4)') + ';box-shadow:0 0 0 4px #0A1124,0 0 0 5px rgba(255,138,31,.28)';
+    const tagS = (c) => 'display:inline-block;border-radius:999px;padding:1px 9px;font-family:Orbitron,sans-serif;font-weight:800;font-size:8px;letter-spacing:.5px;color:' + c + ';background:' + c + '2A';
+    const F = (n, w, rec, extra) => Object.assign({ n, w, sh: SH[w], rec, dc: DC[w], tag: tagS(DC[w]) }, extra || {});
+    const POOL = [
+      F('Pague','Welterweight','9-3',{ pr:'62.1', acc:'44%', kd:'0.60', ko:'56%', rw:'1.9', fin:'7', fpy:'2.1', proj:'38.5', rk:'#1' }),
+      F('Richman','Welterweight','12-4',{ pr:'58.4', acc:'41%', kd:'0.42', ko:'48%', rw:'1.8', fin:'8', fpy:'2.0', proj:'34.0', rk:'#2' }),
+      F('Richardson','Lightweight','8-2',{ pr:'55.0', acc:'39%', kd:'0.35', ko:'40%', rw:'1.7', fin:'5', fpy:'1.9', proj:'31.5', rk:'#3' }),
+      F('Oxendine','Lightweight','7-3',{ pr:'51.7', acc:'37%', kd:'0.30', ko:'36%', rw:'1.6', fin:'4', fpy:'1.8', proj:'27.0', rk:'#4' }),
+      F('[Fighter]','Middleweight','[rec]',{ pr:'[pr]', acc:'[acc]', kd:'[kd]', ko:'[ko]', rw:'[rw]', fin:'[fin]', fpy:'[fpy]', proj:'[proj]', rk:'#5' }),
+      F('[Fighter]','Featherweight','[rec]',{ pr:'[pr]', acc:'[acc]', kd:'[kd]', ko:'[ko]', rw:'[rw]', fin:'[fin]', fpy:'[fpy]', proj:'[proj]', rk:'#6' }),
+      F('[Fighter]','Heavyweight','[rec]',{ pr:'[pr]', acc:'[acc]', kd:'[kd]', ko:'[ko]', rw:'[rw]', fin:'[fin]', fpy:'[fpy]', proj:'[proj]', rk:'#7' })
+    ].map(f => Object.assign(f, { av: ring(46, f.dc, {}), avS: ring(30, f.dc, {}) }));
+    const spot = POOL[0];
+    const divChips = ['Heavyweight','Ironweight','Cruiserweight','Light Heavyweight','Middleweight','Welterweight','Lightweight','Featherweight','Bantamweight','Flyweight',"Women's Featherweight","Women's Flyweight",'Strawweight'].map(d => ({ n: d, s: 'flex:0 0 auto;border-radius:999px;padding:7px 14px;font-family:Oswald,sans-serif;font-size:12px;letter-spacing:.5px;color:#9A9AA2;background:' + DC[d] + '14;border:1px solid ' + DC[d] + '44' }));
+    const track = [[4,'JB','Richman','WW',1,0],[5,'TK','Richardson','LW',1,0],[6,'RW','[Fighter]','MW',1,1],[7,'YOU','',"",0,2],[8,'SM','',"",0,3],[9,'DL','',"",0,3],[10,'JB','',"",0,3],[11,'TK','',"",0,3]].map(([k, tm, nm, dv, done, st]) => {
+      const f = done ? POOL.find(p => p.n === nm) || POOL[4] : null;
+      const you = tm === 'YOU';
+      return { k, tm, nm, dv, st, you, av: ring(52, f ? f.dc : '#999', { empty: !done, glow: st === 2 }), nameC: st === 2 ? '#FF6A7A' : f ? f.dc : '#5A5A62', info: st === 2 ? 'ON THE CLOCK' : done ? nm : 'UPCOMING', tagS: f ? tagS(f.dc) : 'display:none', tmC: you ? '#D4AF37' : '#6A6A72' };
+    });
+
+    const rp = (n, c, S) => ({ n, w: '', av: ring(S, c, {}) });
+    return {
+      rope: rope(), pool: POOL, divChips, track, spot: { av: ring(210, spot.dc, { glow: true }) },
+      clock: { av: Object.assign(ring(104, '#E2283C', { glow: true, txt: true }), { inner: 'width:100%;height:100%;border-radius:50%;background:#1A0A0D;display:flex;align-items:center;justify-content:center;color:#FF6A7A;font-family:Oswald,sans-serif;font-weight:700;font-size:34px', g: 0 }) },
+      heroStats: [{ v: '62.1', l: 'Punches per round' }, { v: '44%', l: 'Accuracy' }, { v: '0.60', l: 'Knockdowns' }, { v: '2.1', l: 'Fights per year' }],
+      form: [['W','Richman'],['W','[Fighter]'],['L','[Fighter]'],['W','[Fighter]'],['W','[Fighter]']].map(([r, o]) => ({ r, o, c: r === 'W' ? '#3DBE6B' : '#E2283C' })),
+      tapeA: { av: ring(56, spot.dc, {}) }, tapeAChips: ['9-3','5\'11"','72"','165 lbs','62.1 P/RD'], tapeB: { av: ring(56, POOL[1].dc, {}) }, tapeBChips: ['12-4','6\'0"','74"','165 lbs','58.4 P/RD'],
+      tapeRows: [{ a: '9-3', l: 'RECORD', b: '12-4' }, { a: '7', l: 'FINISHES', b: '8' }, { a: '#1', l: 'OVERALL RANK', b: '#2' }, { a: '38.5', l: 'PROJ FANTASY PTS', b: '34.0' }],
+      upNext: POOL.slice(1, 4),
+      slip: [{ n: 'Pague', p: '38.5', c: '#E2283C', av: POOL[0].avS }, { n: 'Empty slot', p: '—', c: '#5A5A62', av: ring(30, '#999', { empty: true }) }, { n: 'Empty slot', p: '—', c: '#5A5A62', av: ring(30, '#999', { empty: true }) }, { n: 'Empty slot', p: '—', c: '#5A5A62', av: ring(30, '#999', { empty: true }) }, { n: 'Empty slot', p: '—', c: '#5A5A62', av: ring(30, '#999', { empty: true }) }],
+      queue: [{ i: 1, n: 'Pague' }, { i: 2, n: 'Richman' }, { i: 3, n: 'Richardson' }],
+      feed: [{ k: 6, t: 'RW', n: '[Fighter]' }, { k: 5, t: 'TK', n: 'Richardson' }, { k: 4, t: 'JB', n: 'Richman' }, { k: 3, t: 'DL', n: 'Oxendine' }],
+      news: ['[News item about Pague]', '[News item about the Hershey card]']
+    };
+  }
+}
+</script>
+</body>
+</html>

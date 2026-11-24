@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BKFC card redraft · Combat</title>
+<style>html,body{margin:0;background:#0A1124}#app{min-height:100vh}</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
+</head><body><div id="app"></div>
+<script src="dc-runtime.js"></script>
+<script>
+(async function(){
+  var desk=window.matchMedia('(min-width:900px)').matches;
+  /* Block 1 pool: every fighter on the three BKFC cards, from the bkfc_* tables */
+  var pool=[];
+  try{
+    var sb=window.CombatAuth&&window.CombatAuth.client;
+    var r=await sb.from('bkfc_fighters').select('cito_slug,full_name,weight_class,wins,losses,draws').order('wins',{ascending:false,nullsFirst:false}).order('full_name');
+    pool=(r.data||[]).map(function(f){
+      var parts=f.full_name.trim().split(/\s+/);
+      return {n:parts.length>1?parts.slice(1).join(' '):parts[0],full:f.full_name,w:f.weight_class==='Women Flyweight'?"Women's Flyweight":f.weight_class,
+        rec:f.wins==null?'—':f.wins+'-'+f.losses+(f.draws?'-'+f.draws:'')};
+    });
+  }catch(e){}
+  window.__BKFC=pool;
+  function patch(s){
+    return s.replace(/const POOL = \[[\s\S]*?\n    \]\.map\(/,
+      "const DASH = { pr:'\\u2014', acc:'\\u2014', kd:'\\u2014', ko:'\\u2014', rw:'\\u2014', fin:'\\u2014', fpy:'\\u2014', proj:'\\u2014' };\n"+
+      "    const POOL = (window.__BKFC.length >= 5 ? window.__BKFC : [1,2,3,4,5]).map((p, i) => F(p.n || '\\u2014', p.w || 'Middleweight', p.rec || '\\u2014', Object.assign({}, DASH, { rk: '#' + (i + 1) }))).map(");
+  }
+  function text(t){
+    if(desk)return t;
+    /* phone: one full-screen app instead of the two framed sample screens */
+    var i=t.indexOf('<div style="width:390px;height:900px',t.indexOf('<div style="width:390px;height:900px')+10);
+    var j=t.indexOf('</div>\n</x-dc>');
+    if(i>0&&j>i)t=t.slice(0,i)+t.slice(j);
+    t=t.replace(/<div style="width:880px;box-sizing:border-box;/,'<div style="width:100%;box-sizing:border-box;').replace('padding:24px;display:flex;gap:40px','padding:0;display:flex;gap:0');
+    t=t.replace('width:390px;height:900px;flex-shrink:0;border:1px solid rgba(120,170,255,.25);border-radius:34px;','width:100%;min-height:100vh;border:0;border-radius:0;').replace('overflow:hidden;display:flex;flex-direction:column;position:relative','overflow:auto;display:flex;flex-direction:column;position:relative');
+    return t;
+  }
+  await DCRuntime.mount({url:desk?'mock/BKFCRedraft.dc.html':'mock/BKFCRedraftPhone.dc.html',root:document.getElementById('app'),patch:patch,patchText:text});
+})();
+</script></body></html>

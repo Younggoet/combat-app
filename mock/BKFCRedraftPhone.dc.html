@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BKFC card redraft (phone)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#0A1124}</style>
+</helmet>
+<div style="width:880px;box-sizing:border-box;background:#0A1124;color:#F5F2EA;font-family:'Barlow',sans-serif;padding:24px;display:flex;gap:40px">
+  <div style="width:390px;height:900px;flex-shrink:0;border:1px solid rgba(120,170,255,.25);border-radius:34px;background:#0A1124;overflow:hidden;display:flex;flex-direction:column;position:relative">
+      <div style="padding:14px 16px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1C1C20">
+        <div><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:18px;letter-spacing:1px;color:#D4AF37">COMBAT</div><div style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:2px;color:#9A9AA2">BKFC REDRAFT · BLOCK 1</div></div>
+        <div style="display:flex;align-items:center;gap:10px"><div style="text-align:right"><div style="font-size:9px;letter-spacing:2px;color:#9A9AA2">ROUND</div><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:26px;line-height:1">2<span style="color:#8C8982;font-size:16px"> / 5</span></div></div><div style="{{ clock.av.box }}"><div style="{{ clock.av.outer }}"><div style="{{ clock.av.line }}"></div><sc-for list="{{ clock.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ clock.av.inner }}"><svg width="{{ clock.av.g }}" height="{{ clock.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ clock.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div></div>
+      </div>
+      <div style="display:flex;gap:8px;padding:12px 14px;background:#0F0F12;border-bottom:1px solid #18264A;overflow:hidden">
+        <sc-for list="{{track}}" as="t" hint-placeholder-count="8">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:74px;flex-shrink:0"><div style="{{ t.av.box }}"><div style="{{ t.av.outer }}"><div style="{{ t.av.line }}"></div><sc-for list="{{ t.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ t.av.inner }}"><svg width="{{ t.av.g }}" height="{{ t.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ t.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div><div style="font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;color:#5A5A62">PICK {{ t.k }} <span style="color:{{ t.tmC }}">· {{ t.tm }}</span></div><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:9.5px;text-align:center;color:{{ t.nameC }}">{{ t.info }}</div></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:6px;padding:10px 14px;overflow:hidden">
+        <sc-for list="{{mtabs0}}" as="m" hint-placeholder-count="7"><span style="{{ m.s }}">{{ m.n }}</span></sc-for>
+      </div>
+    <div style="padding:6px 14px;overflow:hidden;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#E2283C"></span><span style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;color:#E2283C">ON THE CLOCK — YOUR PICK</span></div>
+      <div style="{{ rope }};background:linear-gradient(160deg,#14224A 0%,#0C1630 70%);padding:14px;display:flex;align-items:center;gap:14px">
+        <div style="{{ spot.av.box }}"><div style="{{ spot.av.outer }}"><div style="{{ spot.av.line }}"></div><sc-for list="{{ spot.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ spot.av.inner }}"><svg width="{{ spot.av.g }}" height="{{ spot.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ spot.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div>
+        <div style="min-width:0"><div style="font-size:12px;font-weight:600;color:#F4F4F2">Welterweight · 9-3 · 7 finishes</div><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:28px;line-height:1.05">PAGUE</div><div style="font-size:12px;color:#D8D5CC;margin-top:2px">Next fight: <b>Dec 4</b> vs Richman</div>
+          <div style="display:flex;gap:20px;margin-top:6px"><div><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:32px;line-height:1">38.5</div><div style="font-size:10px;color:#B8B5AE">Projected points</div></div><div><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:32px;line-height:1">#1</div><div style="font-size:10px;color:#B8B5AE">Block rank</div></div></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <sc-for list="{{heroStats}}" as="h" hint-placeholder-count="4"><div style="{{ rope }};background:#0F1A33;padding:10px 6px;text-align:center"><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:22px">{{ h.v }}</div><div style="font-size:10px;letter-spacing:1px;color:#9A9AA2">{{ h.l }}</div></div></sc-for>
+      </div>
+      <div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;color:#9A9AA2;text-align:center">MORE DETAILS ▾</div>
+      <div style="{{ rope }};background:#0F1A33;padding:12px 14px"><div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;color:#9A9AA2;margin-bottom:8px">BEST AVAILABLE AFTER THIS PICK</div><div style="display:flex;gap:14px"><sc-for list="{{upNext}}" as="u" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:6px"><div style="{{ u.av.box }}"><div style="{{ u.av.outer }}"><div style="{{ u.av.line }}"></div><sc-for list="{{ u.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ u.av.inner }}"><svg width="{{ u.av.g }}" height="{{ u.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ u.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div><span style="font-family:'Oswald',sans-serif;font-weight:700;font-size:12px">{{ u.n }}</span></div></sc-for></div></div>
+      <div style="min-height:52px;border-radius:999px;background:#E2283C;color:#F5F2EA;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:700;font-size:14px;letter-spacing:2px">LOCK PICK — PAGUE</div>
+    </div>
+  </div>
+
+  <div style="width:390px;height:900px;flex-shrink:0;border:1px solid rgba(120,170,255,.25);border-radius:34px;background:#0A1124;overflow:hidden;display:flex;flex-direction:column;position:relative">
+      <div style="padding:14px 16px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1C1C20">
+        <div><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:18px;letter-spacing:1px;color:#D4AF37">COMBAT</div><div style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:2px;color:#9A9AA2">BKFC REDRAFT · BLOCK 1</div></div>
+        <div style="display:flex;align-items:center;gap:10px"><div style="text-align:right"><div style="font-size:9px;letter-spacing:2px;color:#9A9AA2">ROUND</div><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:26px;line-height:1">2<span style="color:#8C8982;font-size:16px"> / 5</span></div></div><div style="{{ clock.av.box }}"><div style="{{ clock.av.outer }}"><div style="{{ clock.av.line }}"></div><sc-for list="{{ clock.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ clock.av.inner }}"><svg width="{{ clock.av.g }}" height="{{ clock.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ clock.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div></div>
+      </div>
+      <div style="display:flex;gap:8px;padding:12px 14px;background:#0F0F12;border-bottom:1px solid #18264A;overflow:hidden">
+        <sc-for list="{{track}}" as="t" hint-placeholder-count="8">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:74px;flex-shrink:0"><div style="{{ t.av.box }}"><div style="{{ t.av.outer }}"><div style="{{ t.av.line }}"></div><sc-for list="{{ t.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ t.av.inner }}"><svg width="{{ t.av.g }}" height="{{ t.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ t.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div><div style="font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;color:#5A5A62">PICK {{ t.k }} <span style="color:{{ t.tmC }}">· {{ t.tm }}</span></div><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:9.5px;text-align:center;color:{{ t.nameC }}">{{ t.info }}</div></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:6px;padding:10px 14px;overflow:hidden">
+        <sc-for list="{{mtabs1}}" as="m" hint-placeholder-count="7"><span style="{{ m.s }}">{{ m.n }}</span></sc-for>
+      </div>
+    <div style="padding:4px 14px;overflow:hidden;display:flex;flex-direction:column;gap:10px">
+      <div style="border:1px solid #2A2A30;border-radius:999px;padding:10px 18px;font-size:13px;color:#5A5A62">Search fighters…</div>
+      <div style="display:flex;gap:6px;overflow:hidden"><span style="border-radius:999px;padding:6px 14px;border:1px solid #D4AF37;background:rgba(212,175,55,.13);color:#D4AF37;font-family:'Oswald',sans-serif;font-size:11px;font-weight:700">ALL</span><sc-for list="{{divChips}}" as="d" hint-placeholder-count="6"><span style="{{ d.s }}">{{ d.n }}</span></sc-for></div>
+      <div style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:2px;color:#7A7A82">AVAILABLE — RANKED BY BLOCK RANK</div>
+      <sc-for list="{{pool}}" as="p" hint-placeholder-count="7">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#0F1A33;border:1px solid rgba(255,194,61,.3);border-radius:999px 16px 16px 999px">
+          <div style="{{ p.av.box }}"><div style="{{ p.av.outer }}"><div style="{{ p.av.line }}"></div><sc-for list="{{ p.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ p.av.inner }}"><svg width="{{ p.av.g }}" height="{{ p.av.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ p.av.sc }}" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div></div></div>
+          <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="font-family:'Oswald',sans-serif;font-weight:700;font-size:15px">{{ p.n }}</span><span style="{{ p.tag }}">{{ p.sh }}</span></div><div style="font-size:11px;color:#9A9AA2;margin-top:2px">{{ p.rec }} · {{ p.pr }} punch/rd · {{ p.kd }} KD</div></div>
+          <div style="text-align:right"><div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;color:#D4AF37">{{ p.rk }}</div><div style="font-size:10px;color:#9A9AA2">{{ p.proj }} PROJ</div></div>
+          <span style="color:#D4AF37;font-size:16px">☆</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":950}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const DC = { 'Heavyweight':'#E2283C','Ironweight':'#FF6A3D','Cruiserweight':'#B57BFF','Light Heavyweight':'#3A7BFF','Middleweight':'#1FB5A3','Welterweight':'#F4F4F2','Lightweight':'#B5452B','Featherweight':'#9ACD32','Bantamweight':'#FFFDD0','Flyweight':'#6EC6F0',"Women's Featherweight":'#E58CB0',"Women's Flyweight":'#E0239A','Strawweight':'#F6B26B' };
+    const SH = { 'Heavyweight':'HW','Ironweight':'IW','Cruiserweight':'CW','Light Heavyweight':'LHW','Middleweight':'MW','Welterweight':'WW','Lightweight':'LW','Featherweight':'FW','Bantamweight':'BW','Flyweight':'FLW',"Women's Featherweight":'WFW',"Women's Flyweight":'WFLW','Strawweight':'SW' };
+    const ring = (S, c, o) => {
+      o = o || {};
+      const pad = Math.max(3, Math.round(S * .085)), d = Math.max(5, Math.round(S * .115)), R = S / 2 - d / 2 + .5, deco = [];
+      const empty = !!o.empty;
+      for (let i = 0; i < 8; i++) deco.push({ style: 'position:absolute;left:50%;top:50%;width:' + d + 'px;height:' + d + 'px;margin:' + (-d / 2) + 'px 0 0 ' + (-d / 2) + 'px;border-radius:50%;box-sizing:border-box;background:#0A1124;border:' + (S > 70 ? 2 : 1.5) + 'px solid ' + (empty ? '#5A5A62' : '#FFC23D') + ';transform:rotate(' + (i * 45) + 'deg) translateY(' + (-R) + 'px)' });
+      return { sc: empty ? '#4A4A52' : c, g: Math.round(S * .4),
+        box: 'position:relative;width:' + S + 'px;height:' + S + 'px;flex-shrink:0' + (o.glow ? ';filter:drop-shadow(0 0 10px ' + c + '88)' : ''),
+        outer: 'position:relative;width:100%;height:100%;padding:' + pad + 'px;box-sizing:border-box;border-radius:50%;background:' + (empty ? '#22232A' : 'radial-gradient(circle at 35% 28%,#fff 0%,' + c + ' 55%,#000 130%)'),
+        line: 'position:absolute;left:' + Math.round(pad * .45) + 'px;top:' + Math.round(pad * .45) + 'px;right:' + Math.round(pad * .45) + 'px;bottom:' + Math.round(pad * .45) + 'px;border-radius:50%;border:' + (S > 70 ? 2 : 1.5) + 'px solid ' + (empty ? '#5A5A62' : '#FFC23D') + ';box-sizing:border-box;pointer-events:none',
+        inner: 'width:100%;height:100%;border-radius:50%;background:#0F0F12;display:flex;align-items:center;justify-content:center' + (o.txt ? ';color:#FF6A7A;font-family:Orbitron,sans-serif;font-weight:800;font-size:' + Math.round(S * .26) + 'px' : ''), deco };
+    };
+    const rope = (c) => 'border-radius:30px;border:1px solid ' + (c || 'rgba(255,194,61,.4)') + ';box-shadow:0 0 0 4px #0A1124,0 0 0 5px rgba(255,138,31,.28)';
+    const tagS = (c) => 'display:inline-block;border-radius:999px;padding:1px 9px;font-family:Orbitron,sans-serif;font-weight:800;font-size:8px;letter-spacing:.5px;color:' + c + ';background:' + c + '2A';
+    const F = (n, w, rec, extra) => Object.assign({ n, w, sh: SH[w], rec, dc: DC[w], tag: tagS(DC[w]) }, extra || {});
+    const POOL = [
+      F('Pague','Welterweight','9-3',{ pr:'62.1', acc:'44%', kd:'0.60', ko:'56%', rw:'1.9', fin:'7', fpy:'2.1', proj:'38.5', rk:'#1' }),
+      F('Richman','Welterweight','12-4',{ pr:'58.4', acc:'41%', kd:'0.42', ko:'48%', rw:'1.8', fin:'8', fpy:'2.0', proj:'34.0', rk:'#2' }),
+      F('Richardson','Lightweight','8-2',{ pr:'55.0', acc:'39%', kd:'0.35', ko:'40%', rw:'1.7', fin:'5', fpy:'1.9', proj:'31.5', rk:'#3' }),
+      F('Oxendine','Lightweight','7-3',{ pr:'51.7', acc:'37%', kd:'0.30', ko:'36%', rw:'1.6', fin:'4', fpy:'1.8', proj:'27.0', rk:'#4' }),
+      F('[Fighter]','Middleweight','[rec]',{ pr:'[pr]', acc:'[acc]', kd:'[kd]', ko:'[ko]', rw:'[rw]', fin:'[fin]', fpy:'[fpy]', proj:'[proj]', rk:'#5' }),
+      F('[Fighter]','Featherweight','[rec]',{ pr:'[pr]', acc:'[acc]', kd:'[kd]', ko:'[ko]', rw:'[rw]', fin:'[fin]', fpy:'[fpy]', proj:'[proj]', rk:'#6' }),
+      F('[Fighter]','Heavyweight','[rec]',{ pr:'[pr]', acc:'[acc]', kd:'[kd]', ko:'[ko]', rw:'[rw]', fin:'[fin]', fpy:'[fpy]', proj:'[proj]', rk:'#7' })
+    ].map(f => Object.assign(f, { av: ring(42, f.dc, {}), avS: ring(30, f.dc, {}) }));
+    const spot = POOL[0];
+    const divChips = ['Heavyweight','Ironweight','Cruiserweight','Light Heavyweight','Middleweight','Welterweight','Lightweight','Featherweight','Bantamweight','Flyweight',"Women's Featherweight","Women's Flyweight",'Strawweight'].map(d => ({ n: d, s: 'flex:0 0 auto;border-radius:999px;padding:7px 14px;font-family:Oswald,sans-serif;font-size:12px;letter-spacing:.5px;color:#9A9AA2;background:' + DC[d] + '14;border:1px solid ' + DC[d] + '44' }));
+    const track = [[4,'JB','Richman','WW',1,0],[5,'TK','Richardson','LW',1,0],[6,'RW','[Fighter]','MW',1,1],[7,'YOU','',"",0,2],[8,'SM','',"",0,3],[9,'DL','',"",0,3],[10,'JB','',"",0,3],[11,'TK','',"",0,3]].map(([k, tm, nm, dv, done, st]) => {
+      const f = done ? POOL.find(p => p.n === nm) || POOL[4] : null;
+      const you = tm === 'YOU';
+      return { k, tm, nm, dv, st, you, av: ring(42, f ? f.dc : '#999', { empty: !done, glow: st === 2 }), nameC: st === 2 ? '#FF6A7A' : f ? f.dc : '#5A5A62', info: st === 2 ? 'ON THE CLOCK' : done ? nm : 'UPCOMING', tagS: f ? tagS(f.dc) : 'display:none', tmC: you ? '#D4AF37' : '#6A6A72' };
+    });
+
+    const pill = (on) => 'flex:0 0 auto;border-radius:999px;padding:7px 13px;font-family:Oswald,sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;' + (on ? 'background:rgba(226,40,60,.16);border:1px solid #E2283C;color:#FF6A7A' : 'border:1px solid #2A2A30;color:#9A9AA2');
+    const tabs = ['YOUR PICK','FIGHTERS','QUEUE','ROSTER','FEED','CHAT','NEWS'];
+    return {
+      rope: rope(), pool: POOL, divChips, track, spot: { av: ring(84, spot.dc, { glow: true }) },
+      clock: { av: Object.assign(ring(60, '#E2283C', { glow: true }), { inner: 'width:100%;height:100%;border-radius:50%;background:#1A0A0D;display:flex;align-items:center;justify-content:center;color:#FF6A7A;font-family:Oswald,sans-serif;font-weight:700;font-size:15px', g: 0 }) },
+      heroStats: [{ v: '62.1', l: 'Punches per round' }, { v: '44%', l: 'Accuracy' }, { v: '0.60', l: 'Knockdowns' }, { v: '2.1', l: 'Fights per year' }],
+      upNext: POOL.slice(1, 4).map(f => Object.assign({}, f, { av: ring(34, f.dc, {}) })),
+      mtabs0: tabs.map((n, i) => ({ n, s: pill(i === 0) })), mtabs1: tabs.map((n, i) => ({ n, s: pill(i === 1) }))
+    };
+  }
+}
+</script>
+</body>
+</html>
