@@ -380,41 +380,81 @@ button:focus-visible{outline:2px solid #D4AF37;outline-offset:2px}
 
     <!-- ============ FIGHTS ============ -->
     <sc-if value="{{ isFights }}" hint-placeholder-val="{{ false }}">
-      <div style="font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.08em;text-transform:uppercase;margin:8px 0 0;flex-shrink:0">Browse fights</div>
-      <div style="display:flex;gap:16px;align-items:center;flex-shrink:0">
-        <div style="display:flex;align-items:center;gap:10px;padding:0 16px;min-height:48px;width:520px;background:#0F1A33;border:1px solid rgba(120,170,255,.2);border-radius:12px;color:#8FA3C7;font-size:15px">
+      <sc-if value="{{ fxList }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;gap:10px;padding:0 14px;min-height:52px;background:#0F1A33;border:1px solid rgba(120,170,255,.2);border-radius:12px;color:#8FA3C7;font-size:16px">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Search fighters and events
         </div>
-        <div style="display:flex;gap:4px;width:320px">
-          <sc-for list="{{fightTabs}}" as="t" hint-placeholder-count="2">
-            <button onClick="{{ t.pick }}" aria-pressed="{{ t.on }}" class="lift" style="{{ t.style }}">{{ t.label }}</button>
+        <div class="scroll" style="display:flex;gap:6px;overflow-x:auto;flex-wrap:wrap"><sc-for list="{{ fx.tabs }}" as="t" hint-placeholder-count="4"><button onClick="{{ t.pick }}" class="lift" style="{{ t.style }}">{{ t.label }}</button></sc-for></div>
+        <sc-if value="{{ fxFighters }}" hint-placeholder-val="{{ false }}"><div style="height:0"></div></sc-if>
+      </div></sc-if>
+      <sc-if value="{{ fxList }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">
+        <div class="scroll" style="display:flex;gap:6px;overflow-x:auto;flex-wrap:wrap"><sc-for list="{{ fx.orgs }}" as="o" hint-placeholder-count="7"><button onClick="{{ o.pick }}" class="lift" style="{{ o.style }}">{{ o.label }}</button></sc-for></div>
+        <sc-if value="{{ fx.showLiveNote }}" hint-placeholder-val="{{ false }}"><div style="font-size:14px;line-height:1.45;padding:10px 12px;border-radius:10px;background:rgba(212,175,55,.1);color:#F6E08A;border:1px solid rgba(212,175,55,.4)">{{ fx.liveNote }}</div></sc-if>
+        <sc-if value="{{ fx.isEmpty }}" hint-placeholder-val="{{ false }}"><div style="font-size:16px;color:#9FB2D6;line-height:1.5;padding:20px 0">Nothing here right now. Try another tab or filter.</div></sc-if>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start">
+          <sc-for list="{{ fx.list }}" as="e" hint-placeholder-count="4">
+            <div style="{{ e.shell }}"><div style="{{ e.wrap }}"><div style="{{ e.card }}">
+              <sc-for list="{{ e.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for>
+              <sc-if value="{{ e.hasStars }}" hint-placeholder-val="{{ false }}"><div style="{{ e.starS }}">{{ e.stars }}</div></sc-if>
+              <div style="display:flex;align-items:center;gap:10px"><div style="{{ e.chip }}">{{ e.org }}</div><div style="flex:1;min-width:0;font-size:13px;color:#9FB2D6">{{ e.when }}</div><div style="{{ e.badgeS }}">{{ e.badge }}</div></div>
+              <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:22px;line-height:1.15">{{ e.name }}</div>
+              <div style="font-size:17px;color:#E8F0FF">{{ e.sub }}</div>
+              <div style="font-size:14px;color:#9FB2D6">{{ e.place }}</div>
+              <div style="{{ e.lineS }}">{{ e.line }}</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap"><div style="{{ e.liveTagS }}">{{ e.liveTag }}</div><button onClick="{{ e.open }}" class="lift" style="{{ e.btn }}">VIEW FULL CARD</button></div>
+              <sc-if value="{{ e.hasStars }}" hint-placeholder-val="{{ false }}"><div style="{{ e.starS }}">{{ e.stars }}</div></sc-if>
+            </div></div></div>
           </sc-for>
         </div>
-      </div>
-      <sc-if value="{{ showEvents }}" hint-placeholder-val="{{ true }}">
-        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;flex-shrink:0">
-          <sc-for list="{{events}}" as="e" hint-placeholder-count="5">
-            <div style="display:flex;align-items:center;gap:14px;padding:16px 18px;background:#0F1A33;border:1px solid rgba(120,170,255,.14);border-radius:12px">
-              <div style="{{ e.chip }}">{{ e.org }}</div>
-              <div style="flex:1;min-width:0">
-                <div style="font-weight:600;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.name }}</div>
-                <div style="font-size:13px;color:#9FB2D6;margin-top:2px">{{ e.meta }}</div>
-              </div>
-              <div style="font-size:14px;color:#B6C6E6;white-space:nowrap">{{ e.date }}</div>
+        <div style="font-size:13px;color:#7F93B8;line-height:1.45">Layout sample. Names and stats are placeholders until the feeds are connected.</div>
+      </div></sc-if>
+      <sc-if value="{{ fxFighters }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px">
+          <sc-for list="{{fighters}}" as="f" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#0F1A33;border:1px solid rgba(120,170,255,.14);border-radius:12px">
+              <div style="{{ f.av }}"></div>
+              <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:15px">{{ f.name }}</div><div style="font-size:12px;color:#9FB2D6;margin-top:2px">{{ f.meta }}</div></div>
+              <div style="{{ f.chip }}">{{ f.org }}</div>
             </div>
           </sc-for>
         </div>
       </sc-if>
-      <sc-if value="{{ showFighters }}" hint-placeholder-val="{{ false }}">
-        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;flex-shrink:0">
-          <sc-for list="{{fighters}}" as="f" hint-placeholder-count="4">
-            <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;background:#0F1A33;border:1px solid rgba(120,170,255,.14);border-radius:12px">
-              <div style="{{ f.av }}"></div>
-              <div style="flex:1;min-width:0">
-                <div style="font-weight:600;font-size:17px">{{ f.name }}</div>
-                <div style="font-size:13px;color:#9FB2D6;margin-top:2px">{{ f.meta }}</div>
+      <sc-if value="{{ fxDetailOn }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:16px;max-width:940px">
+          <button onClick="{{ fx.back }}" class="lift" style="align-self:flex-start;border:0;background:none;padding:0;color:#D4AF37;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;cursor:pointer">‹ All events</button>
+          <div style="{{ fx.detail.shell }}"><div style="{{ fx.detail.wrap }}"><div style="{{ fx.detail.card }}">
+            <sc-for list="{{ fx.detail.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for>
+            <sc-if value="{{ fx.detail.hasStars }}" hint-placeholder-val="{{ false }}"><div style="{{ fx.detail.starS }}">{{ fx.detail.stars }}</div></sc-if>
+            <div style="display:flex;align-items:center;gap:10px"><div style="{{ fx.detail.chip }}">{{ fx.detail.org }}</div><div style="flex:1;min-width:0;font-size:13px;color:#9FB2D6">{{ fx.detail.when }}</div><div style="{{ fx.detail.badgeS }}">{{ fx.detail.badge }}</div></div>
+            <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:30px;line-height:1.15">{{ fx.detail.name }}</div>
+            <div style="font-size:15px;color:#9FB2D6">{{ fx.detail.place }}</div>
+            <div style="{{ fx.detail.noteS }}">{{ fx.detail.note }}</div>
+            <sc-if value="{{ fx.detail.hasStars }}" hint-placeholder-val="{{ false }}"><div style="{{ fx.detail.starS }}">{{ fx.detail.stars }}</div></sc-if>
+          </div></div></div>
+          <sc-for list="{{ fx.detail.bouts }}" as="b" hint-placeholder-count="5">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-if value="{{ b.showSec }}" hint-placeholder-val="{{ true }}"><div style="{{ b.secS }}">{{ b.sec }}</div></sc-if>
+              <div style="background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-radius:14px;overflow:hidden">
+                <button onClick="{{ b.toggle }}" style="width:100%;box-sizing:border-box;border:0;background:none;color:inherit;text-align:left;cursor:pointer;padding:16px 20px;display:flex;flex-direction:column;gap:10px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font-size:13px;color:#9FB2D6">{{ b.meta }}</div><div style="display:flex;align-items:center;gap:10px"><div style="{{ b.badgeS }}">{{ b.badge }}</div><div style="font-size:20px;color:#D4AF37;width:16px;text-align:center">{{ b.chev }}</div></div></div>
+                  <div style="display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:16px">
+                    <div style="display:flex;align-items:center;gap:10px;min-width:0"><div style="{{ b.aAv }}">{{ b.aIni }}</div><div style="min-width:0"><div style="{{ b.aNS }}">{{ b.aN }}</div><div style="font-size:14px;color:#9FB2D6;margin-top:3px">{{ b.aR }}</div></div></div>
+                    <div style="font-family:'Orbitron',sans-serif;font-weight:800;font-size:14px;color:#7F93B8">VS</div>
+                    <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0;text-align:right"><div style="min-width:0"><div style="{{ b.bNS }}">{{ b.bN }}</div><div style="font-size:14px;color:#9FB2D6;margin-top:3px">{{ b.bR }}</div></div><div style="{{ b.bAv }}">{{ b.bIni }}</div></div>
+                  </div>
+                  <div style="font-size:13px;color:#7F93B8">{{ b.odds }}</div>
+                </button>
+                <sc-if value="{{ b.open }}" hint-placeholder-val="{{ false }}"><div style="border-top:1px solid rgba(120,170,255,.16);padding:16px 20px 20px;display:flex;flex-direction:column;gap:12px">
+                  <sc-if value="{{ b.hasRes }}" hint-placeholder-val="{{ false }}"><div style="font-size:16px;padding:10px 12px;border-radius:10px;background:rgba(212,175,55,.1);color:#F6E08A">{{ b.res }}</div></sc-if>
+                  <sc-if value="{{ b.hasLive }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:10px">
+                    <div style="display:flex;align-items:center;gap:8px;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:16px;color:#F6E08A"><span style="width:8px;height:8px;border-radius:50%;background:#D4AF37;box-shadow:0 0 10px #D4AF37"></span>Live stats · {{ b.liveRd }}</div>
+                    <sc-for list="{{ b.liveRows }}" as="r" hint-placeholder-count="5"><div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(120,170,255,.1)"><div style="{{ r.aS }}">{{ r.a }}</div><div style="font-size:13px;color:#9FB2D6;text-align:center">{{ r.l }}</div><div style="{{ r.bS }};text-align:right">{{ r.b }}</div></div></sc-for>
+                    <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(212,175,55,.1)"><div style="font-family:'Orbitron',sans-serif;font-weight:800;font-size:24px;color:#F6E08A">{{ b.pA }}</div><div style="font-size:13px;color:#F6E08A;text-align:center">Fantasy points</div><div style="font-family:'Orbitron',sans-serif;font-weight:800;font-size:24px;color:#F6E08A;text-align:right">{{ b.pB }}</div></div>
+                  </div></sc-if>
+                  <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:16px;color:#9FB2D6">Tale of the tape</div>
+                  <sc-for list="{{ b.tape }}" as="r" hint-placeholder-count="8"><div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(120,170,255,.1)"><div style="{{ r.aS }}">{{ r.a }}</div><div style="font-size:13px;color:#9FB2D6;text-align:center">{{ r.l }}</div><div style="{{ r.bS }};text-align:right">{{ r.b }}</div></div></sc-for>
+                </div></sc-if>
               </div>
-              <div style="{{ f.chip }}">{{ f.org }}</div>
             </div>
           </sc-for>
         </div>
@@ -715,13 +755,6 @@ class Component extends DCLogic {
       { org:'RAF', c:'#A87BFF', chip:chip('#A87BFF'), name:'No RAF leagues yet', meta:'Face-Off planned', status:'Planned', badge:badge('Planned') }
     ];
 
-    const events = [
-      { org:'RAF', chip:chip('#A87BFF'), name:'RAF 15: Cejudo vs Song', meta:'Chicago · 13 bouts', date:'Nov 28' },
-      { org:'BKFC', chip:chip('#FF8A1F'), name:'Hershey: Pague vs Richman', meta:'Fight Night · 13 bouts', date:'Dec 4' },
-      { org:'UFC', chip:chip('#FF3B4E'), name:'Adesanya vs Magomedov', meta:'Fight Night · 13 bouts', date:'Dec 5' },
-      { org:'BKFC', chip:chip('#FF8A1F'), name:'BKFC 97 Hollywood: Henry vs Collard', meta:'8 bouts so far', date:'Dec 11' },
-      { org:'UFC', chip:chip('#FF3B4E'), name:'UFC 335: Oliveira vs Lopes', meta:'Numbered event', date:'Dec 12' }
-    ];
     const fav = (c) => 'width:44px;height:44px;flex-shrink:0;clip-path:polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%);background:radial-gradient(circle at 35% 28%,#fff 0%,' + c + ' 55%,#000 130%)';
     const fighters = [
       { name:'Jiri Prochazka', meta:'Light heavyweight', org:'UFC', chip:chip('#FF3B4E'), av:fav('#FF3B4E') },
@@ -729,7 +762,7 @@ class Component extends DCLogic {
       { name:'Khamzat Chimaev', meta:'Light heavyweight crossover', org:'RAF', chip:chip('#A87BFF'), av:fav('#A87BFF') },
       { name:'[Fighter]', meta:'Weight class · record', org:'PFL', chip:chip('#5CC8FF'), av:fav('#5CC8FF') }
     ];
-    const fightTabs = [['events','EVENTS'],['fighters','FIGHTERS']].map(([k, l]) => ({ label:l, on:fightTab===k, style:orgBtn('ufc', false).replace('background:#0F1A33;color:#B6C6E6;', fightTab===k ? 'background:#E8F0FF;color:#0A1124;' : 'background:#0F1A33;color:#B6C6E6;'), pick:() => this.setState({ fightTab:k }) }));
+    const events = [], fightTabs = [];
 
     const news = [
       { org:'UFC', chip:chip('#FF3B4E'), title:'[UFC headline: roster move or card change]', when:'Today' },
@@ -968,6 +1001,86 @@ class Component extends DCLogic {
         key: (e) => { if (e.key === 'Enter') { const t = (e.target.value || '').trim(); if (!t) return; this.setState({ msgs: { ...msgs, [chatId]: [...(msgs[chatId] || []), { mine:true, text:t, when:'now' }] }, cdraft:'' }); } },
         list: (msgs[chatId] || []).map(m => ({ text: m.text, when: m.when, style: 'max-width:78%;padding:9px 13px;font-size:' + (FR_FS > 48 ? 16 : 15) + 'px;line-height:1.35;' + (m.mine ? 'align-self:flex-end;background:#D4AF37;color:#0A1124;border-radius:16px 16px 4px 16px' : 'align-self:flex-start;background:#16254A;color:#E8F0FF;border-radius:16px 16px 16px 4px') })) } : { name:'', fav:'', av:{ box:'', outer:'', inner:'', initial:'', deco:[], line:'display:none' }, back: () => {}, draft:'', setDraft: () => {}, send: () => {}, key: () => {}, list: [] } };
     
+    // ---------- Upcoming / Live: event cards, full card detail, live stats category ----------
+    const FXP = false;
+    const FX_LIVE = ['UFC', 'BKFC', 'OKTAGON'];
+    const FXC = { UFC:'#FF3B4E', BKFC:'#FF8A1F', OKTAGON:'#B0E04B', RAF:'#A87BFF', PFL:'#5CC8FF' };
+    const ftab = ['live', 'upcoming', 'results', 'fighters'].includes(this.state.fightTab) ? this.state.fightTab : 'upcoming';
+    const fOrg = this.state.fOrg || 'all', evId = this.state.evId || null;
+    const FI = (n, w, l, d, ht, rc, st, sig, td, fin, age) => ({ n, w, l, d, ht, rc, st, sig, td, fin, age });
+    const FPH = (n) => FI(n, '', '', '', '', '', '', '', '', '', '');
+    const rec = (f) => f.w === '' ? '\u2014' : f.w + '-' + f.l + (f.d ? '-' + f.d : '');
+    const dash = (v, u) => (v === '' || v == null ? '\u2014' : v + (u || ''));
+    const BT = (sec, wc, rd, a, b, o) => ({ sec, wc, rd, a, b, odds: ['\u2014', '\u2014'], state: 'next', ...o });
+    const FX_EVENTS = [
+      { id:'e1', org:'BKFC', name:'BKFC [Live event]', sub:'[Fighter A] vs [Fighter B]', place:'[Venue, city]', date:'Tonight', time:'Live now', state:'live',
+        line:'R3 2:41 \u00B7 [Fighter A] leads punches landed 41\u201328',
+        bouts:[ BT('Main event', 'Heavyweight', '5 rds', FPH('[Fighter A]'), FPH('[Fighter B]'), { state:'live', live:{ rd:'Round 3 \u00B7 2:41', rows:[['Punches landed','41','28',1],['Punches thrown','88','74',0],['Head / body','34 / 7','22 / 6',0],['Power punches','19','11',1],['Knockdowns','1','0',1]], pts:['38.5','24.0'] } }),
+                BT('Main card', 'Welterweight', '5 rds', FPH('[Fighter C]'), FPH('[Fighter D]'), { state:'done', win:'a', res:'[Method] \u00B7 R2 1:48' }),
+                BT('Main card', 'Lightweight', '5 rds', FPH('[Fighter E]'), FPH('[Fighter F]'), {}) ] },
+      { id:'e2', org:'UFC', name:'UFC Fight Night: Adesanya vs Magomedov', sub:'Israel Adesanya vs Shara Magomedov', place:'[Venue, city]', date:'Sat, Dec 5', time:'Main card TBA', state:'upcoming', line:'14 bouts \u00B7 Middleweight main event',
+        bouts:[ BT('Main event', 'Middleweight', '5 rds', FI('Israel Adesanya',24,6,0,193,203.2,'Switch',71.9,0.1,16,''), FI('Shara Magomedov',17,1,0,188,185.4,'Orthodox',77.1,0.0,15,32), {}),
+                BT('Co-main', 'Welterweight', '5 rds', FI('Ian Machado Garry',17,2,0,190.5,188,'Orthodox',67.0,0.8,3,28), FI('Yaroslav Amosov',30,1,0,183,190.5,'Orthodox',32.3,2.0,2,''), {}),
+                BT('Main card', 'Heavyweight', '3 rds', FI('Serghei Spivac',18,7,0,191,198,'Orthodox',23.7,1.5,6,''), FI('Mario Pinto',13,0,0,196,201,'Orthodox',32.3,2.3,3,''), {}),
+                BT('Main card', 'Welterweight', '3 rds', FI('Islam Dulatov',12,1,0,191,190.5,'Orthodox',39.3,0.8,7,''), FI('Levan Chokheli',15,3,0,182.9,183,'Orthodox',35.6,0.7,12,29), {}),
+                BT('Prelims', 'Lightweight', '3 rds', FI('Mairon Santos',17,1,0,170.2,182.9,'Orthodox',42.5,0.0,9,''), FI('Akbar Abdullaev',14,0,0,175,178,'Orthodox',99.3,3.3,14,''), {}) ] },
+      { id:'e3', org:'BKFC', name:'BKFC Hershey: Pague vs Richman', sub:'Pague vs Richman', place:'Hershey, PA', date:'Fri, Dec 4', time:'Main card TBA', state:'upcoming', line:'13 bouts so far',
+        bouts:[ BT('Main event', 'Cruiserweight', '5 rds', FPH('Pague'), FPH('Richman'), {}), BT('Co-main', '[Weight class]', '5 rds', FPH('[Fighter A]'), FPH('[Fighter B]'), {}), BT('Main card', '[Weight class]', '5 rds', FPH('[Fighter C]'), FPH('[Fighter D]'), {}) ] },
+      { id:'e4', org:'OKTAGON', name:'OKTAGON [Event name]', sub:'[Fighter A] vs [Fighter B]', place:'[Venue, city]', date:'[Date]', time:'Main card TBA', state:'upcoming', line:'[Bout count] bouts',
+        bouts:[ BT('Main event', '[Weight class]', '5 rds', FPH('[Fighter A]'), FPH('[Fighter B]'), {}), BT('Main card', '[Weight class]', '3 rds', FPH('[Fighter C]'), FPH('[Fighter D]'), {}) ] },
+      { id:'e5', org:'RAF', name:'RAF 15: Cejudo vs Song', sub:'Henry Cejudo vs Song Yadong', place:'Chicago, IL', date:'Sat, Nov 28', time:'Main card TBA', state:'upcoming', line:'13 bouts \u00B7 Results-based scoring',
+        bouts:[ BT('Main event', '[Weight class]', '[Format]', FPH('Henry Cejudo'), FPH('Song Yadong'), {}), BT('Main card', '[Weight class]', '[Format]', FPH('[Wrestler A]'), FPH('[Wrestler B]'), {}) ] },
+      { id:'e6', org:'PFL', name:'PFL [Event name]', sub:'[Fighter A] vs [Fighter B]', place:'[Venue, city]', date:'[Date]', time:'Main card TBA', state:'upcoming', line:'[Bout count] bouts',
+        bouts:[ BT('Main event', '[Weight class]', '5 rds', FPH('[Fighter A]'), FPH('[Fighter B]'), {}) ] },
+      { id:'e7', org:'UFC', name:'UFC Fight Night: Prochazka vs Stirling', sub:'Jiri Prochazka vs Navajo Stirling', place:'[Venue, city]', date:'Sat, Nov 21', time:'Final', state:'results', line:'Stirling def. Prochazka \u00B7 KO/TKO R2 4:58',
+        bouts:[ BT('Main event', 'Light heavyweight', '5 rds', FI('Jiri Prochazka',32,6,1,193,203.2,'Orthodox',55.8,0.3,31,''), FI('Navajo Stirling',11,0,0,193,200.7,'Orthodox',56.0,0.3,7,''), { state:'done', win:'b', res:'KO/TKO \u00B7 R2 4:58' }),
+                BT('Co-main', 'Featherweight', '3 rds', FI('Aljamain Sterling',26,5,0,170,180.3,'Orthodox',42.8,3.2,11,''), FI('Kevin Vallejos',18,1,0,170.2,172.7,'Switch',40.4,0.4,15,''), { state:'done', win:'b', res:'Decision (unanimous) \u00B7 R3 5:00' }),
+                BT('Main card', 'Lightweight', '3 rds', FI('Dan Hooker',24,15,0,183,190.5,'Switch',39.2,0.4,18,''), FI('Brian Ortega',16,5,0,178,175.3,'Switch',49.4,0.9,11,''), { state:'done', win:'a', res:'Decision (unanimous) \u00B7 R3 5:00' }),
+                BT('Main card', 'Flyweight', '3 rds', FI('Asu Almabayev',24,3,0,162.6,165.1,'Orthodox',32.2,2.6,14,''), FI('Kyoji Horiguchi',36,6,0,165,175.3,'Orthodox',49.6,0.6,21,''), { state:'done', win:'b', res:'Decision (unanimous) \u00B7 R3 5:00' }),
+                BT('Main card', 'Middleweight', '3 rds', FI('Jared Cannonier',18,10,0,180,196.9,'Switch',85.4,1.0,13,''), FI('Ikram Aliskerov',18,2,0,185,193,'Southpaw',38.8,2.2,11,''), { state:'done', win:'b', res:'Decision (unanimous) \u00B7 R3 5:00' }) ] }
+    ];
+    const fxKind = (o) => (o === 'BKFC' ? 'ring' : o === 'RAF' ? 'mat' : 'oct');
+    const fxOct = (n) => 'polygon(' + n + 'px 0,calc(100% - ' + n + 'px) 0,100% ' + n + 'px,100% calc(100% - ' + n + 'px),calc(100% - ' + n + 'px) 100%,' + n + 'px 100%,0 calc(100% - ' + n + 'px),0 ' + n + 'px)';
+    const fxFrame = (org, big) => { const c = FXC[org] || '#8FA3C7', k = fxKind(org), pad = FXP ? 14 : 20, fl = 'display:flex;flex-direction:column;gap:' + (FXP ? 10 : 12) + 'px;';
+      const dot = (x, y) => ({ style: 'position:absolute;left:' + x + ';top:' + y + ';width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#0A1124;border:2px solid #FFC23D' });
+      if (k === 'oct') return { shell: 'filter:drop-shadow(0 0 10px ' + c + '44)', wrap: 'padding:2px;background:linear-gradient(160deg,' + c + ',' + c + '55);clip-path:' + fxOct(FXP ? 18 : 24), card: 'background:#0F1A33;clip-path:' + fxOct(FXP ? 16 : 22) + ';padding:' + (pad + 8) + 'px ' + (pad + 12) + 'px;' + fl, deco: [], stars: false, c };
+      if (k === 'ring') return { shell: '', wrap: 'padding:6px', card: 'position:relative;background:#0F1A33;border:2px solid ' + c + ';border-radius:20px;box-shadow:inset 0 0 0 7px #0F1A33,inset 0 0 0 8px ' + c + '77;padding:' + (pad + 10) + 'px ' + (pad + 12) + 'px;' + fl, deco: [dot('0%','0%'), dot('50%','0%'), dot('100%','0%'), dot('0%','50%'), dot('100%','50%'), dot('0%','100%'), dot('50%','100%'), dot('100%','100%')], stars: false, c };
+      return { shell: '', wrap: '', card: 'background:linear-gradient(180deg,' + c + '26,#0F1A33 45%);border:2px solid ' + c + ';border-radius:8px;padding:' + (pad + 2) + 'px ' + (pad + 4) + 'px;' + fl, deco: [], stars: true, c }; };
+    const star25 = Array(25).fill('\u2605').join(' ');
+    const starS = (c) => 'height:' + (FXP ? 9 : 11) + 'px;overflow:hidden;line-height:1;font-size:' + (FXP ? 8 : 10) + 'px;color:' + c + ';text-align:justify;text-align-last:justify;white-space:normal';
+    const stBadge = (s) => s === 'live' ? { t: 'LIVE', s: 'font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:11px;letter-spacing:.08em;color:#0A1124;background:#D4AF37;padding:5px 9px;border-radius:6px;white-space:nowrap' } : s === 'results' ? { t: 'FINAL', s: 'font-size:11px;color:#B6C6E6;border:1px solid rgba(120,170,255,.3);padding:4px 8px;border-radius:6px;white-space:nowrap' } : { t: 'UPCOMING', s: 'font-size:11px;color:#E8F0FF;border:1px solid rgba(120,170,255,.5);padding:4px 8px;border-radius:6px;white-space:nowrap' };
+    const fxTabOf = (e) => e.state;
+    const orgMatch = (e) => fOrg === 'all' || (fOrg === 'livestats' ? FX_LIVE.includes(e.org) : e.org === fOrg);
+    const inTab = FX_EVENTS.filter(e => fxTabOf(e) === ftab && orgMatch(e));
+    const evCard = (e) => { const fr = fxFrame(e.org), b = stBadge(e.state), hasLive = FX_LIVE.includes(e.org);
+      return { shell: fr.shell, wrap: fr.wrap, card: fr.card, deco: fr.deco, hasStars: fr.stars, stars: star25, starS: starS(fr.c), org: e.org, chip: chip(fr.c), name: e.name, sub: e.sub, place: e.place, when: e.date + ' \u00B7 ' + e.time, badge: b.t, badgeS: b.s, line: e.line, lineS: 'font-size:' + (FXP ? 13 : 14) + 'px;padding:9px 12px;border-radius:10px;' + (e.state === 'live' ? 'background:rgba(212,175,55,.1);color:#F6E08A' : 'background:rgba(120,170,255,.06);color:#B6C6E6'),
+        hasLive, liveTag: hasLive ? 'Live stats' : 'Results after each fight', liveTagS: 'font-size:11px;padding:4px 9px;border-radius:999px;white-space:nowrap;' + (hasLive ? 'border:1px solid #D4AF37;color:#F6E08A;background:rgba(212,175,55,.12)' : 'border:1px solid rgba(120,170,255,.3);color:#9FB2D6'),
+        btn: 'min-height:42px;padding:0 18px;border:0;background:' + fr.c + ';color:#0A1124;border-radius:8px;font-family:"Orbitron",sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em;cursor:pointer;white-space:nowrap', open: () => this.setState({ evId: e.id, fxBout: null }) }; };
+    const cnt = (s) => FX_EVENTS.filter(e => e.state === s && orgMatch(e)).length;
+    const fxTabs = [['live', 'Live'], ['upcoming', 'Upcoming'], ['results', 'Results'], ['fighters', 'Fighters']].map(([k, l]) => ({ label: l + (k === 'fighters' ? '' : ' ' + cnt(k)), style: pill(ftab === k, k === 'live' ? '#D4AF37' : null), pick: () => this.setState({ fightTab: k, evId: null }) }));
+    const fxOrgs = [['all', 'All'], ['livestats', 'Live stats'], ['UFC', 'UFC'], ['BKFC', 'BKFC'], ['OKTAGON', 'Oktagon'], ['RAF', 'RAF'], ['PFL', 'PFL']].map(([k, l]) => ({ label: l, style: pill(fOrg === k, k === 'livestats' ? '#D4AF37' : (FXC[k] || null)), pick: () => this.setState({ fOrg: k }) }));
+    const ev = FX_EVENTS.find(e => e.id === evId) || null;
+    const openB = ev ? (this.state.fxBout || ev.bouts[0].a.n + '|' + ev.bouts[0].b.n) : null;
+    const num = (v) => parseFloat(v);
+    const rowsOf = (rows) => rows.map(([l, a, b, hl]) => { const x = num(a), y = num(b), lead = hl && !isNaN(x) && !isNaN(y) && x !== y ? (x > y ? 'a' : 'b') : '', base = 'font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:' + (FXP ? 15 : 17) + 'px;';
+      return { l, a: String(a), b: String(b), aS: base + (lead === 'a' ? 'color:#F6E08A' : 'color:#E8F0FF'), bS: base + (lead === 'b' ? 'color:#F6E08A' : 'color:#E8F0FF') }; });
+    const tapeOf = (a, b) => rowsOf([['Record', rec(a), rec(b), 0], ['Age', dash(a.age), dash(b.age), 0], ['Height', dash(a.ht, ' cm'), dash(b.ht, ' cm'), 1], ['Reach', dash(a.rc, ' cm'), dash(b.rc, ' cm'), 1], ['Stance', dash(a.st), dash(b.st), 0], ['Sig. strikes / min', dash(a.sig), dash(b.sig), 1], ['Takedowns / 15 min', dash(a.td), dash(b.td), 1], ['Finishes', dash(a.fin), dash(b.fin), 1]]);
+    const fxDetail = ev ? (() => { const fr = fxFrame(ev.org), hasLive = FX_LIVE.includes(ev.org), b = stBadge(ev.state); let last = '';
+      return { shell: fr.shell, wrap: fr.wrap, card: fr.card, deco: fr.deco, hasStars: fr.stars, stars: star25, starS: starS(fr.c), chip: chip(fr.c), org: ev.org, name: ev.name, place: ev.place, when: ev.date + ' \u00B7 ' + ev.time, badge: b.t, badgeS: b.s,
+        note: hasLive ? 'Live stats are on for this card. Round-by-round strikes, knockdowns and fantasy points update during each fight.' : 'No live stats for this organization. Results and fantasy points post after each fight.', noteS: 'font-size:' + (FXP ? 13 : 14) + 'px;line-height:1.45;padding:10px 12px;border-radius:10px;' + (hasLive ? 'background:rgba(212,175,55,.1);color:#F6E08A;border:1px solid rgba(212,175,55,.4)' : 'background:rgba(120,170,255,.06);color:#B6C6E6;border:1px solid rgba(120,170,255,.2)'),
+        bouts: ev.bouts.map(bt => { const id = bt.a.n + '|' + bt.b.n, open = openB === id, showSec = bt.sec !== last; last = bt.sec; const bd = stBadge(bt.state === 'done' ? 'results' : bt.state === 'live' ? 'live' : 'upcoming');
+          const nm = (f, side) => 'font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:' + (FXP ? 16 : 19) + 'px;line-height:1.15;color:' + (bt.win === side ? '#F6E08A' : '#E8F0FF');
+          const av = (f) => 'width:' + (FXP ? 40 : 48) + 'px;height:' + (FXP ? 40 : 48) + 'px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:"Orbitron",sans-serif;font-weight:800;font-size:' + (FXP ? 14 : 17) + 'px;color:#0A1124;' + (fxKind(ev.org) === 'oct' ? 'clip-path:polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%);' : 'border-radius:' + (fxKind(ev.org) === 'ring' ? '50%;box-shadow:0 0 0 2px #0F1A33,0 0 0 4px ' + fr.c : '50%;border:3px dotted ' + fr.c) + ';') + 'background:radial-gradient(circle at 35% 28%,#fff 0%,' + fr.c + ' 60%,#000 150%)';
+          const ini = (f) => (f.n.replace(/[^A-Za-z]/g, '')[0] || '?').toUpperCase();
+          return { id, showSec, sec: bt.sec, secS: 'font-family:"Orbitron","Chakra Petch",sans-serif;font-weight:700;font-size:' + (FXP ? 13 : 15) + 'px;letter-spacing:.08em;text-transform:uppercase;color:#9FB2D6;margin:' + (showSec ? '8px 0 0' : '0'),
+            meta: bt.wc + ' \u00B7 ' + bt.rd, badge: bt.state === 'live' ? 'LIVE \u00B7 ' + bt.live.rd.replace('Round ', 'R') : bt.state === 'done' ? 'FINAL' : 'UPCOMING', badgeS: bd.s,
+            aN: bt.a.n, bN: bt.b.n, aR: rec(bt.a), bR: rec(bt.b), aNS: nm(bt.a, 'a'), bNS: nm(bt.b, 'b'), aAv: av(bt.a), bAv: av(bt.b), aIni: ini(bt.a), bIni: ini(bt.b), aWin: bt.win === 'a', bWin: bt.win === 'b',
+            odds: 'Odds ' + bt.odds[0] + ' / ' + bt.odds[1], open, chev: open ? '\u2212' : '+', hasRes: bt.state === 'done', res: (bt.win === 'a' ? bt.a.n : bt.b.n) + ' wins \u00B7 ' + (bt.res || ''),
+            hasLive: bt.state === 'live', liveRd: bt.live ? bt.live.rd : '', liveRows: bt.live ? rowsOf(bt.live.rows) : [], pA: bt.live ? bt.live.pts[0] : '', pB: bt.live ? bt.live.pts[1] : '',
+            tape: tapeOf(bt.a, bt.b), toggle: () => this.setState({ fxBout: open ? '-' : id }) }; }) }; })() : null;
+    const fxVals = { fx: { tabs: fxTabs, orgs: fxOrgs, list: inTab.map(evCard), isEmpty: inTab.length === 0, showLiveNote: fOrg === 'livestats', liveNote: 'UFC, BKFC and OKTAGON cards track stats live, round by round. Other organizations post results after each fight.', detail: fxDetail || { bouts: [], shell: '', wrap: '', card: '', deco: [], stars: '', starS: '', chip: '', org: '', name: '', place: '', when: '', badge: '', badgeS: '', note: '', noteS: '' }, back: () => this.setState({ evId: null }) },
+      fxList: !evId && ftab !== 'fighters', fxDetailOn: !!evId, fxFighters: !evId && ftab === 'fighters' };
+    
     const publicLeagues = cur.leagues ? [
       { name:'Bayou Brawlers', meta:'Card Redraft · 8/12 teams · Dec 5 to Jan 23', pick:() => this.setState({ page:'username' }) },
       { name:'Octagon Alley', meta:'Card Redraft · 5/10 teams · Dec 12 to Jan 30', pick:() => this.setState({ page:'username' }) },
@@ -1047,8 +1160,8 @@ class Component extends DCLogic {
     };
     return {
       isHome: false, notHome: true, pageTitle: titles[page] || '',
-      isFantasy: page === 'leagues', isScores: page === 'fights', isCombat: page === 'home',
-      ...mineVals, ...pfVals, ...frVals, isLeagues: false, isConnect: page === 'connect', feedItems, feedFilters, creators, homePosts, cmp, orgFilters, hasOrgFilters, goFeed, connectPlatforms, goConnect: () => this.setState({ page: 'connect' }), goMock: () => this.setState({ page: 'mock' }), isMock: page === 'mock', sl: slideV, slideDots, mockTiles, promos, publicLeagues, showPublic: cur.leagues, isUsername: page === 'username', isFights: page === 'fights', isNews: page === 'news', isMe: page === 'me',
+      isFantasy: page === 'leagues', isScores: false, isFights: page === 'fights', isCombat: page === 'home',
+      ...mineVals, ...pfVals, ...frVals, ...fxVals, isLeagues: false, isConnect: page === 'connect', feedItems, feedFilters, creators, homePosts, cmp, orgFilters, hasOrgFilters, goFeed, connectPlatforms, goConnect: () => this.setState({ page: 'connect' }), goMock: () => this.setState({ page: 'mock' }), isMock: page === 'mock', sl: slideV, slideDots, mockTiles, promos, publicLeagues, showPublic: cur.leagues, isUsername: page === 'username', isFights: page === 'fights', isNews: page === 'news', isMe: page === 'me',
       tabs: [['fantasy','FANTASY'],['scores','SCORES']].map(([k, l]) => ({ label:l, on:tab===k, style:tabBtn(tab===k), pick:() => this.setState({ tab:k }) })),
       orgs: ['ufc','bkfc','raf'].map(k => ({ label:O[k].label, on:org===k, ...orgShape(k, org===k), pick:() => this.setState({ org:k }) })),
       accent:cur.c, accent2:cur.c2, accentSoft, accentLine:cur.line,
