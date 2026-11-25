@@ -21,6 +21,11 @@
     pool=(fr.data||[]).map(function(f){
       var L=logs[f.id]||[],ls=L.filter(function(l){return l.landed!=null&&l.thrown!=null});
       var landed=0,thrown=0,rounds=0,kd=0;ls.forEach(function(l){landed+=l.landed;thrown+=l.thrown;rounds+=(l.elapsed_seconds||0)/120;kd+=(l.knockdowns||0)});
+      /* William's BKFC scoring: punch .2, KD 8, win 5, KO/TKO +15, decision win +3, accuracy +3 (60%+ of 30+ thrown). Rounds won (3 each) is not in the log, so left out. */
+      var fpT=0;ls.forEach(function(l){var win=l.result==='win',m=l.method||'';fpT+=0.2*l.landed+8*(l.knockdowns||0)+(win?5:0)+(win&&(m==='ko'||m==='tko')?15:0)+(win&&m.indexOf('decision')===0?3:0)+(l.thrown>=30&&l.landed/l.thrown>=0.6?3:0)});
+      var fpf=ls.length?fpT/ls.length:null,fpy=null;
+      var ds=L.map(function(l){return l.fight_date&&new Date(l.fight_date).getTime()}).filter(Boolean);
+      if(ds.length>=2){var yrs=Math.max(0.5,(Date.now()-Math.min.apply(null,ds))/31557600000);fpy=ds.length/yrs}
       var w=f.weight_class==='Women Flyweight'?"Women's Flyweight":f.weight_class;
       var cm=f.height_cm,ft=cm?Math.floor(cm/2.54/12)+"'"+Math.round((cm/2.54)%12)+'"':DASH;
       var age=null;if(f.birth_month){var p=f.birth_month.split('-');var d=new Date();age=d.getFullYear()-(+p[0])-((d.getMonth()+1)<(+p[1])?1:0)}
@@ -28,7 +33,7 @@
       return {slug:f.cito_slug,full:f.full_name,nick:f.nickname,w:w,nat:f.nationality,iso:ISO[f.nationality]||null,
         rec:hasRec?f.wins+'-'+f.losses+(f.draws?'-'+f.draws:''):DASH,wins:f.wins,ko:f.ko_wins,
         pr:rounds>0?(landed/rounds).toFixed(1):DASH,acc:thrown>0?Math.round(landed/thrown*100)+'%':DASH,kd:ls.length?(kd/ls.length).toFixed(2):DASH,
-        kop:(f.wins>0&&f.ko_wins!=null)?Math.round(f.ko_wins/f.wins*100)+'%':DASH,fin:f.ko_wins!=null?String(f.ko_wins):DASH,
+        kop:(f.wins>0&&f.ko_wins!=null)?Math.round(f.ko_wins/f.wins*100)+'%':DASH,fin:f.ko_wins!=null?String(f.ko_wins):DASH,fpy:fpy!=null?fpy.toFixed(1):DASH,proj:fpf!=null?fpf.toFixed(1):DASH,
         photo:f.headshot_url,credit:f.headshot_credit,tag:f.career_tag,note:f.career_note,src:f.career_source,
         ht:cm?ft+' ('+Math.round(cm)+' cm)':DASH,rc:f.reach_cm?Math.round(f.reach_cm/2.54)+'" ('+Math.round(f.reach_cm)+' cm)':DASH,age:age,status:f.status,
         rank:(f.rankings||[]).filter(function(r){return r.rank>0}).map(function(r){return '#'+r.rank+' '+r.division}).join(' · ')||DASH,
@@ -80,7 +85,7 @@
   var PHOTO_INNER='<sc-if value="{{ p.hasPhoto }}"><img src="{{ p.photo }}" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center 20%;border-radius:50%"></sc-if><sc-if value="{{ p.noPhoto }}">';
   function patch(s){
     s=s.replace(/const POOL = \[[\s\S]*?\n    \]\.map\(/,
-      "const POOL = (window.__BKFC.length >= 5 ? window.__BKFC : [1,2,3,4,5].map(i => ({ full:'\\u2014', w:'Middleweight', rec:'\\u2014' }))).map((p, i) => F(p.full, p.w || 'Middleweight', p.rec || '\\u2014', { pr:p.pr||'\\u2014', acc:p.acc||'\\u2014', kd:p.kd||'\\u2014', ko:p.kop||'\\u2014', rw:'\\u2014', fin:p.fin||'\\u2014', fpy:'\\u2014', proj:'\\u2014', rk:'#' + (i + 1),\n        hasPhoto:!!p.photo, noPhoto:!p.photo, photo:p.photo, ct:p.tag || '', hasCt:!!p.tag, open: () => this.setState({ prof: p.slug }) })).map(");
+      "const POOL = (window.__BKFC.length >= 5 ? window.__BKFC : [1,2,3,4,5].map(i => ({ full:'\\u2014', w:'Middleweight', rec:'\\u2014' }))).map((p, i) => F(p.full, p.w || 'Middleweight', p.rec || '\\u2014', { pr:p.pr||'\\u2014', acc:p.acc||'\\u2014', kd:p.kd||'\\u2014', ko:p.kop||'\\u2014', rw:'\\u2014', fin:p.fin||'\\u2014', fpy:p.fpy||'\\u2014', proj:p.proj||'\\u2014', rk:'#' + (i + 1),\n        hasPhoto:!!p.photo, noPhoto:!p.photo, photo:p.photo, ct:p.tag || '', hasCt:!!p.tag, open: () => this.setState({ prof: p.slug }) })).map(");
     s=s.replace("mtabs0: tabs.map((n, i) => ({ n, s: pill(i === 0) })), mtabs1: tabs.map((n, i) => ({ n, s: pill(i === 1) }))","view: { pick: (this.state.tab || 0) !== 1, fighters: this.state.tab === 1 }, mtabs0: tabs.map((n, i) => ({ n, s: pill(i === 0), go: () => this.setState({ tab: i === 1 ? 1 : 0 }) })), mtabs1: tabs.map((n, i) => ({ n, s: pill(i === 1), go: () => this.setState({ tab: i === 1 ? 1 : 0 }) }))");
     var n=0;s=s.replace(/rope: rope\(\), pool: POOL/,function(m){n++;return "rope: rope(), prof: window.__PROFV(this, ring, tagS, DC), pool: POOL"});
     return s;
