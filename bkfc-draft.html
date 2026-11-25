@@ -10,31 +10,102 @@
 <script>
 (async function(){
   var desk=window.matchMedia('(min-width:900px)').matches;
-  /* Block 1 pool: every fighter on the three BKFC cards, from the bkfc_* tables */
-  var pool=[];
+  var ISO={'United States':'us','Australia':'au','Mexico':'mx','Cuba':'cu','Italy':'it','North Macedonia':'mk','Puerto Rico':'pr','United Kingdom':'gb','Turkey':'tr'};
+  var DASH='—';
+  var pool=[],BY={};
   try{
     var sb=window.CombatAuth&&window.CombatAuth.client;
-    var r=await sb.from('bkfc_fighters').select('cito_slug,full_name,weight_class,wins,losses,draws').order('wins',{ascending:false,nullsFirst:false}).order('full_name');
-    pool=(r.data||[]).map(function(f){
-      var parts=f.full_name.trim().split(/\s+/);
-      return {n:parts.length>1?parts.slice(1).join(' '):parts[0],full:f.full_name,w:f.weight_class==='Women Flyweight'?"Women's Flyweight":f.weight_class,
-        rec:f.wins==null?'—':f.wins+'-'+f.losses+(f.draws?'-'+f.draws:'')};
+    var fr=await sb.from('bkfc_fighters').select('*').order('wins',{ascending:false,nullsFirst:false}).order('full_name');
+    var lr=await sb.from('bkfc_fight_log').select('*').order('fight_date',{ascending:false});
+    var logs={};(lr.data||[]).forEach(function(l){(logs[l.fighter_id]=logs[l.fighter_id]||[]).push(l)});
+    pool=(fr.data||[]).map(function(f){
+      var L=logs[f.id]||[],ls=L.filter(function(l){return l.landed!=null&&l.thrown!=null});
+      var landed=0,thrown=0,rounds=0,kd=0;ls.forEach(function(l){landed+=l.landed;thrown+=l.thrown;rounds+=(l.elapsed_seconds||0)/120;kd+=(l.knockdowns||0)});
+      var w=f.weight_class==='Women Flyweight'?"Women's Flyweight":f.weight_class;
+      var cm=f.height_cm,ft=cm?Math.floor(cm/2.54/12)+"'"+Math.round((cm/2.54)%12)+'"':DASH;
+      var age=null;if(f.birth_month){var p=f.birth_month.split('-');var d=new Date();age=d.getFullYear()-(+p[0])-((d.getMonth()+1)<(+p[1])?1:0)}
+      var hasRec=f.wins!=null&&(f.record_source==='cito');
+      return {slug:f.cito_slug,full:f.full_name,nick:f.nickname,w:w,nat:f.nationality,iso:ISO[f.nationality]||null,
+        rec:hasRec?f.wins+'-'+f.losses+(f.draws?'-'+f.draws:''):DASH,wins:f.wins,ko:f.ko_wins,
+        pr:rounds>0?(landed/rounds).toFixed(1):DASH,acc:thrown>0?Math.round(landed/thrown*100)+'%':DASH,kd:ls.length?(kd/ls.length).toFixed(2):DASH,
+        kop:(f.wins>0&&f.ko_wins!=null)?Math.round(f.ko_wins/f.wins*100)+'%':DASH,fin:f.ko_wins!=null?String(f.ko_wins):DASH,
+        photo:f.headshot_url,credit:f.headshot_credit,tag:f.career_tag,note:f.career_note,src:f.career_source,
+        ht:cm?ft+' ('+Math.round(cm)+' cm)':DASH,rc:f.reach_cm?Math.round(f.reach_cm/2.54)+'" ('+Math.round(f.reach_cm)+' cm)':DASH,age:age,status:f.status,
+        rank:(f.rankings||[]).filter(function(r){return r.rank>0}).map(function(r){return '#'+r.rank+' '+r.division}).join(' · ')||DASH,
+        next:f.next_bout_date,last:f.last_bout_date,nlog:ls.length,landed:landed,thrown:thrown,kdTot:kd,logs:L};
     });
+    pool.forEach(function(p){BY[p.slug]=p});
   }catch(e){}
-  window.__BKFC=pool;
+  window.__BKFC=pool;window.__BKFCBY=BY;
+  var FLAG=function(iso){return iso?'https://flagcdn.com/w1280/'+iso+'.png':null};
+  /* profile card values; called from inside renderVals */
+  window.__PROFV=function(inst,ring,tagS,DC){
+    var p=BY[inst.state.prof];if(!p)return {on:false,logs:[],tiles:[],phys:[],tagList:[]};
+    var c=DC[p.w]||'#F4F4F2',fl=FLAG(p.iso);
+    var logs=p.logs.map(function(l){var win=l.result==='win';return {d:l.fight_date||DASH,o:l.opponent_name||DASH,r:(l.result||DASH).toUpperCase(),rc:win?'#3DBE6B':(l.result==='loss'?'#E2283C':'#9A9AA2'),
+      m:(l.method_text||l.method||DASH)+(l.end_round?' · R'+l.end_round+(l.end_time?' '+l.end_time:''):''),t:l.landed!=null?l.landed+'/'+l.thrown:DASH,a:l.accuracy_pct!=null?Math.round(l.accuracy_pct)+'%':DASH,k:l.knockdowns!=null?String(l.knockdowns):DASH,ttl:l.is_title_fight?'TITLE':''}});
+    return {on:true,hasFlag:!!fl,noFlag:!fl,flag:fl?'background-image:url('+fl+');background-size:cover;background-position:center':'',
+      hasPhoto:!!p.photo,noPhoto:!p.photo,photo:p.photo||'',av:ring(168,c,{glow:true}),name:p.full.toUpperCase(),nick:p.nick?'“'+p.nick+'”':'',
+      div:(p.w||DASH),divS:tagS(c),nat:p.nat||'',hasNat:!!p.nat,
+      tagList:(p.tag?p.tag.split(' · '):[]).map(function(t){return {t:t}}),hasTag:!!p.tag,note:p.note||'',hasNote:!!p.note,src:p.src?'Sources: '+p.src:'',
+      tiles:[[p.rec,'BKFC record'],[p.ko!=null?String(p.ko):DASH,'KO wins'],[p.pr,'Punches per round'],[p.acc,'Accuracy'],[p.kd,'Knockdowns per fight'],[String(p.nlog),'Fights logged']].map(function(a){return {v:a[0],l:a[1]}}),
+      phys:[['Height',p.ht],['Reach',p.rc],['Age',p.age!=null?String(p.age):DASH],['Status',p.status||DASH],['Rank',p.rank],['Next fight',p.next||DASH],['Last fight',p.last||DASH],['KO rate',p.kop]].map(function(a){return {k:a[0],v:a[1]}}),
+      logs:logs,hasLogs:logs.length>0,noLogs:logs.length===0,credit:p.photo?('Photo '+(p.credit||'© BKFC')+'. Official promotional image, shown unaltered.'):'',
+      close:function(){inst.setState({prof:null})}};
+  };
+  var MODAL='<sc-if value="{{ prof.on }}"><div style="position:fixed;left:0;top:0;right:0;bottom:0;z-index:50;background:rgba(5,9,20,.82);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:'+(desk?'32px 24px':'0')+'">'+
+   '<div style="position:relative;width:100%;max-width:960px;box-sizing:border-box;background:#0F1A33;border:1px solid rgba(255,194,61,.4);border-radius:'+(desk?'30px':'0')+';box-shadow:0 0 0 4px #0A1124,0 0 0 5px rgba(255,138,31,.28);overflow:hidden;color:#F5F2EA;font-family:\'Barlow\',sans-serif;min-height:'+(desk?'0':'100vh')+'">'+
+    '<sc-if value="{{ prof.hasFlag }}"><div style="{{ prof.flag }};position:absolute;left:0;top:0;right:0;height:420px;opacity:.34"></div></sc-if>'+
+    '<div style="position:absolute;left:0;top:0;right:0;height:420px;background:linear-gradient(180deg,rgba(15,26,51,.15) 0%,#0F1A33 100%)"></div>'+
+    '<div style="position:relative;padding:'+(desk?'28px 32px 28px':'18px 16px 28px')+'">'+
+     '<div style="display:flex;justify-content:flex-end"><div onClick="{{ prof.close }}" style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:12px;letter-spacing:2px;color:#D4AF37;border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:8px 16px;background:rgba(10,17,36,.6)">CLOSE</div></div>'+
+     '<div style="display:flex;gap:'+(desk?'28px':'16px')+';align-items:center;flex-wrap:wrap;margin-top:6px">'+
+      '<div style="{{ prof.av.box }}"><div style="{{ prof.av.outer }}"><div style="{{ prof.av.line }}"></div><sc-for list="{{ prof.av.deco }}" as="d" hint-placeholder-count="8"><div style="{{ d.style }}"></div></sc-for><div style="{{ prof.av.inner }}">'+
+       '<sc-if value="{{ prof.hasPhoto }}"><img src="{{ prof.photo }}" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center 20%;border-radius:50%"></sc-if>'+
+       '<sc-if value="{{ prof.noPhoto }}"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9A9AA2" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></sc-if></div></div></div>'+
+      '<div style="flex:1;min-width:220px">'+
+       '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span style="{{ prof.divS }}">{{ prof.div }}</span><sc-if value="{{ prof.hasNat }}"><span style="font-size:12px;color:#C4C1B8">{{ prof.nat }}</span></sc-if></div>'+
+       '<div style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:'+(desk?'44':'30')+'px;line-height:1.05;margin-top:8px;color:#F5F2EA">{{ prof.name }}</div>'+
+       '<div style="font-size:15px;color:#C4C1B8;margin-top:4px">{{ prof.nick }}</div>'+
+       '<sc-if value="{{ prof.hasTag }}"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><sc-for list="{{ prof.tagList }}" as="t" hint-placeholder-count="2"><span style="display:inline-block;border-radius:999px;padding:5px 14px;border:1px solid #D4AF37;background:rgba(212,175,55,.13);color:#D4AF37;font-family:\'Oswald\',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px">{{ t.t }}</span></sc-for></div></sc-if>'+
+      '</div></div>'+
+     '<sc-if value="{{ prof.hasNote }}"><div style="margin-top:16px;font-size:14px;line-height:1.5;color:#C4C1B8">{{ prof.note }}<div style="font-size:10px;letter-spacing:1px;color:#5A5A62;margin-top:6px">{{ prof.src }}</div></div></sc-if>'+
+     '<div style="display:grid;grid-template-columns:repeat('+(desk?'6':'2')+',minmax(0,1fr));gap:10px;margin-top:20px"><sc-for list="{{ prof.tiles }}" as="t" hint-placeholder-count="6"><div style="border:1px solid rgba(255,194,61,.3);border-radius:18px;background:#0A1124;padding:12px 8px;text-align:center"><div style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:24px">{{ t.v }}</div><div style="font-size:11px;letter-spacing:1px;color:#9A9AA2;margin-top:2px">{{ t.l }}</div></div></sc-for></div>'+
+     '<div style="display:grid;grid-template-columns:repeat('+(desk?'4':'2')+',minmax(0,1fr));gap:8px 16px;margin-top:20px"><sc-for list="{{ prof.phys }}" as="t" hint-placeholder-count="8"><div style="border-bottom:1px solid #18264A;padding:6px 0"><div style="font-size:10px;letter-spacing:2px;color:#7A7A82">{{ t.k }}</div><div style="font-size:14px;color:#F5F2EA;margin-top:2px">{{ t.v }}</div></div></sc-for></div>'+
+     '<div style="font-family:\'Oswald\',sans-serif;font-size:12px;letter-spacing:2px;color:#7A7A82;margin-top:24px">FIGHT LOG</div>'+
+     '<sc-if value="{{ prof.noLogs }}"><div style="font-size:13px;color:#9A9AA2;margin-top:8px">No BKFC fights logged yet.</div></sc-if>'+
+     '<sc-if value="{{ prof.hasLogs }}"><div style="margin-top:8px;border:1px solid #18264A;border-radius:16px;overflow:hidden;background:#0A1124"><sc-for list="{{ prof.logs }}" as="l" hint-placeholder-count="4"><div style="display:grid;grid-template-columns:'+(desk?'.9fr 1.6fr .6fr 1.3fr .8fr .6fr .4fr':'1fr 1fr')+';gap:6px 10px;align-items:center;padding:10px 14px;border-top:1px solid #18264A;font-size:13px;color:#C4C1B8"><span>{{ l.d }}</span><span style="color:#F5F2EA;font-weight:600">{{ l.o }}</span><span style="color:{{ l.rc }};font-family:\'Oswald\',sans-serif;font-weight:700">{{ l.r }}</span><span>{{ l.m }}</span><span>{{ l.t }} landed</span><span>{{ l.a }}</span><span>{{ l.k }} KD</span></div></sc-for></div></sc-if>'+
+     '<div style="font-size:10px;letter-spacing:1px;color:#5A5A62;margin-top:14px;line-height:1.6">{{ prof.credit }}</div>'+
+    '</div></div></div></sc-if>';
+  var PHOTO_INNER='<sc-if value="{{ p.hasPhoto }}"><img src="{{ p.photo }}" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center 20%;border-radius:50%"></sc-if><sc-if value="{{ p.noPhoto }}">';
   function patch(s){
-    return s.replace(/const POOL = \[[\s\S]*?\n    \]\.map\(/,
-      "const DASH = { pr:'\\u2014', acc:'\\u2014', kd:'\\u2014', ko:'\\u2014', rw:'\\u2014', fin:'\\u2014', fpy:'\\u2014', proj:'\\u2014' };\n"+
-      "    const POOL = (window.__BKFC.length >= 5 ? window.__BKFC : [1,2,3,4,5]).map((p, i) => F(p.n || '\\u2014', p.w || 'Middleweight', p.rec || '\\u2014', Object.assign({}, DASH, { rk: '#' + (i + 1) }))).map(");
+    s=s.replace(/const POOL = \[[\s\S]*?\n    \]\.map\(/,
+      "const POOL = (window.__BKFC.length >= 5 ? window.__BKFC : [1,2,3,4,5].map(i => ({ full:'\\u2014', w:'Middleweight', rec:'\\u2014' }))).map((p, i) => F(p.full, p.w || 'Middleweight', p.rec || '\\u2014', { pr:p.pr||'\\u2014', acc:p.acc||'\\u2014', kd:p.kd||'\\u2014', ko:p.kop||'\\u2014', rw:'\\u2014', fin:p.fin||'\\u2014', fpy:'\\u2014', proj:'\\u2014', rk:'#' + (i + 1),\n        hasPhoto:!!p.photo, noPhoto:!p.photo, photo:p.photo, ct:p.tag || '', hasCt:!!p.tag, open: () => this.setState({ prof: p.slug }) })).map(");
+    s=s.replace("mtabs0: tabs.map((n, i) => ({ n, s: pill(i === 0) })), mtabs1: tabs.map((n, i) => ({ n, s: pill(i === 1) }))","view: { pick: (this.state.tab || 0) !== 1, fighters: this.state.tab === 1 }, mtabs0: tabs.map((n, i) => ({ n, s: pill(i === 0), go: () => this.setState({ tab: i === 1 ? 1 : 0 }) })), mtabs1: tabs.map((n, i) => ({ n, s: pill(i === 1), go: () => this.setState({ tab: i === 1 ? 1 : 0 }) }))");
+    var n=0;s=s.replace(/rope: rope\(\), pool: POOL/,function(m){n++;return "rope: rope(), prof: window.__PROFV(this, ring, tagS, DC), pool: POOL"});
+    return s;
   }
   function text(t){
-    if(desk)return t;
-    /* phone: one full-screen app instead of the two framed sample screens */
-    var i=t.indexOf('<div style="width:390px;height:900px',t.indexOf('<div style="width:390px;height:900px')+10);
-    var j=t.indexOf('</div>\n</x-dc>');
-    if(i>0&&j>i)t=t.slice(0,i)+t.slice(j);
-    t=t.replace(/<div style="width:880px;box-sizing:border-box;/,'<div style="width:100%;box-sizing:border-box;').replace('padding:24px;display:flex;gap:40px','padding:0;display:flex;gap:0');
-    t=t.replace('width:390px;height:900px;flex-shrink:0;border:1px solid rgba(120,170,255,.25);border-radius:34px;','width:100%;min-height:100vh;border:0;border-radius:0;').replace('overflow:hidden;display:flex;flex-direction:column;position:relative','overflow:auto;display:flex;flex-direction:column;position:relative');
+    var svgRe=/<svg width="\{\{ p\.av\.g \}\}" height="\{\{ p\.av\.g \}\}"[^>]*>[\s\S]*?<\/svg>/g;
+    t=t.replace(svgRe,function(m){return PHOTO_INNER+m+'</sc-if>'});
+    /* tapping a fighter row opens the profile card */
+    t=t.replace('<div style="display:grid;grid-template-columns:2fr .7fr .8fr .9fr .7fr .7fr .7fr .6fr .7fr .8fr .6fr .4fr;gap:8px;align-items:center;padding:8px 20px','<div onClick="{{ p.open }}" style="cursor:pointer;display:grid;grid-template-columns:2fr .7fr .8fr .9fr .7fr .7fr .7fr .6fr .7fr .8fr .6fr .4fr;gap:8px;align-items:center;padding:8px 20px');
+    t=t.replace('<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#0F1A33;border:1px solid rgba(255,194,61,.3);border-radius:999px 16px 16px 999px">','<div onClick="{{ p.open }}" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 12px;background:#0F1A33;border:1px solid rgba(255,194,61,.3);border-radius:999px 16px 16px 999px">');
+    /* career tag next to the name (shown only when the fighter has one) */
+    var tagEl='<sc-if value="{{ p.hasCt }}"><span style="font-size:10px;color:#D4AF37;letter-spacing:.5px;border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:1px 8px;white-space:nowrap">{{ p.ct }}</span></sc-if>';
+    t=t.replace('<span style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:15px;color:#F5F2EA">{{ p.n }}</span></div>','<div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0"><span style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:15px;color:#F5F2EA">{{ p.n }}</span>'+tagEl+'</div></div>');
+    t=t.replace('{{ p.kd }} KD</div></div>','{{ p.kd }} KD</div><div style="margin-top:4px">'+tagEl+'</div></div>');
+    t=t.replace(' · NUMBERS SHOWN ARE SAMPLES',' · LAST 4 LOGGED BKFC FIGHTS').replace('PER-FIGHT CAREER AVERAGES FROM THE BKFC FEED','AVERAGES FROM THE BKFC FEED');
+    t=t.replace('</x-dc>',MODAL+'</x-dc>');
+    if(!desk){
+      /* phone: one full-screen app; the two framed sample screens become the Your pick / Fighters tabs */
+      var F0='<div style="width:390px;height:900px',i1=t.indexOf(F0),i2=t.indexOf(F0,i1+10),end=t.indexOf('</div>\n<sc-if value="{{ prof.on }}">');
+      if(i1>0&&i2>i1&&end>i2)t=t.slice(0,i1)+'<sc-if value="{{ view.pick }}">'+t.slice(i1,i2)+'</sc-if><sc-if value="{{ view.fighters }}">'+t.slice(i2,end)+'</sc-if>'+t.slice(end);
+      t=t.split(F0+';flex-shrink:0;border:1px solid rgba(120,170,255,.25);border-radius:34px;').join('<div style="width:100%;min-height:100vh;border:0;border-radius:0;'.replace('<div style="','<div style="').slice(0,0)+F0.replace('width:390px;height:900px','width:100%;min-height:100vh')+';flex-shrink:0;border:0;border-radius:0;');
+      t=t.split('overflow:hidden;display:flex;flex-direction:column;position:relative').join('overflow:auto;display:flex;flex-direction:column;position:relative');
+      t=t.replace(/<div style="width:880px;box-sizing:border-box;/,'<div style="width:100%;box-sizing:border-box;').replace('padding:24px;display:flex;gap:40px','padding:0;display:flex;gap:0');
+      t=t.split('<span style="{{ m.s }}">{{ m.n }}</span>').join('<span onClick="{{ m.go }}" style="cursor:pointer;{{ m.s }}">{{ m.n }}</span>');
+    }
     return t;
   }
   await DCRuntime.mount({url:desk?'mock/BKFCRedraft.dc.html':'mock/BKFCRedraftPhone.dc.html',root:document.getElementById('app'),patch:patch,patchText:text});
