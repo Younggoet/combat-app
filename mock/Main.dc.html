@@ -799,7 +799,7 @@ class Component extends DCLogic {
       ['bkfc', 'BKFC', 'Bare Knuckle mock draft', 'Draft from a BKFC fight night.'],
       ['raf', 'RAF', 'Face-Off mock draft', 'Draft wrestlers head to head.']
     ];
-    const mockTiles = MD.map(([k, lab, t, d]) => { const sh = orgShape(k, true); const F = HP ? 1.7 : 2.0, S0 = HP ? 76 : 84; return { ...sh, label: lab, title: t, body: d, color: O[k].c, box: 'width:' + Math.round(S0 * F) + 'px;height:' + Math.round(S0 * F) + 'px;flex-shrink:0;position:relative', scale: 'transform:scale(' + F + ');transform-origin:0 0;width:' + S0 + 'px;height:' + S0 + 'px', go: () => {} }; });
+    const mockTiles = MD.map(([k, lab, t, d]) => { const sh = orgShape(k, true); const F = HP ? 1.15 : 1.5, S0 = 112; return { ...sh, label: lab, title: t, body: d, color: O[k].c, box: 'width:' + Math.round(S0 * F) + 'px;height:' + Math.round(S0 * F) + 'px;flex-shrink:0;position:relative', scale: 'transform:scale(' + F + ');transform-origin:0 0;width:' + S0 + 'px;height:' + S0 + 'px', go: () => {} }; });
     const follow = this.state.follow || { UFC: true };
     const promos = ['UFC','BKFC','RAF','PFL','ONE','KSW','RIZIN','OKTAGON','Cage Warriors','LFA'].map(k => { const on = !!follow[k]; return { name: k, color: ORG[k], on, label: on ? 'FOLLOWING' : 'FOLLOW',
       card: 'display:flex;align-items:center;gap:10px;padding:' + (HP ? '10px 12px' : '14px 16px') + ';background:#0F1A33;border:1px solid ' + (on ? ORG[k] : 'rgba(120,170,255,.14)') + ';border-left:3px solid ' + ORG[k] + ';border-radius:12px',

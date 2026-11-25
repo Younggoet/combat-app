@@ -63,34 +63,39 @@
   var fdate=function(d){if(!d)return DASH;var q=d.split('-');return MON[+q[1]-1]+' '+(+q[2])};
   var clkFmt=function(){var t=window.__CLKS,m=Math.floor(t/60),s=t%60;return m+':'+(s<10?'0':'')+s};
   window.__CLKS=90;window.__CLKT=clkFmt;
-  var TEAMS=['T1','T2','T3','T4','T5','T6','YOU','T8','T9','T10'],ME=7,INST=null;
+  var CFG={name:'BKFC Card Redraft',team:'My Team',teams:10,fpt:5,dt:'snake',clock:90,pos:7};
+  try{var c0=JSON.parse(sessionStorage.getItem('bkfcSetup')||'null');if(c0&&c0.teams)CFG=c0}catch(e){}
+  var TN=CFG.teams,RD=CFG.fpt,TOT=TN*RD,ME=Math.min(Math.max(+CFG.pos||1,1),TN),INST=null;
+  var TEAMS=[];for(var ti=1;ti<=TN;ti++)TEAMS.push(ti===ME?'YOU':'T'+ti);
+  window.__CLKS=CFG.clock;window.__CLK0=CFG.clock;
   var DR={picks:[]};window.__DR=DR;
-  var slotOf=function(k){var r=Math.ceil(k/10),i=(k-1)%10;return r%2?i+1:10-i};
+  var revR=function(rd){return CFG.dt==='linear'?false:CFG.dt==='3rr'?(rd===1?false:rd===2?true:((rd-3)%2===0)):(rd%2===0)};
+  var slotOf=function(k){var r=Math.ceil(k/TN),i=(k-1)%TN;return revR(r)?TN-i:i+1};
   var taken=function(sl){return DR.picks.indexOf(sl)>=0};window.__TAKEN=taken;
   var availFirst=function(){return pool.filter(function(p){return !taken(p.slug)})[0]};
   var turn=function(){return DR.picks.length+1};
-  var myTurn=function(){return turn()<=50&&slotOf(turn())===ME};
+  var myTurn=function(){return turn()<=TOT&&slotOf(turn())===ME};
   var rerender=function(){if(INST)INST.setState({dv:Date.now()})};
-  var takePick=function(sl){if(turn()>50||!sl)return;DR.picks.push(sl);window.__CLKS=90;rerender()};
-  var live=pool.length>=50;
-  if(live){while(turn()<=50&&!myTurn()){DR.picks.push(availFirst().slug)}}
+  var takePick=function(sl){if(turn()>TOT||!sl)return;DR.picks.push(sl);window.__CLKS=CFG.clock;rerender()};
+  var live=pool.length>=TOT;
+  if(live){while(turn()<=TOT&&!myTurn()){DR.picks.push(availFirst().slug)}}
   setInterval(function(){
-    if(live&&turn()<=50){
+    if(live&&turn()<=TOT){
       if(myTurn()){if(window.__CLKS>0){window.__CLKS--}else{var a=availFirst();a&&takePick(a.slug)}}
       else{var b=availFirst();b&&takePick(b.slug)}
     }
     var t=clkFmt();document.querySelectorAll('[data-clk]').forEach(function(e){e.textContent=t})},1000);
   window.__HDV=function(inst){
-    INST=inst;var k=Math.min(turn(),50),done=turn()>50,tm=TEAMS[slotOf(k)-1];
+    INST=inst;var k=Math.min(turn(),TOT),done=turn()>TOT,tm=TEAMS[slotOf(k)-1];
     var mine=DR.picks.filter(function(_,i){return slotOf(i+1)===ME}).map(function(sl){return BY[sl]});
     var tot=mine.reduce(function(a,p){return a+(p.projN||0)},0);
-    return {round:Math.ceil(k/10),pickTxt:done?'DRAFT COMPLETE':(myTurn()?'YOUR PICK · PICK '+k+' OF 50':tm+' ON THE CLOCK · PICK '+k+' OF 50'),
+    return {round:Math.ceil(k/TN),rounds:RD,team:CFG.team.toUpperCase(),league:CFG.name.toUpperCase(),pickTxt:done?'DRAFT COMPLETE':(myTurn()?'YOUR PICK · PICK '+k+' OF '+TOT:tm+' ON THE CLOCK · PICK '+k+' OF '+TOT),
       label:done?'DRAFT COMPLETE':(myTurn()?'ON THE CLOCK — YOUR PICK':'ON THE CLOCK — '+tm),mine:mine.length,teamTot:mine.length?tot.toFixed(1):DASH,
       mineList:mine,back:function(){if(document.referrer&&history.length>1)history.back();else location.href='index.html'},
       feed:DR.picks.slice(-4).reverse().map(function(sl,i){var n=DR.picks.length-i;return {k:n,t:TEAMS[slotOf(n)-1],n:BY[sl].full}})};
   };
   window.__TRK=function(inst,ring,tagS,DC,SH,S){
-    var cur=turn(),start=Math.max(1,Math.min(cur-3,43)),out=[];
+    var cur=turn(),start=Math.max(1,Math.min(cur-3,TOT-7)),out=[];
     for(var k=start;k<start+8;k++){var tm=TEAMS[slotOf(k)-1],f=BY[DR.picks[k-1]],st=k===cur?2:(k<cur?0:3),c=f?(DC[f.w]||'#999'):'#999';
       out.push({k:k,tm:tm,you:tm==='YOU',st:st,av:ring(S,c,{empty:!f,glow:st===2}),nameC:st===2?'#FF6A7A':f?c:'#5A5A62',
         info:st===2?'ON THE CLOCK':f?f.full:'UPCOMING',tagS:f?tagS(c):'display:none',sh:f?(SH[f.w]||''):'',tmC:tm==='YOU'?'#D4AF37':'#6A6A72',
@@ -113,13 +118,13 @@
       hasPhoto:!!p.photo,noPhoto:!p.photo,photo:p.photo,credit:p.photo?(p.credit||''):'',
       openProf:function(){inst.setState({prof:p.slug})},
       lock:function(){if(myTurn()){takePick(p.slug);inst.setState({spot:null})}},
-      lockTxt:turn()>50?'DRAFT COMPLETE':(myTurn()?'LOCK PICK — '+p.full.toUpperCase():'WAITING — '+TEAMS[slotOf(turn())-1]+' ON THE CLOCK'),lockS:myTurn()?'cursor:pointer;':'opacity:.45;',
+      lockTxt:turn()>TOT?'DRAFT COMPLETE':(myTurn()?'LOCK PICK — '+p.full.toUpperCase():'WAITING — '+TEAMS[slotOf(turn())-1]+' ON THE CLOCK'),lockS:myTurn()?'cursor:pointer;':'opacity:.45;',
       tape:{a:Object.assign(tp(p),{chips:[p.rec,p.ht==='\u2014'?DASH:p.ht.split(' (')[0],p.rc==='\u2014'?DASH:p.rc.split(' (')[0],p.pr+' P/RD']}),
         b:o?Object.assign(tp(o),{chips:[o.rec,o.ht==='\u2014'?DASH:o.ht.split(' (')[0],o.rc==='\u2014'?DASH:o.rc.split(' (')[0],o.pr+' P/RD']}):{dc:'#999',hasPhoto:false,noPhoto:true,chips:[]},
         rows:[{a:p.rec,l:'RECORD',b:o?o.rec:DASH},{a:p.fin,l:'FINISHES',b:o?o.fin:DASH},{a:rkOf(p),l:'BLOCK RANK',b:o?rkOf(o):DASH},{a:p.proj,l:'PROJ FANTASY PTS',b:o?o.proj:DASH}]}};
   };
   window.__BRDV=function(inst){
-    var rounds=[];for(var r=0;r<5;r++){var cells=[];for(var i=0;i<10;i++){var slot=r%2?9-i:i,k=r*10+slot+1,f=BY[DR.picks[k-1]],cur=k===turn();cells.push({k:k,tm:TEAMS[slot],nm:f?f.full:(cur?'ON THE CLOCK':''),bg:cur?'rgba(226,40,60,.18)':(f?'#14224A':'#0A1124'),bc:cur?'#E2283C':(f?'rgba(255,194,61,.4)':'#18264A'),c:cur?'#FF6A7A':(f?'#D4AF37':'#5A5A62')})}rounds.push({r:r+1,cells:cells})}
+    var rounds=[];for(var r=0;r<RD;r++){var cells=[];for(var i=0;i<TN;i++){var slot=revR(r+1)?TN-1-i:i,k=r*TN+slot+1,f=BY[DR.picks[k-1]],cur=k===turn();cells.push({k:k,tm:TEAMS[slot],nm:f?f.full:(cur?'ON THE CLOCK':''),bg:cur?'rgba(226,40,60,.18)':(f?'#14224A':'#0A1124'),bc:cur?'#E2283C':(f?'rgba(255,194,61,.4)':'#18264A'),c:cur?'#FF6A7A':(f?'#D4AF37':'#5A5A62')})}rounds.push({r:r+1,cells:cells})}
     return {on:!!inst.state.board,rounds:rounds,close:function(){inst.setState({board:false})},open:function(){inst.setState({board:true})}};
   };
   /* profile card values; called from inside renderVals */
@@ -176,7 +181,7 @@
     s=s.replace(/tapeA: [^\n]*\n\s*tapeRows: [^\n]*\n/,"tapeA: Object.assign({ av: ring(56, window.__SPV(this, DC).tape.a.dc, {}) }, window.__SPV(this, DC).tape.a), tapeAChips: window.__SPV(this, DC).tape.a.chips, tapeB: Object.assign({ av: ring(56, window.__SPV(this, DC).tape.b.dc, {}) }, window.__SPV(this, DC).tape.b), tapeBChips: window.__SPV(this, DC).tape.b.chips,\n      tapeRows: window.__SPV(this, DC).tape.rows,\n");
     s=s.replace('upNext: POOL.slice(1, 4),','upNext: POOL.filter(p => p !== spot && !window.__TAKEN(p.slug)).slice(0, 3),');
     s=s.replace('upNext: POOL.slice(1, 4).map(','upNext: POOL.filter(p => p !== spot && !window.__TAKEN(p.slug)).slice(0, 3).map(');
-    s=s.replace(/slip: \[[^\n]*\n/,"slip: (() => { const m = window.__HDV(this).mineList.map(p => ({ n: p.full, p: p.proj, c: '#E2283C', av: ring(30, DC[p.w] || '#999', {}), hasPhoto: !!p.photo, noPhoto: !p.photo, photo: p.photo })); while (m.length < 5) m.push({ n: 'Empty slot', p: '\\u2014', c: '#5A5A62', av: ring(30, '#999', { empty: true }), hasPhoto: false, noPhoto: true, photo: '' }); return m.slice(0, 5); })(),\n");
+    s=s.replace(/slip: \[[^\n]*\n/,"slip: (() => { const m = window.__HDV(this).mineList.map(p => ({ n: p.full, p: p.proj, c: '#E2283C', av: ring(30, DC[p.w] || '#999', {}), hasPhoto: !!p.photo, noPhoto: !p.photo, photo: p.photo })); while (m.length < window.__HDV(this).rounds) m.push({ n: 'Empty slot', p: '\\u2014', c: '#5A5A62', av: ring(30, '#999', { empty: true }), hasPhoto: false, noPhoto: true, photo: '' }); return m.slice(0, window.__HDV(this).rounds); })(),\n");
     s=s.replace(/const track = \[\[[\s\S]*?\n    \}\);/,"const track = window.__TRK(this, ring, tagS, DC, SH, "+(desk?52:42)+");");
     s=s.replace(/feed: \[[^\n]*\n/,"feed: window.__HDV(this).feed,\n");
     s=s.replace(/\.map\(d => \(\{ n: d, s: /,".map(d => ({ go: () => this.setState({ div: this.state.div === d ? null : d }), n: d, s: (this.state.div === d ? 'outline:2px solid #D4AF37;' : '') + ");
@@ -206,12 +211,12 @@
     t=t.replace('line-height:1.02">PAGUE</div>','line-height:1.02;text-transform:uppercase;overflow-wrap:anywhere">{{ sp.name }}</div>').replace('line-height:1.05">PAGUE</div>','line-height:1.05;text-transform:uppercase;overflow-wrap:anywhere">{{ sp.name }}</div>');
     var NEXT='Next fight: <b>{{ sp.nd }}</b> {{ sp.nr }}</div><div onClick="{{ sp.openProf }}" style="cursor:pointer;align-self:flex-start;margin-top:6px;font-family:\'Oswald\',sans-serif;font-size:11px;letter-spacing:2px;color:#D4AF37;border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:6px 14px;background:rgba(10,17,36,.6)">FULL PROFILE</div><div style="font-size:9px;letter-spacing:.5px;color:#5A5A62">{{ sp.credit }}</div>';
     t=t.replace('Next fight: <b>Dec 4</b> vs Richman · BKFC Hershey</div>',NEXT).replace('Next fight: <b>Dec 4</b> vs Richman</div>',NEXT);
-    t=t.replace('font-size:20px">38.5</span>','font-size:20px">{{ hd.teamTot }}</span>').replace('ROSTER · 1 OF 5','ROSTER · {{ hd.mine }} OF 5');
+    t=t.replace('font-size:20px">38.5</span>','font-size:20px">{{ hd.teamTot }}</span>').replace('ROSTER · 1 OF 5','ROSTER · {{ hd.mine }} OF {{ hd.rounds }}').replace('TEAM RASTA WILLY','{{ hd.team }}');
     t=t.replace('line-height:1">38.5</div>','line-height:1">{{ sp.proj }}</div>').replace('line-height:1">#1</div>','line-height:1">{{ sp.rk }}</div>');
     t=t.split('LOCK PICK — PAGUE').join('LOCK PICK — {{ sp.nameU }}').replace('NEWS · PAGUE','NEWS · {{ sp.nameU }}').replace('LAST 5 FIGHTS','LAST 5 LOGGED FIGHTS');
     t=t.replace('line-height:1">78%</div>','line-height:1">{{ sp.frPct }}</div>').replace('<div style="width:78%;height:100%','<div style="width:{{ sp.frW }};height:100%').replace('7 finishes in 9 wins · You own 0 Welterweight fighters','{{ sp.frTxt }}');
 
-    t=t.replace(/line-height:1">2<span style="color:#8C8982;font-size:(26|16)px"> \/ 5<\/span>/,function(m,z){return 'line-height:1">{{ hd.round }}<span style="color:#8C8982;font-size:'+z+'px"> / 5</span>'});
+    t=t.replace(/line-height:1">2<span style="color:#8C8982;font-size:(26|16)px"> \/ 5<\/span>/,function(m,z){return 'line-height:1">{{ hd.round }}<span style="color:#8C8982;font-size:'+z+'px"> / {{ hd.rounds }}</span>'});
     t=t.replace('YOUR PICK · PICK 7 OF 50','{{ hd.pickTxt }}').split('ON THE CLOCK — YOUR PICK').join('{{ hd.label }}');
     t=t.split('<div style="{{ spot.av.box }}">').join('<div onClick="{{ sp.openProf }}" title="Fighter profile" style="cursor:pointer;{{ spot.av.box }}">');
     t=t.replace(/<div style="min-height:(56|52)px;border-radius:999px;background:#E2283C;/,function(m,z){return '<div onClick="{{ sp.lock }}" style="{{ sp.lockS }}min-height:'+z+'px;border-radius:999px;background:#E2283C;'});
@@ -230,11 +235,11 @@
     t=t.replace('<div style="font-family:\'Oswald\',sans-serif;font-size:11px;letter-spacing:2px;color:#9A9AA2">FULL DRAFT BOARD</div>','<div onClick="{{ board.open }}" style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:11px;letter-spacing:2px;color:#D4AF37">FULL DRAFT BOARD</div>');
     t=t.replace('<div style="display:flex;gap:6px;padding:10px 14px;overflow:hidden">','<div style="display:flex;gap:6px;padding:10px 14px;overflow-x:auto">');
     var BOARD='<sc-if value="{{ board.on }}"><div style="position:fixed;left:0;top:0;right:0;bottom:0;z-index:60;background:rgba(5,9,20,.88);overflow:auto;padding:'+(desk?'32px 24px':'12px')+'"><div style="max-width:1200px;margin:0 auto;box-sizing:border-box;background:#0F1A33;border:1px solid rgba(255,194,61,.4);border-radius:'+(desk?'30px':'20px')+';padding:'+(desk?'24px 28px':'14px')+';color:#F5F2EA">'+
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:'+(desk?'22':'16')+'px;letter-spacing:2px;color:#D4AF37">FULL DRAFT BOARD · BLOCK 1</div><div onClick="{{ board.close }}" style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:12px;letter-spacing:2px;color:#D4AF37;border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:8px 16px">CLOSE</div></div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:'+(desk?'22':'16')+'px;letter-spacing:2px;color:#D4AF37">FULL DRAFT BOARD · {{ hd.league }}</div><div onClick="{{ board.close }}" style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:12px;letter-spacing:2px;color:#D4AF37;border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:8px 16px">CLOSE</div></div>'+
       '<div style="overflow-x:auto"><div style="min-width:'+(desk?'0':'640px')+'">'+
       '<sc-for list="{{ board.rounds }}" as="r" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><div style="width:'+(desk?'64':'40')+'px;flex-shrink:0;font-family:\'Oswald\',sans-serif;font-size:11px;letter-spacing:1px;color:#9A9AA2">RD {{ r.r }}</div>'+
       '<sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="10"><div style="flex:1;min-width:0;box-sizing:border-box;border:1px solid {{ c.bc }};background:{{ c.bg }};border-radius:12px;padding:'+(desk?'12px 6px':'8px 4px')+';text-align:center"><div style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:'+(desk?'16':'13')+'px;color:{{ c.c }}">{{ c.k }}</div><div style="font-size:9px;letter-spacing:1px;color:#8C8982;margin-top:2px">{{ c.tm }}</div><div style="font-size:10px;font-weight:600;color:#F5F2EA;margin-top:2px;line-height:1.2;overflow-wrap:anywhere">{{ c.nm }}</div></div></sc-for></div></sc-for></div></div>'+
-      '<div style="font-size:12px;color:#9A9AA2;margin-top:12px">Snake order, 10 teams by 5 rounds. Bots take the best projected fighter left.</div></div></div></sc-if>';
+      '<div style="font-size:12px;color:#9A9AA2;margin-top:12px">'+({snake:'Snake',"3rr":'Snake with 3rd round reversal',linear:'Linear'}[CFG.dt]||'Snake')+' order, '+TN+' teams by '+RD+' rounds. Bots take the best projected fighter left.</div></div></div></sc-if>';
     t=t.replace('</x-dc>',MODAL+BOARD+'</x-dc>');
     if(!desk){
       /* phone: one full-screen app; the two framed sample screens become the Your pick / Fighters tabs */

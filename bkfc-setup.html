@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BKFC mock draft setup · Combat</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#0A1124;color:#F5F2EA;font-family:'Barlow',sans-serif}
+.wrap{max-width:880px;margin:0 auto;padding:0 16px 120px;position:relative}
+.glow{position:fixed;left:-160px;top:-200px;width:760px;height:760px;border-radius:50%;background:radial-gradient(circle,rgba(255,138,31,.2) 0%,rgba(10,17,36,0) 70%);pointer-events:none}
+.top{position:relative;display:flex;align-items:center;gap:12px;padding:16px 0;border-bottom:1px solid #1C1C20}
+.o{font-family:'Oswald',sans-serif}
+.gold{color:#D4AF37}
+.pill{white-space:nowrap;cursor:pointer;font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:2px;color:#D4AF37;border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:8px 16px;background:transparent}
+.rope{border-radius:26px;border:1px solid rgba(255,194,61,.4);box-shadow:0 0 0 4px #0A1124,0 0 0 5px rgba(255,138,31,.28);background:#0F1A33}
+.rope.on{border-color:#D4AF37;background:linear-gradient(160deg,#14224A,#0C1630)}
+h1{font-family:'Oswald',sans-serif;font-weight:700;font-size:30px;margin:26px 0 4px}
+.sub{color:#9A9AA2;font-size:15px;margin:0 0 22px}
+.lbl{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;color:#9A9AA2;margin:18px 0 8px}
+input[type=text]{width:100%;background:#0F1A33;border:1px solid rgba(255,194,61,.4);border-radius:999px;padding:14px 22px;font-size:17px;color:#F5F2EA;outline:none;font-family:'Barlow',sans-serif}
+input[type=text]:focus{border-color:#D4AF37}
+.grid{display:grid;gap:14px}
+.sz{grid-template-columns:repeat(2,1fr)}
+@media(min-width:700px){.sz{grid-template-columns:repeat(4,1fr)}.dt{grid-template-columns:repeat(2,1fr)}}
+.card{padding:16px;text-align:center;cursor:pointer;color:inherit;font:inherit}
+.big{font-family:'Oswald',sans-serif;font-weight:700;font-size:34px;line-height:1}
+.tiny{font-size:12px;color:#9A9AA2}
+.chip{cursor:pointer;border-radius:999px;padding:9px 18px;border:1px solid #2A2A30;color:#9A9AA2;font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:1px;background:transparent}
+.chip.on{border-color:#D4AF37;background:rgba(212,175,55,.13);color:#D4AF37;font-weight:700}
+.row{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-top:1px solid #18264A;font-size:15px}
+.row:first-child{border-top:0}
+.row span:first-child{color:#9A9AA2}
+.bar{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(10,17,36,0),#0A1124 40%);padding:30px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.bar .in{max-width:880px;margin:0 auto;display:flex;gap:12px}
+.go{flex:1;min-height:56px;border-radius:999px;border:0;background:#E2283C;color:#F5F2EA;font-family:'Oswald',sans-serif;font-weight:700;font-size:16px;letter-spacing:2px;cursor:pointer}
+.go[disabled]{opacity:.4;cursor:default}
+.dots{display:flex;gap:8px;margin-left:auto}
+.dots i{width:22px;height:6px;border-radius:3px;background:#2A2A30}
+.dots i.on{background:#D4AF37}
+.mini{display:grid;gap:3px;margin-top:10px}
+.mini b{display:block;border-radius:6px;background:#0A1124;border:1px solid #18264A;font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;color:#9A9AA2;padding:3px 0;text-align:center}
+.mini b.me{border-color:#E2283C;color:#FF6A7A}
+.soon{display:inline-block;margin-top:6px;border-radius:999px;border:1px solid #5A5A62;color:#9A9AA2;font-size:10px;letter-spacing:1px;padding:2px 8px;font-family:'Oswald',sans-serif}
+@media(max-width:520px){.top .lab{display:none}}
+</style></head><body>
+<div class="glow"></div>
+<div class="wrap" id="app"></div>
+<div class="bar"><div class="in"><button class="pill" id="prev" style="display:none">BACK</button><button class="go" id="next">NEXT</button></div></div>
+<script>
+(function(){
+  var SIZES=[[12,4],[10,5],[10,4],[8,6],[8,5],[6,8],[6,7],[4,12]];
+  var DTS=[['snake','SNAKE','Snake (default)','The order reverses every round. Pick 1 in round 1 picks last in round 2. The most common way to draft.'],
+    ['3rr','3RD ROUND REVERSAL','Snake, 3rd round reversal','Snake order, but the order reverses again in round 3, so the team that picked last in round 2 also picks first in round 3 and the team that picked first waits longer.'],
+    ['linear','LINEAR','Linear','Same order every round. Pick 1 stays first in every round.'],
+    ['auction','AUCTION','Auction','Every team gets a budget and bids on fighters. Highest bid wins.']];
+  var CLOCKS=[30,60,90,120,180];
+  var rev=function(dt,rd){return dt==='linear'?false:dt==='3rr'?(rd===1?false:rd===2?true:((rd-3)%2===0)):(rd%2===0)};
+  var S={step:0,name:'My BKFC League',team:'My Team',sz:1,dt:'snake',clock:90,pos:'random',pool:58};
+  try{var old=JSON.parse(sessionStorage.getItem('bkfcSetupDraft')||'null');if(old)Object.assign(S,old)}catch(e){}
+  var STEPS=['League name','League size','Draft type','Draft settings','Review'];
+  var app=document.getElementById('app'),nx=document.getElementById('next'),pv=document.getElementById('prev');
+  var esc=function(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+  function head(t,s){return '<div class="top"><button class="pill" data-a="exit">← BACK</button><div class="o gold" style="font-weight:700;font-size:20px;letter-spacing:1px">COMBAT</div><div class="o lab" style="font-size:13px;letter-spacing:2px;color:#9A9AA2">BKFC MOCK DRAFT</div><div class="dots">'+STEPS.map(function(_,i){return '<i class="'+(i<=S.step?'on':'')+'"></i>'}).join('')+'</div></div><h1>'+t+'</h1><p class="sub">'+s+'</p>'}
+  function order(dt,T,rd){var o=[];for(var i=1;i<=T;i++)o.push(rev(dt,rd)?T-i+1:i);return o}
+  function miniGrid(dt,T,mine){
+    var R=Math.min(4,SIZES[S.sz][1]);var h='<div class="mini" style="grid-template-columns:repeat('+T+',1fr)">';
+    for(var r=1;r<=R;r++)order(dt,T,r).forEach(function(s){h+='<b class="'+(mine&&s===mine?'me':'')+'">'+s+'</b>'});
+    return h+'</div>'}
+  function r(){
+    var T=SIZES[S.sz][0],F=SIZES[S.sz][1],need=T*F,left=S.pool-need,h='';
+    if(S.step===0){
+      h=head('Name your league','This is a practice draft. Nothing is saved to a real league.')+
+      '<div class="lbl">LEAGUE NAME</div><input type="text" id="nm" maxlength="40" value="'+esc(S.name)+'">'+
+      '<div class="lbl">YOUR TEAM NAME</div><input type="text" id="tm" maxlength="30" value="'+esc(S.team)+'">'+
+      '<div class="lbl">FORMAT</div><div class="rope" style="padding:16px 20px"><div class="o" style="font-size:18px;letter-spacing:1px">BKFC Card Redraft · Block 1</div><div class="tiny" style="margin-top:4px">Draft from the next 3 BKFC cards. Rosters clear and redraft each block.</div></div>';
+    }
+    if(S.step===1){
+      h=head('Choose league size','Teams and fighters per team. The pool is every fighter on the next 3 cards ('+S.pool+' fighters).')+'<div class="grid sz">'+SIZES.map(function(z,i){var l=S.pool-z[0]*z[1];return '<button class="rope card '+(S.sz===i?'on':'')+'" data-a="sz" data-v="'+i+'"><div class="big">'+z[0]+'</div><div class="tiny">teams</div><div style="height:1px;width:24px;background:#33333A;margin:8px auto"></div><div class="big gold" style="font-size:26px">'+z[1]+'</div><div class="tiny">fighters</div><div class="tiny" style="margin-top:8px;color:'+(l<0?'#FF6A78':l===0?'#FFC23D':'#5CE0A0')+'">'+(l<0?'short '+(-l):l===0?'none left over':l+' left over')+'</div></button>'}).join('')+'</div>'+
+      '<p class="tiny" style="margin-top:16px;line-height:1.5">'+T+' teams drafting '+F+' each takes '+need+' of the '+S.pool+' fighters. '+(left<0?'That is more than the pool.':left<=12?'Compact: your picks matter most and few fighters stay free.':'Plenty of fighters left for waivers and trades.')+' Matchups: '+(T/2)+' per week.</p>';
+    }
+    if(S.step===2){
+      var d=DTS.filter(function(x){return x[0]===S.dt})[0];
+      h=head('Choose draft type','The order picks are made in.')+'<div class="grid dt">'+DTS.map(function(x){var off=x[0]==='auction';return '<button class="rope card '+(S.dt===x[0]?'on':'')+'" '+(off?'style="opacity:.5;cursor:default"':'data-a="dt" data-v="'+x[0]+'"')+'><div class="o" style="font-weight:700;font-size:17px;letter-spacing:1px;color:'+(S.dt===x[0]?'#D4AF37':'#F5F2EA')+'">'+x[1]+'</div>'+(off?'<span class="soon">COMING SOON</span>':miniGrid(x[0],T,0))+'</button>'}).join('')+'</div>'+
+      '<div style="margin-top:22px"><div class="o" style="font-size:22px">'+d[2]+'</div><div style="margin-top:6px;color:#C4C1B8;line-height:1.5">'+d[3]+'</div><div class="tiny" style="margin-top:8px">Rows are the first '+Math.min(4,F)+' rounds. Numbers are draft slots.</div></div>';
+    }
+    if(S.step===3){
+      h=head('Draft settings','How the practice draft runs. The other '+(T-1)+' teams are bots that take the best projected fighter left.')+
+      '<div class="lbl">PICK CLOCK</div><div style="display:flex;gap:8px;flex-wrap:wrap">'+CLOCKS.map(function(c){return '<button class="chip '+(S.clock===c?'on':'')+'" data-a="clock" data-v="'+c+'">'+c+' sec</button>'}).join('')+'</div><div class="tiny" style="margin-top:8px">If your clock runs out, the best projected fighter left is picked for you.</div>'+
+      '<div class="lbl">YOUR DRAFT POSITION</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="chip '+(S.pos==='random'?'on':'')+'" data-a="pos" data-v="random">Random</button>'+Array.from({length:T},function(_,i){return '<button class="chip '+(S.pos===i+1?'on':'')+'" data-a="pos" data-v="'+(i+1)+'">'+(i+1)+'</button>'}).join('')+'</div>'+
+      '<div class="lbl">SCORING</div><div class="rope" style="padding:6px 20px">'+[['Punch landed','0.2'],['Knockdown','8'],['Round won','3'],['Win','5'],['KO / TKO / stoppage','+15'],['Decision win','+3'],['Accuracy bonus (60%+ of 30+ thrown)','+3']].map(function(x){return '<div class="row"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>'}).join('')+'</div><div class="tiny" style="margin-top:8px">Scoring is the same for every BKFC league.</div>';
+    }
+    if(S.step===4){
+      var d2=DTS.filter(function(x){return x[0]===S.dt})[0];
+      h=head('Ready to draft','Check your settings, then start.')+'<div class="rope" style="padding:6px 20px">'+[['League',esc(S.name)],['Your team',esc(S.team)],['Format','BKFC Card Redraft · Block 1'],['Size',T+' teams × '+F+' fighters'],['Draft type',d2[2]],['Pick clock',S.clock+' seconds'],['Your position',S.pos==='random'?'Random':'Pick '+S.pos],['Total picks',need],['Fighter pool',S.pool+' fighters']].map(function(x){return '<div class="row"><span>'+x[0]+'</span><b style="text-align:right">'+x[1]+'</b></div>'}).join('')+'</div>'+(left<0?'<p style="color:#FF6A78;margin-top:14px">This size needs more fighters than the pool has. Go back and pick a smaller setup.</p>':'');
+    }
+    app.innerHTML=h;
+    pv.style.display=S.step?'':'none';
+    nx.textContent=S.step===4?'START MOCK DRAFT':'NEXT';nx.disabled=S.step===4&&left<0;
+    try{sessionStorage.setItem('bkfcSetupDraft',JSON.stringify(S))}catch(e){}
+  }
+  function grab(){var a=document.getElementById('nm'),b=document.getElementById('tm');if(a)S.name=a.value.trim()||'My BKFC League';if(b)S.team=b.value.trim()||'My Team'}
+  document.addEventListener('click',function(e){
+    var t=e.target.closest('[data-a]');if(!t)return;var a=t.getAttribute('data-a'),v=t.getAttribute('data-v');
+    if(a==='exit'){if(document.referrer&&history.length>1)history.back();else location.href='index.html';return}
+    grab();
+    if(a==='sz'){S.sz=+v;if(S.pos!=='random'&&S.pos>SIZES[S.sz][0])S.pos='random'}
+    if(a==='dt')S.dt=v;if(a==='clock')S.clock=+v;if(a==='pos')S.pos=v==='random'?'random':+v;
+    r();
+  });
+  pv.onclick=function(){grab();if(S.step>0)S.step--;r();scrollTo(0,0)};
+  nx.onclick=function(){grab();
+    if(S.step<4){S.step++;r();scrollTo(0,0);return}
+    var T=SIZES[S.sz][0],F=SIZES[S.sz][1];
+    var cfg={name:S.name,team:S.team,teams:T,fpt:F,dt:S.dt,clock:S.clock,pos:S.pos==='random'?1+Math.floor(Math.random()*T):S.pos};
+    try{sessionStorage.setItem('bkfcSetup',JSON.stringify(cfg))}catch(e){}
+    location.href='bkfc-draft.html';
+  };
+  r();
+  try{var sb=window.CombatAuth&&window.CombatAuth.client;if(sb)sb.from('bkfc_fighters').select('id',{count:'exact',head:true}).then(function(x){if(x&&x.count){S.pool=x.count;grab();r()}})}catch(e){}
+})();
+</script></body></html>

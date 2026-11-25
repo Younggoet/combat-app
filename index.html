@@ -90,7 +90,7 @@
     s=s.replace(/cur\.leagues \? \[[\s\S]*?\] : \[\];/,"cur.leagues ? (window.__PUBLIC||[]).map(l => ({ name:l.name, meta:l.meta, pick:() => "+LOBBY+" })) : [];");
     s=s.replace("kicker:'UFC FIGHT NIGHT · DOHA'","kicker:((window.__SLIDES||[])[0]||{kicker:'UFC'}).kicker").replace("title:'Prochazka vs Stirling'","title:((window.__SLIDES||[])[0]||{title:'Cards are being booked'}).title").replace("sub:'Light heavyweight main event · Block 1 card'","sub:((window.__SLIDES||[])[0]||{sub:''}).sub").replace("status:'Block 1 scoring live Saturday'","status:'Next card'");
     s=s.replace(/this\.setState\(\{\s*page:\s*'username'\s*\}\)/g,CREATE);
-    s=s.replace(/go: \(\) => \{\}/g,"go: () => { if (k === 'ufc') "+CREATE+"; if (k === 'bkfc') location.href='bkfc-draft.html'; }");
+    s=s.replace(/go: \(\) => \{\}/g,"go: () => { if (k === 'ufc') "+CREATE+"; if (k === 'bkfc') location.href='bkfc-setup.html'; }");
     return s;
   }
   var inst=await DCRuntime.mount({url:desk?'mock/Desktop.dc.html':'mock/Main.dc.html',root:document.getElementById('app'),patch:patch,patchText:function(t){return t.replace(/<div style="font-size:13px;color:#E8F0FF;padding:10px 12px;background:rgba\(44,230,255,\.08\)[^>]*>[^<]*<\/div>/g,'')}});
