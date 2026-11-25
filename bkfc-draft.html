@@ -63,11 +63,44 @@
   var fdate=function(d){if(!d)return DASH;var q=d.split('-');return MON[+q[1]-1]+' '+(+q[2])};
   var clkFmt=function(){var t=window.__CLKS,m=Math.floor(t/60),s=t%60;return m+':'+(s<10?'0':'')+s};
   window.__CLKS=90;window.__CLKT=clkFmt;
-  setInterval(function(){if(window.__CLKS>0)window.__CLKS--;var t=clkFmt();document.querySelectorAll('[data-clk]').forEach(function(e){e.textContent=t})},1000);
+  var TEAMS=['T1','T2','T3','T4','T5','T6','YOU','T8','T9','T10'],ME=7,INST=null;
+  var DR={picks:[]};window.__DR=DR;
+  var slotOf=function(k){var r=Math.ceil(k/10),i=(k-1)%10;return r%2?i+1:10-i};
+  var taken=function(sl){return DR.picks.indexOf(sl)>=0};window.__TAKEN=taken;
+  var availFirst=function(){return pool.filter(function(p){return !taken(p.slug)})[0]};
+  var turn=function(){return DR.picks.length+1};
+  var myTurn=function(){return turn()<=50&&slotOf(turn())===ME};
+  var rerender=function(){if(INST)INST.setState({dv:Date.now()})};
+  var takePick=function(sl){if(turn()>50||!sl)return;DR.picks.push(sl);window.__CLKS=90;rerender()};
+  var live=pool.length>=50;
+  if(live){while(turn()<=50&&!myTurn()){DR.picks.push(availFirst().slug)}}
+  setInterval(function(){
+    if(live&&turn()<=50){
+      if(myTurn()){if(window.__CLKS>0){window.__CLKS--}else{var a=availFirst();a&&takePick(a.slug)}}
+      else{var b=availFirst();b&&takePick(b.slug)}
+    }
+    var t=clkFmt();document.querySelectorAll('[data-clk]').forEach(function(e){e.textContent=t})},1000);
+  window.__HDV=function(inst){
+    INST=inst;var k=Math.min(turn(),50),done=turn()>50,tm=TEAMS[slotOf(k)-1];
+    var mine=DR.picks.filter(function(_,i){return slotOf(i+1)===ME}).map(function(sl){return BY[sl]});
+    var tot=mine.reduce(function(a,p){return a+(p.projN||0)},0);
+    return {round:Math.ceil(k/10),pickTxt:done?'DRAFT COMPLETE':(myTurn()?'YOUR PICK · PICK '+k+' OF 50':tm+' ON THE CLOCK · PICK '+k+' OF 50'),
+      label:done?'DRAFT COMPLETE':(myTurn()?'ON THE CLOCK — YOUR PICK':'ON THE CLOCK — '+tm),mine:mine.length,teamTot:mine.length?tot.toFixed(1):DASH,
+      mineList:mine,back:function(){if(document.referrer&&history.length>1)history.back();else location.href='index.html'},
+      feed:DR.picks.slice(-4).reverse().map(function(sl,i){var n=DR.picks.length-i;return {k:n,t:TEAMS[slotOf(n)-1],n:BY[sl].full}})};
+  };
+  window.__TRK=function(inst,ring,tagS,DC,SH,S){
+    var cur=turn(),start=Math.max(1,Math.min(cur-3,43)),out=[];
+    for(var k=start;k<start+8;k++){var tm=TEAMS[slotOf(k)-1],f=BY[DR.picks[k-1]],st=k===cur?2:(k<cur?0:3),c=f?(DC[f.w]||'#999'):'#999';
+      out.push({k:k,tm:tm,you:tm==='YOU',st:st,av:ring(S,c,{empty:!f,glow:st===2}),nameC:st===2?'#FF6A7A':f?c:'#5A5A62',
+        info:st===2?'ON THE CLOCK':f?f.full:'UPCOMING',tagS:f?tagS(c):'display:none',sh:f?(SH[f.w]||''):'',tmC:tm==='YOU'?'#D4AF37':'#6A6A72',
+        hasPhoto:!!(f&&f.photo),noPhoto:!(f&&f.photo),photo:f?f.photo:''})}
+    return out;
+  };
   var inch=function(cm){return cm?Math.floor(cm/2.54/12)+"'"+Math.round((cm/2.54)%12)+'"':DASH};
   window.__SPV=function(inst,DC){
-    var p=BY[inst.state.spot]||pool[0];
-    if(!p)return {name:DASH,nameU:'',line:'',nd:DASH,nr:'',proj:DASH,rk:DASH,stats:[],brk:[],total:DASH,form:[],news:[],frPct:DASH,frW:'0%',frTxt:'',credit:'',openProf:function(){},tape:{a:{},b:{}},hasPhoto:false,noPhoto:true};
+    var p=BY[inst.state.spot];if(!p||taken(p.slug))p=availFirst();
+    if(!p)return {lockTxt:'DRAFT COMPLETE',lockS:'opacity:.45;',lock:function(){},name:DASH,nameU:'',line:'',nd:DASH,nr:'',proj:DASH,rk:DASH,stats:[],brk:[],total:DASH,form:[],news:[],frPct:DASH,frW:'0%',frTxt:'',credit:'',openProf:function(){},tape:{a:{},b:{}},hasPhoto:false,noPhoto:true};
     var o=p.opp||pool.filter(function(x){return x!==p})[0]||null;
     var tp=function(x){return {dc:DC[x.w]||'#F4F4F2',hasPhoto:!!x.photo,noPhoto:!x.photo,photo:x.photo}};
     var fr=(p.wins>0&&p.ko!=null)?Math.round(p.ko/p.wins*100):null;
@@ -79,12 +112,14 @@
       news:[p.evName?p.full+' fights '+fdate(p.evDate)+(p.opp?' vs '+p.opp.full:'')+' at '+p.evName+'.':p.full+' has no upcoming BKFC fight listed.',p.tag?(p.full+': '+p.tag.replace(/ · /g,', ')+'.'):p.full+' has no other major promotion on record.'],
       hasPhoto:!!p.photo,noPhoto:!p.photo,photo:p.photo,credit:p.photo?(p.credit||''):'',
       openProf:function(){inst.setState({prof:p.slug})},
+      lock:function(){if(myTurn()){takePick(p.slug);inst.setState({spot:null})}},
+      lockTxt:turn()>50?'DRAFT COMPLETE':(myTurn()?'LOCK PICK — '+p.full.toUpperCase():'WAITING — '+TEAMS[slotOf(turn())-1]+' ON THE CLOCK'),lockS:myTurn()?'cursor:pointer;':'opacity:.45;',
       tape:{a:Object.assign(tp(p),{chips:[p.rec,p.ht==='\u2014'?DASH:p.ht.split(' (')[0],p.rc==='\u2014'?DASH:p.rc.split(' (')[0],p.pr+' P/RD']}),
         b:o?Object.assign(tp(o),{chips:[o.rec,o.ht==='\u2014'?DASH:o.ht.split(' (')[0],o.rc==='\u2014'?DASH:o.rc.split(' (')[0],o.pr+' P/RD']}):{dc:'#999',hasPhoto:false,noPhoto:true,chips:[]},
         rows:[{a:p.rec,l:'RECORD',b:o?o.rec:DASH},{a:p.fin,l:'FINISHES',b:o?o.fin:DASH},{a:rkOf(p),l:'BLOCK RANK',b:o?rkOf(o):DASH},{a:p.proj,l:'PROJ FANTASY PTS',b:o?o.proj:DASH}]}};
   };
   window.__BRDV=function(inst){
-    var rounds=[];for(var r=0;r<5;r++){var cells=[];for(var i=0;i<10;i++){var slot=r%2?9-i:i,k=r*10+slot+1;cells.push({k:k,s:slot+1,cur:k===7,bg:k===7?'rgba(226,40,60,.18)':'#0A1124',bc:k===7?'#E2283C':'#18264A',c:k===7?'#FF6A7A':'#5A5A62'})}rounds.push({r:r+1,cells:cells})}
+    var rounds=[];for(var r=0;r<5;r++){var cells=[];for(var i=0;i<10;i++){var slot=r%2?9-i:i,k=r*10+slot+1,f=BY[DR.picks[k-1]],cur=k===turn();cells.push({k:k,tm:TEAMS[slot],nm:f?f.full:(cur?'ON THE CLOCK':''),bg:cur?'rgba(226,40,60,.18)':(f?'#14224A':'#0A1124'),bc:cur?'#E2283C':(f?'rgba(255,194,61,.4)':'#18264A'),c:cur?'#FF6A7A':(f?'#D4AF37':'#5A5A62')})}rounds.push({r:r+1,cells:cells})}
     return {on:!!inst.state.board,rounds:rounds,close:function(){inst.setState({board:false})},open:function(){inst.setState({board:true})}};
   };
   /* profile card values; called from inside renderVals */
@@ -97,9 +132,9 @@
       hasPhoto:!!p.photo,noPhoto:!p.photo,photo:p.photo||'',av:ring(168,c,{glow:true}),name:p.full.toUpperCase(),nick:p.nick?'“'+p.nick+'”':'',
       div:(p.w||DASH),divS:tagS(c),nat:p.nat||'',hasNat:!!p.nat,
       tagList:(p.tag?p.tag.split(' · '):[]).map(function(t){return {t:t}}),hasTag:!!p.tag,note:p.note||'',hasNote:!!p.note,src:p.src?'Sources: '+p.src:'',
-      tiles:[[p.rec,'BKFC record'],[p.ko!=null?String(p.ko):DASH,'KO wins'],[p.pr,'Punches per round'],[p.acc,'Accuracy'],[p.kd,'Knockdowns per fight'],[String(p.nlog),'Fights logged']].map(function(a){return {v:a[0],l:a[1]}}),
+      tiles:[[p.rec,'BKFC record'],[p.ko!=null?String(p.ko):DASH,'KO wins'],[p.pr,'Punches per round'],[p.acc,'Accuracy'],[p.kd,'Knockdowns per fight'],[String(p.nlog),'Fights logged'],[p.proj,'Proj fantasy pts']].map(function(a){return {v:a[0],l:a[1]}}),
       phys:[['Height',p.ht],['Reach',p.rc],['Age',p.age!=null?String(p.age):DASH],['Status',p.status||DASH],['Rank',p.rank],['Next fight',p.next||DASH],['Last fight',p.last||DASH],['KO rate',p.kop]].map(function(a){return {k:a[0],v:a[1]}}),
-      logs:logs,hasLogs:logs.length>0,noLogs:logs.length===0,credit:p.photo?('Photo '+(p.credit||'© BKFC')+'. Official promotional image, shown unaltered.'):'',
+      brk:p.brk,total:p.proj,logs:logs,hasLogs:logs.length>0,noLogs:logs.length===0,credit:p.photo?('Photo '+(p.credit||'© BKFC')+'. Official promotional image, shown unaltered.'):'',
       close:function(){inst.setState({prof:null})}};
   };
   var MODAL='<sc-if value="{{ prof.on }}"><div style="position:fixed;left:0;top:0;right:0;bottom:0;z-index:50;background:rgba(5,9,20,.82);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:'+(desk?'32px 24px':'0')+'">'+
@@ -119,8 +154,10 @@
        '<sc-if value="{{ prof.hasTag }}"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><sc-for list="{{ prof.tagList }}" as="t" hint-placeholder-count="2"><span style="display:inline-block;border-radius:999px;padding:5px 14px;border:1px solid #D4AF37;background:rgba(212,175,55,.13);color:#D4AF37;font-family:\'Oswald\',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px">{{ t.t }}</span></sc-for></div></sc-if>'+
       '</div></div>'+
      '<sc-if value="{{ prof.hasNote }}"><div style="margin-top:16px;font-size:14px;line-height:1.5;color:#C4C1B8">{{ prof.note }}<div style="font-size:10px;letter-spacing:1px;color:#5A5A62;margin-top:6px">{{ prof.src }}</div></div></sc-if>'+
-     '<div style="display:grid;grid-template-columns:repeat('+(desk?'6':'2')+',minmax(0,1fr));gap:10px;margin-top:20px"><sc-for list="{{ prof.tiles }}" as="t" hint-placeholder-count="6"><div style="border:1px solid rgba(255,194,61,.3);border-radius:18px;background:#0A1124;padding:12px 8px;text-align:center"><div style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:24px">{{ t.v }}</div><div style="font-size:11px;letter-spacing:1px;color:#9A9AA2;margin-top:2px">{{ t.l }}</div></div></sc-for></div>'+
+     '<div style="display:grid;grid-template-columns:repeat('+(desk?'7':'2')+',minmax(0,1fr));gap:10px;margin-top:20px"><sc-for list="{{ prof.tiles }}" as="t" hint-placeholder-count="7"><div style="border:1px solid rgba(255,194,61,.3);border-radius:18px;background:#0A1124;padding:12px 8px;text-align:center"><div style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:24px">{{ t.v }}</div><div style="font-size:11px;letter-spacing:1px;color:#9A9AA2;margin-top:2px">{{ t.l }}</div></div></sc-for></div>'+
      '<div style="display:grid;grid-template-columns:repeat('+(desk?'4':'2')+',minmax(0,1fr));gap:8px 16px;margin-top:20px"><sc-for list="{{ prof.phys }}" as="t" hint-placeholder-count="8"><div style="border-bottom:1px solid #18264A;padding:6px 0"><div style="font-size:10px;letter-spacing:2px;color:#7A7A82">{{ t.k }}</div><div style="font-size:14px;color:#F5F2EA;margin-top:2px">{{ t.v }}</div></div></sc-for></div>'+
+     '<div style="font-family:\'Oswald\',sans-serif;font-size:12px;letter-spacing:2px;color:#7A7A82;margin-top:24px">FANTASY POINTS · PROJECTED PER FIGHT</div>'+
+     '<div style="margin-top:8px;border:1px solid #18264A;border-radius:16px;overflow:hidden;background:#0A1124"><sc-for list="{{ prof.brk }}" as="b" hint-placeholder-count="7"><div style="display:grid;grid-template-columns:1.5fr 1.1fr .5fr .5fr;gap:6px;align-items:center;padding:9px 14px;border-top:1px solid #18264A;font-size:13px;color:#C4C1B8"><span style="color:#F5F2EA;font-weight:600">{{ b.l }}</span><span>{{ b.a }}</span><span style="color:#8C8982">{{ b.r }}</span><span style="text-align:right;font-family:\'Oswald\',sans-serif;font-weight:700;color:#F5F2EA">{{ b.p }}</span></div></sc-for><div style="display:flex;justify-content:space-between;padding:10px 14px;border-top:1px solid #D4AF37;font-family:\'Oswald\',sans-serif;font-weight:700;color:#D4AF37"><span style="letter-spacing:2px;font-size:12px">PROJECTED TOTAL</span><span style="font-size:20px">{{ prof.total }}</span></div></div>'+
      '<div style="font-family:\'Oswald\',sans-serif;font-size:12px;letter-spacing:2px;color:#7A7A82;margin-top:24px">FIGHT LOG</div>'+
      '<sc-if value="{{ prof.noLogs }}"><div style="font-size:13px;color:#9A9AA2;margin-top:8px">No BKFC fights logged yet.</div></sc-if>'+
      '<sc-if value="{{ prof.hasLogs }}"><div style="margin-top:8px;border:1px solid #18264A;border-radius:16px;overflow:hidden;background:#0A1124"><sc-for list="{{ prof.logs }}" as="l" hint-placeholder-count="4"><div style="display:grid;grid-template-columns:'+(desk?'.9fr 1.6fr .6fr 1.3fr .8fr .6fr .4fr':'1fr 1fr')+';gap:6px 10px;align-items:center;padding:10px 14px;border-top:1px solid #18264A;font-size:13px;color:#C4C1B8"><span>{{ l.d }}</span><span style="color:#F5F2EA;font-weight:600">{{ l.o }}</span><span style="color:{{ l.rc }};font-family:\'Oswald\',sans-serif;font-weight:700">{{ l.r }}</span><span>{{ l.m }}</span><span>{{ l.t }} landed</span><span>{{ l.a }}</span><span>{{ l.k }} KD</span></div></sc-for></div></sc-if>'+
@@ -131,16 +168,19 @@
     s=s.replace(/const POOL = \[[\s\S]*?\n    \]\.map\(/,
       "const POOL = (window.__BKFC.length >= 5 ? window.__BKFC : [1,2,3,4,5].map(i => ({ full:'\\u2014', w:'Middleweight', rec:'\\u2014' }))).map((p, i) => F(p.full, p.w || 'Middleweight', p.rec || '\\u2014', { pr:p.pr||'\\u2014', acc:p.acc||'\\u2014', kd:p.kd||'\\u2014', ko:p.kop||'\\u2014', rw:'\\u2014', fin:p.fin||'\\u2014', fpy:p.fpy||'\\u2014', proj:p.proj||'\\u2014', rk:'#' + (i + 1),\n        hasPhoto:!!p.photo, noPhoto:!p.photo, photo:p.photo, ct:p.tag || '', hasCt:!!p.tag, slug:p.slug, open: () => { this.setState({ spot: p.slug, tab: 0 }); try { window.scrollTo(0, 0) } catch (e) {} } })).map(");
     s=s.replace("mtabs0: tabs.map((n, i) => ({ n, s: pill(i === 0) })), mtabs1: tabs.map((n, i) => ({ n, s: pill(i === 1) }))","view: { pick: (this.state.tab || 0) !== 1, fighters: this.state.tab === 1 }, mtabs0: tabs.map((n, i) => ({ n, s: pill(i === 0), go: () => this.setState(i === 7 ? { board: true } : { tab: i === 1 ? 1 : 0 }) })), mtabs1: tabs.map((n, i) => ({ n, s: pill(i === 1), go: () => this.setState(i === 7 ? { board: true } : { tab: i === 1 ? 1 : 0 }) }))");
-    s=s.replace('const spot = POOL[0];','const spot = POOL.find(p => p.slug === this.state.spot) || POOL[0];');
-    s=s.replace(/rope: rope\(\), pool: POOL/,"rope: rope(), prof: window.__PROFV(this, ring, tagS, DC), sp: window.__SPV(this, DC), board: window.__BRDV(this), clk: window.__CLKT(), pool: POOL");
+    s=s.replace('const spot = POOL[0];','const spot = POOL.find(p => p.slug === this.state.spot && !window.__TAKEN(p.slug)) || POOL.find(p => !window.__TAKEN(p.slug)) || POOL[0]; const POOLV = POOL.filter(p => !window.__TAKEN(p.slug) && (!this.state.div || p.w === this.state.div));');
+    s=s.replace(/rope: rope\(\), pool: POOL/,"rope: rope(), prof: window.__PROFV(this, ring, tagS, DC), sp: window.__SPV(this, DC), hd: window.__HDV(this), bk: window.__HDV(this).back, allGo: () => this.setState({ div: null }), board: window.__BRDV(this), clk: window.__CLKT(), pool: POOLV");
     s=s.replace(/spot: \{ av: ring\((\d+), spot\.dc, \{ glow: true \}\) \}/,function(m,S){return "spot: { av: ring("+S+", spot.dc, { glow: true }), hasPhoto: !!spot.photo, noPhoto: !spot.photo, photo: spot.photo }"});
     s=s.replace(/heroStats: \[[^\n]*\],\n/,"heroStats: window.__SPV(this, DC).stats,\n");
     s=s.replace(/form: \[\[[^\n]*\n/,"form: window.__SPV(this, DC).form,\n");
     s=s.replace(/tapeA: [^\n]*\n\s*tapeRows: [^\n]*\n/,"tapeA: Object.assign({ av: ring(56, window.__SPV(this, DC).tape.a.dc, {}) }, window.__SPV(this, DC).tape.a), tapeAChips: window.__SPV(this, DC).tape.a.chips, tapeB: Object.assign({ av: ring(56, window.__SPV(this, DC).tape.b.dc, {}) }, window.__SPV(this, DC).tape.b), tapeBChips: window.__SPV(this, DC).tape.b.chips,\n      tapeRows: window.__SPV(this, DC).tape.rows,\n");
-    s=s.replace('upNext: POOL.slice(1, 4),','upNext: POOL.filter(p => p !== spot).slice(0, 3),');
-    s=s.replace('upNext: POOL.slice(1, 4).map(','upNext: POOL.filter(p => p !== spot).slice(0, 3).map(');
-    s=s.replace(/slip: \[\{ n: 'Pague', p: '38\.5', c: '#E2283C', av: POOL\[0\]\.avS \}/,"slip: [{ n: spot.n, p: spot.proj, c: '#E2283C', av: spot.avS }");
-    s=s.replace(/queue: \[[^\n]*\n/,"queue: [spot].concat(POOL.filter(p => p !== spot)).slice(0, 3).map((p, i) => ({ i: i + 1, n: p.n })),\n");
+    s=s.replace('upNext: POOL.slice(1, 4),','upNext: POOL.filter(p => p !== spot && !window.__TAKEN(p.slug)).slice(0, 3),');
+    s=s.replace('upNext: POOL.slice(1, 4).map(','upNext: POOL.filter(p => p !== spot && !window.__TAKEN(p.slug)).slice(0, 3).map(');
+    s=s.replace(/slip: \[[^\n]*\n/,"slip: (() => { const m = window.__HDV(this).mineList.map(p => ({ n: p.full, p: p.proj, c: '#E2283C', av: ring(30, DC[p.w] || '#999', {}), hasPhoto: !!p.photo, noPhoto: !p.photo, photo: p.photo })); while (m.length < 5) m.push({ n: 'Empty slot', p: '\\u2014', c: '#5A5A62', av: ring(30, '#999', { empty: true }), hasPhoto: false, noPhoto: true, photo: '' }); return m.slice(0, 5); })(),\n");
+    s=s.replace(/const track = \[\[[\s\S]*?\n    \}\);/,"const track = window.__TRK(this, ring, tagS, DC, SH, "+(desk?52:42)+");");
+    s=s.replace(/feed: \[[^\n]*\n/,"feed: window.__HDV(this).feed,\n");
+    s=s.replace(/\.map\(d => \(\{ n: d, s: /,".map(d => ({ go: () => this.setState({ div: this.state.div === d ? null : d }), n: d, s: (this.state.div === d ? 'outline:2px solid #D4AF37;' : '') + ");
+    s=s.replace(/queue: \[[^\n]*\n/,"queue: [spot].concat(POOL.filter(p => p !== spot && !window.__TAKEN(p.slug))).slice(0, 3).map((p, i) => ({ i: i + 1, n: p.n })),\n");
     s=s.replace(/news: \[[^\n]*\]\n/,"news: window.__SPV(this, DC).news\n");
     s=s.replace(/const tabs = \[([^\]]*)\];/,"const tabs = [$1,'BOARD'];");
     return s;
@@ -157,8 +197,8 @@
     t=t.replace('{{ p.kd }} KD</div></div>','{{ p.kd }} KD</div><div style="margin-top:4px">'+tagEl+'</div></div>');
     t=t.replace(' · NUMBERS SHOWN ARE SAMPLES',' · LAST 4 LOGGED BKFC FIGHTS').replace('PER-FIGHT CAREER AVERAGES FROM THE BKFC FEED','AVERAGES FROM THE BKFC FEED');
     /* spotlight: real fighter, photo, projected points */
-    ['spot','tapeA','tapeB'].forEach(function(k){
-      var re=new RegExp('<svg width="\\{\\{ '+k+'\\.av\\.g \\}\\}"[^>]*>[\\s\\S]*?</svg>');
+    ['spot','tapeA','tapeB','t','s'].forEach(function(k){
+      var re=new RegExp('<svg width="\\{\\{ '+k+'\\.av\\.g \\}\\}"[^>]*>[\\s\\S]*?</svg>','g');
       t=t.replace(re,function(m){return '<sc-if value="{{ '+k+'.hasPhoto }}"><img src="{{ '+k+'.photo }}" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center 20%;border-radius:50%"></sc-if><sc-if value="{{ '+k+'.noPhoto }}">'+m+'</sc-if>'});
     });
     t=t.replace(/<svg width="\{\{ clock\.av\.g \}\}"[^>]*>[\s\S]*?<\/svg>/,'<span data-clk>{{ clk }}</span>');
@@ -166,10 +206,22 @@
     t=t.replace('line-height:1.02">PAGUE</div>','line-height:1.02;text-transform:uppercase;overflow-wrap:anywhere">{{ sp.name }}</div>').replace('line-height:1.05">PAGUE</div>','line-height:1.05;text-transform:uppercase;overflow-wrap:anywhere">{{ sp.name }}</div>');
     var NEXT='Next fight: <b>{{ sp.nd }}</b> {{ sp.nr }}</div><div onClick="{{ sp.openProf }}" style="cursor:pointer;align-self:flex-start;margin-top:6px;font-family:\'Oswald\',sans-serif;font-size:11px;letter-spacing:2px;color:#D4AF37;border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:6px 14px;background:rgba(10,17,36,.6)">FULL PROFILE</div><div style="font-size:9px;letter-spacing:.5px;color:#5A5A62">{{ sp.credit }}</div>';
     t=t.replace('Next fight: <b>Dec 4</b> vs Richman · BKFC Hershey</div>',NEXT).replace('Next fight: <b>Dec 4</b> vs Richman</div>',NEXT);
-    t=t.replace('font-size:20px">38.5</span>','font-size:20px">{{ sp.proj }}</span>');
+    t=t.replace('font-size:20px">38.5</span>','font-size:20px">{{ hd.teamTot }}</span>').replace('ROSTER · 1 OF 5','ROSTER · {{ hd.mine }} OF 5');
     t=t.replace('line-height:1">38.5</div>','line-height:1">{{ sp.proj }}</div>').replace('line-height:1">#1</div>','line-height:1">{{ sp.rk }}</div>');
     t=t.split('LOCK PICK — PAGUE').join('LOCK PICK — {{ sp.nameU }}').replace('NEWS · PAGUE','NEWS · {{ sp.nameU }}').replace('LAST 5 FIGHTS','LAST 5 LOGGED FIGHTS');
     t=t.replace('line-height:1">78%</div>','line-height:1">{{ sp.frPct }}</div>').replace('<div style="width:78%;height:100%','<div style="width:{{ sp.frW }};height:100%').replace('7 finishes in 9 wins · You own 0 Welterweight fighters','{{ sp.frTxt }}');
+
+    t=t.replace(/line-height:1">2<span style="color:#8C8982;font-size:(26|16)px"> \/ 5<\/span>/,function(m,z){return 'line-height:1">{{ hd.round }}<span style="color:#8C8982;font-size:'+z+'px"> / 5</span>'});
+    t=t.replace('YOUR PICK · PICK 7 OF 50','{{ hd.pickTxt }}').split('ON THE CLOCK — YOUR PICK').join('{{ hd.label }}');
+    t=t.split('<div style="{{ spot.av.box }}">').join('<div onClick="{{ sp.openProf }}" title="Fighter profile" style="cursor:pointer;{{ spot.av.box }}">');
+    t=t.replace(/<div style="min-height:(56|52)px;border-radius:999px;background:#E2283C;/,function(m,z){return '<div onClick="{{ sp.lock }}" style="{{ sp.lockS }}min-height:'+z+'px;border-radius:999px;background:#E2283C;'});
+    t=t.split('LOCK PICK — {{ sp.nameU }}').join('{{ sp.lockTxt }}');
+    var BACK='<div onClick="{{ bk }}" style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:'+(desk?'13':'12')+'px;letter-spacing:2px;color:#D4AF37;border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:'+(desk?'8px 16px':'6px 12px')+';margin-right:'+(desk?'6':'8')+'px;white-space:nowrap">← BACK</div>';
+    t=t.replace('<div style="display:flex;align-items:center;gap:14px">\n      <div style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:22px','<div style="display:flex;align-items:center;gap:14px">'+BACK+'\n      <div style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:22px');
+    t=t.split('<div><div style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:18px;letter-spacing:1px;color:#D4AF37">COMBAT</div>').join('<div style="display:flex;align-items:center">'+BACK+'<div><div style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:18px;letter-spacing:1px;color:#D4AF37">COMBAT</div>');
+    t=t.split('BKFC REDRAFT · BLOCK 1</div></div>').join('BKFC REDRAFT · BLOCK 1</div></div></div>');
+    t=t.replace('<span style="border-radius:999px;padding:7px 16px;border:1px solid #D4AF37','<span onClick="{{ allGo }}" style="cursor:pointer;border-radius:999px;padding:7px 16px;border:1px solid #D4AF37').replace('<span style="border-radius:999px;padding:6px 14px;border:1px solid #D4AF37','<span onClick="{{ allGo }}" style="cursor:pointer;border-radius:999px;padding:6px 14px;border:1px solid #D4AF37');
+    t=t.split('<span style="{{ d.s }}">{{ d.n }}</span>').join('<span onClick="{{ d.go }}" style="cursor:pointer;{{ d.s }}">{{ d.n }}</span>');
     var BRK=function(pad){return '<div style="{{ rope }};background:#0F1A33;padding:'+pad+'"><div style="font-family:\'Oswald\',sans-serif;font-size:'+(desk?'14':'11')+'px;letter-spacing:2px;color:#9A9AA2;margin-bottom:8px">PROJECTED POINTS · AVERAGE PER FIGHT</div>'+
       '<sc-for list="{{ sp.brk }}" as="b" hint-placeholder-count="7"><div style="display:grid;grid-template-columns:1.5fr 1.1fr .5fr .5fr;gap:6px;align-items:center;padding:'+(desk?'7':'5')+'px 0;border-top:1px solid #18264A;font-size:'+(desk?'13':'11')+'px;color:#C4C1B8"><span style="color:#F5F2EA;font-weight:600">{{ b.l }}</span><span>{{ b.a }}</span><span style="color:#8C8982">{{ b.r }}</span><span style="text-align:right;font-family:\'Oswald\',sans-serif;font-weight:700;color:#F5F2EA">{{ b.p }}</span></div></sc-for>'+
       '<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid #D4AF37;font-family:\'Oswald\',sans-serif;font-weight:700;color:#D4AF37"><span style="letter-spacing:2px;font-size:12px">PROJECTED TOTAL</span><span style="font-size:'+(desk?'22':'18')+'px">{{ sp.total }}</span></div></div>'};
@@ -181,8 +233,8 @@
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:'+(desk?'22':'16')+'px;letter-spacing:2px;color:#D4AF37">FULL DRAFT BOARD · BLOCK 1</div><div onClick="{{ board.close }}" style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:12px;letter-spacing:2px;color:#D4AF37;border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:8px 16px">CLOSE</div></div>'+
       '<div style="overflow-x:auto"><div style="min-width:'+(desk?'0':'640px')+'">'+
       '<sc-for list="{{ board.rounds }}" as="r" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><div style="width:'+(desk?'64':'40')+'px;flex-shrink:0;font-family:\'Oswald\',sans-serif;font-size:11px;letter-spacing:1px;color:#9A9AA2">RD {{ r.r }}</div>'+
-      '<sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="10"><div style="flex:1;min-width:0;box-sizing:border-box;border:1px solid {{ c.bc }};background:{{ c.bg }};border-radius:12px;padding:'+(desk?'12px 6px':'8px 4px')+';text-align:center"><div style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:'+(desk?'16':'13')+'px;color:{{ c.c }}">{{ c.k }}</div><div style="font-size:9px;letter-spacing:1px;color:#5A5A62;margin-top:2px">SLOT {{ c.s }}</div></div></sc-for></div></sc-for></div></div>'+
-      '<div style="font-size:12px;color:#9A9AA2;margin-top:12px">Picks fill in here as the draft runs. Snake order, 10 slots by 5 rounds.</div></div></div></sc-if>';
+      '<sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="10"><div style="flex:1;min-width:0;box-sizing:border-box;border:1px solid {{ c.bc }};background:{{ c.bg }};border-radius:12px;padding:'+(desk?'12px 6px':'8px 4px')+';text-align:center"><div style="font-family:\'Oswald\',sans-serif;font-weight:700;font-size:'+(desk?'16':'13')+'px;color:{{ c.c }}">{{ c.k }}</div><div style="font-size:9px;letter-spacing:1px;color:#8C8982;margin-top:2px">{{ c.tm }}</div><div style="font-size:10px;font-weight:600;color:#F5F2EA;margin-top:2px;line-height:1.2;overflow-wrap:anywhere">{{ c.nm }}</div></div></sc-for></div></sc-for></div></div>'+
+      '<div style="font-size:12px;color:#9A9AA2;margin-top:12px">Snake order, 10 teams by 5 rounds. Bots take the best projected fighter left.</div></div></div></sc-if>';
     t=t.replace('</x-dc>',MODAL+BOARD+'</x-dc>');
     if(!desk){
       /* phone: one full-screen app; the two framed sample screens become the Your pick / Fighters tabs */
