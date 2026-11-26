@@ -1,0 +1,5 @@
+-- Applied to the live project as migration "bkfc_card_redraft_foundation".
+-- leagues.sport ('ufc' default, or 'bkfc'); bkfc_fp (punch .2, KD 8, win 5, KO/TKO +15, decision +3, accuracy +3 at 60%+ on 30+ thrown);
+-- bkfc_team_pts, bkfc_refresh_scores, bkfc_start_next_draft (3 cards per block from bkfc_events).
+-- cr_refresh_scores and cr_start_next_draft hand off to the bkfc_ versions when the league's sport is 'bkfc'.
+-- Schedule, bracket, standings and the two-champion season are shared with UFC (cr_make_schedule, cr_make_bracket).
