@@ -28,7 +28,7 @@
         '<div style="' + H + 'font-size:19px;line-height:1.2;margin:6px 0 8px;color:#F5F2EA">' + esc(s.headline) + '</div>' +
         '<div style="font-size:14px;line-height:1.55;color:#DAD7CE">' + esc(s.body) + '</div>' +
         (s.take ? '<div style="font-size:14px;line-height:1.5;margin-top:10px;color:#F5F2EA"><span style="' + H + 'font-size:12px;letter-spacing:2px;color:' + GOLD + ';margin-right:8px">COMBAT TAKE</span>' + esc(s.take) + '</div>' : '') +
-        (src ? '<div style="font-size:12.5px;color:' + DIM + ';margin-top:10px">Sources: ' + src + '</div>' : '') +
+        (src ? '<div style="font-size:12.5px;color:' + DIM + ';margin-top:10px">Sources: ' + src + '</div>' : (s.generated ? '<div style="font-size:12.5px;color:' + DIM + ';margin-top:10px">Built from Combat fight data</div>' : '')) +
         '</div>';
     });
     if (cov.length) {
