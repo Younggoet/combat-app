@@ -138,9 +138,10 @@ input[type=text]:focus{border-color:#D4AF37}
     var T=SIZES[S.sz][0],F=SIZES[S.sz][1];
     if(LG){makeLeague(T,F);return}
     var cfg={name:S.name,team:S.team,teams:T,fpt:F,dt:S.dt,clock:S.clock,pos:S.pos==='random'?1+Math.floor(Math.random()*T):S.pos};
-    try{sessionStorage.setItem('bkfcSetup',JSON.stringify(cfg))}catch(e){}
+    try{sessionStorage.setItem('bkfcSetup',JSON.stringify(cfg));sessionStorage.removeItem('bkfcSetupDraft')}catch(e){}
     location.href='bkfc-draft.html';
   };
+  addEventListener('pageshow',function(e){if(e.persisted)location.reload()});
   r();
   try{var sb=window.CombatAuth&&window.CombatAuth.client;if(sb)sb.from('bkfc_fighters').select('id',{count:'exact',head:true}).then(function(x){if(x&&x.count){S.pool=x.count;grab();r()}})}catch(e){}
 })();
