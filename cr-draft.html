@@ -750,8 +750,8 @@ function tapeFighter(f, right){
   if (f.height_cm) c.push(tapeCell(fmtHeight(f.height_cm / 2.54), "HEIGHT"));
   if (f.reach_cm) c.push(tapeCell(Math.round(f.reach_cm / 2.54) + '"', "REACH"));
   if (TAPE_LBS[f.announced_weight_class]) c.push(tapeCell(TAPE_LBS[f.announced_weight_class], "LBS"));
-  if (f.avg_sig_strikes !== null && f.avg_sig_strikes !== undefined) c.push(tapeCell(Number(f.avg_sig_strikes).toFixed(1), "SIG STR"));
-  if (f.avg_takedowns !== null && f.avg_takedowns !== undefined) c.push(tapeCell(Number(f.avg_takedowns).toFixed(1), "TD"));
+  if (f.avg_sig_strikes !== null && f.avg_sig_strikes !== undefined) c.push(tapeCell(Number(f.avg_sig_strikes).toFixed(1), f._bk ? "PUNCHES" : "SIG STR"));
+  if (f.avg_takedowns !== null && f.avg_takedowns !== undefined) c.push(tapeCell(Number(f.avg_takedowns).toFixed(1), f._bk ? "ACC %" : "TD"));
   const w = f.histWins != null ? f.histWins : f.wins;
   if (w) c.push(tapeCell(Math.round(((f.finishes || 0) / w) * 100) + "%", "FINISH"));
   return `<div style="display:flex;flex-direction:column;gap:8px;align-items:${right ? "flex-end" : "flex-start"};">${octagonRingAvatar(f, fighterDc(f), 56)}<div style="display:flex;flex-wrap:wrap;gap:4px;line-height:1;justify-content:${right ? "flex-end" : "flex-start"};">${c.join("")}</div></div>`;
@@ -771,6 +771,7 @@ const FANTASY_WEIGHTS = { sigStrike: 0.1, takedown: 2, knockdown: 8, controlMinu
 const ASSUMED_OPP_TD_ATTEMPTS = 3;
 function projectedFantasyPoints(f){
   if (!f) return null;
+  if (f._bk) return f._proj;
   const sig = Number(f.avg_sig_strikes) || 0;
   const td = Number(f.avg_takedowns) || 0;
   const kd = Number(f.avg_knockdowns) || 0;
@@ -820,13 +821,20 @@ function octagonAvatar(f, strokeColor, size){
   }
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${strokeColor}" stroke-width="1.6"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path></svg>`;
 }
+const isBk = () => !!(L && L.sport === "bkfc");
 const OCT_CLIP = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
 // Dynasty's picked-fighter octagon, upgraded to match the two-layer
 // gradient-ring look used for every fighter photo in Face-Off (.fo-avatar-ring
 // / .fo-fighter-ring): a padded outer octagon in a radial gradient of the
 // division color for depth, wrapping an inner clipped photo panel — instead
 // of the old flat single-color border.
+function bkRingAvatar(f, dc, outerSize){
+  const pad = Math.max(2, Math.round(outerSize * 0.05)), r = outerSize / 2, pr = Math.max(2, outerSize * 0.05);
+  const posts = Array.from({ length: 8 }, (_, i) => { const a = (i / 8) * Math.PI * 2 - Math.PI / 2; return `<span style="position:absolute;left:${(r + Math.cos(a) * (r - pr)) - pr}px;top:${(r + Math.sin(a) * (r - pr)) - pr}px;width:${pr * 2}px;height:${pr * 2}px;border-radius:50%;background:#F5F2EA;box-shadow:0 0 0 1px #000"></span>`; }).join("");
+  return `<div ${f && f.id ? `data-profile="${f.id}"` : ""} style="position:relative;width:${outerSize}px;height:${outerSize}px;flex-shrink:0;${f && f.id ? "cursor:pointer;" : ""}"><div style="width:100%;height:100%;padding:${pad + pr}px;box-sizing:border-box;border-radius:50%;background:radial-gradient(circle at 35% 28%, #fff 0%, ${dc} 55%, #000 130%)"><div style="width:100%;height:100%;border-radius:50%;background:#0F0F12;overflow:hidden;display:flex;align-items:center;justify-content:center">${octagonAvatar(f, dc, Math.round(outerSize * 0.4))}</div></div>${posts}</div>`;
+}
 function octagonRingAvatar(f, dc, outerSize){
+  if (f && f._bk) return bkRingAvatar(f, dc, outerSize);
   const pad = Math.max(2, Math.round(outerSize * 0.036));
   return `
     <div ${f && f.id ? `data-profile="${f.id}"` : ""} style="width:${outerSize}px;height:${outerSize}px;padding:${pad}px;box-sizing:border-box;clip-path:${OCT_CLIP};background:radial-gradient(circle at 35% 28%, #fff 0%, ${dc} 55%, #000 130%);flex-shrink:0;${f && f.id ? "cursor:pointer;" : ""}">
@@ -1066,7 +1074,7 @@ const isNewF = (id) => !!(room && (room.pool_new || []).includes(id));
 /* ---------- data ---------- */
 let pvCache = null;
 async function buildPreviewRoom(){
-  if (!L || L.status !== "setup" || !teams.length) return null;
+  if (!L || isBk() || L.status !== "setup" || !teams.length) return null;
   const now = Date.now();
   if (!pvCache || now - pvCache.at > 60000) {
     const today = new Date().toISOString().slice(0, 10), from = today > "2026-11-14" ? today : "2026-11-14";
@@ -1127,8 +1135,43 @@ async function loadTeams(){
   userTeamId = me ? me.id : null; userTeamName = me ? me.name : "";
 }
 const STAT_COLS = "pro_wins, pro_losses, pro_draws, id, full_name, nickname, announced_weight_class, photo_url, current_rating, wins, losses, finishes, avg_sig_strikes, avg_takedowns, avg_knockdowns, avg_control_seconds, avg_sub_attempts, avg_reversals, td_def_pct, is_champion, date_of_birth, nationality, team, stance, height_cm, reach_cm";
+async function loadBkfcPool(){
+  try {
+    const BKD = { "Ironweight": ["#FF8A1F", "IW"], "Cruiserweight": ["#C9A227", "CW"] };
+    Object.keys(BKD).forEach((k) => { if (!DIVISION_COLOR[k]) { DIVISION_COLOR[k] = BKD[k][0]; DIV_SHORT[k] = BKD[k][1]; DIVISION_LIST.push(k); } });
+    const [fr, lr, br, er] = await Promise.all([sb.from("bkfc_fighters").select("*"), sb.from("bkfc_fight_log").select("*"), sb.from("bkfc_bouts").select("*"), sb.from("bkfc_events").select("*")]);
+    if (fr.error) throw fr.error;
+    const logs = {}; (lr.data || []).forEach((l) => { (logs[l.fighter_id] = logs[l.fighter_id] || []).push(l); });
+    fighters = (fr.data || []).map((b) => {
+      const Lg = (logs[b.id] || []).filter((l) => l.landed != null && l.thrown != null), n = Lg.length;
+      let landed = 0, thrown = 0, kd = 0, fp = 0;
+      Lg.forEach((l) => { landed += l.landed; thrown += l.thrown; kd += (l.knockdowns || 0); const win = l.result === "win", m = l.method || ""; fp += 0.2 * l.landed + 8 * (l.knockdowns || 0) + (win ? 5 : 0) + (win && (m === "ko" || m === "tko") ? 15 : 0) + (win && m.indexOf("decision") === 0 ? 3 : 0) + (l.thrown >= 30 && l.landed / l.thrown >= 0.6 ? 3 : 0); });
+      const ds = (logs[b.id] || []).map((l) => l.fight_date && new Date(l.fight_date).getTime()).filter(Boolean);
+      if (ds.length >= 2) fightRateById[b.id] = ds.length / Math.max(0.5, (Date.now() - Math.min(...ds)) / 31557600000);
+      const wc = b.weight_class === "Women Flyweight" ? "Women's Flyweight" : b.weight_class;
+      return { _bk: true, _proj: n ? fp / n : null, id: b.id, full_name: b.full_name, nickname: b.nickname, announced_weight_class: wc, photo_url: b.headshot_url || b.photo_url,
+        current_rating: 1500 + (b.wins || 0) * 10 - (b.losses || 0) * 5, pro_wins: b.wins, pro_losses: b.losses, pro_draws: b.draws, wins: b.wins, losses: b.losses, finishes: b.ko_wins,
+        avg_sig_strikes: n ? landed / n : null, avg_takedowns: thrown ? landed / thrown * 100 : null, avg_knockdowns: n ? kd / n : null,
+        nationality: b.nationality, stance: b.stance, height_cm: b.height_cm, reach_cm: b.reach_cm, is_champion: false };
+    });
+    fighters.sort((a, b) => b.current_rating - a.current_rating);
+    fighters.forEach((f) => { fightersById[f.id] = f; });
+    championById = {}; bmfById = {};
+    const EV = {}; (er.data || []).forEach((e) => { EV[e.id] = e; });
+    const today = new Date().toISOString().slice(0, 10); nextBoutById = {};
+    (br.data || []).filter((b) => b.status !== "completed" && b.status !== "cancelled" && EV[b.event_id] && EV[b.event_id].event_date >= today)
+      .sort((a, b) => EV[a.event_id].event_date.localeCompare(EV[b.event_id].event_date)).forEach((b) => {
+        const ev = EV[b.event_id];
+        if (b.red_id && !nextBoutById[b.red_id]) nextBoutById[b.red_id] = { date: ev.event_date, event: ev.name, oppId: b.blue_id, title: b.is_title_fight, ml: null, rumored: false };
+        if (b.blue_id && !nextBoutById[b.blue_id]) nextBoutById[b.blue_id] = { date: ev.event_date, event: ev.name, oppId: b.red_id, title: b.is_title_fight, ml: null, rumored: false };
+      });
+    projectedFPById = {}; fighters.forEach((f) => { projectedFPById[f.id] = projectedFantasyPoints(f); });
+    overallRankById = {}; fighters.slice().sort((a, b) => (projectedFPById[b.id] || 0) - (projectedFPById[a.id] || 0)).forEach((f, i) => { overallRankById[f.id] = i + 1; });
+  } catch (err) { fighterPoolError = err.message || "Couldn't load fighters."; }
+}
 async function loadFighterPool(){
   if (fighters.length || fighterPoolError) return;
+  if (isBk()) return loadBkfcPool();
   try {
     const { data, error } = await sb.from("fighters").select(STAT_COLS).order("current_rating", { ascending: false }).limit(1000);
     if (error) throw error;
@@ -1325,8 +1368,8 @@ function renderDraft(){
       : `You own ${myDivCount} ${esc(spotlight.announced_weight_class || "")} fighter${myDivCount > 1 ? "s" : ""}`;
     const upNext = available.filter((f) => f.id !== spotlight.id).slice(0, 3);
     const bigStats = [
-      { l: "Sig. strikes", v: fmtNum(spotlight.avg_sig_strikes) }, { l: "Takedowns", v: fmtNum(spotlight.avg_takedowns) },
-      { l: "Control time", v: fmtCtrl(spotlight.avg_control_seconds) }, { l: "Fights / year", v: fmtFightsPerYear(spotlight) },
+      ...(spotlight._bk ? [{ l: "Punches landed", v: fmtNum(spotlight.avg_sig_strikes) }, { l: "Accuracy %", v: fmtNum(spotlight.avg_takedowns, 0) }, { l: "Knockdowns", v: fmtNum(spotlight.avg_knockdowns, 2) }, { l: "Fights / year", v: fmtFightsPerYear(spotlight) }] : [{ l: "Sig. strikes", v: fmtNum(spotlight.avg_sig_strikes) }, { l: "Takedowns", v: fmtNum(spotlight.avg_takedowns) },
+      { l: "Control time", v: fmtCtrl(spotlight.avg_control_seconds) }, { l: "Fights / year", v: fmtFightsPerYear(spotlight) }]),
     ];
     stageMainHtml += `
       <div style="display:flex;align-items:center;gap:10px;">
@@ -1453,7 +1496,7 @@ function renderDraft(){
     </button>`;
   }).join("");
   const poolTable = ob(`<div class="pool-table-scroll"><div class="pool-grid">
-      <div class="pool-head">FIGHTER</div><div class="pool-head">DIV</div><div class="pool-head">RECORD</div><div class="pool-head">SIG STR</div><div class="pool-head">TD</div><div class="pool-head">KD</div><div class="pool-head">CTRL</div><div class="pool-head">SUB A</div><div class="pool-head">REV</div><div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div><div class="pool-head">FIGHTS/YR</div><div class="pool-head">PROJ FP</div><div class="pool-head" style="color:var(--gold);">BLOCK RANK</div><div class="pool-head">QUEUE</div>
+      <div class="pool-head">FIGHTER</div><div class="pool-head">DIV</div><div class="pool-head">RECORD</div><div class="pool-head">${isBk() ? "PUNCHES" : "SIG STR"}</div><div class="pool-head">${isBk() ? "ACC %" : "TD"}</div><div class="pool-head">KD</div><div class="pool-head">CTRL</div><div class="pool-head">SUB A</div><div class="pool-head">REV</div><div class="pool-head">TD DEF</div><div class="pool-head">FINISHES</div><div class="pool-head">FIGHTS/YR</div><div class="pool-head">PROJ FP</div><div class="pool-head" style="color:var(--gold);">BLOCK RANK</div><div class="pool-head">QUEUE</div>
       ${poolRows || `<div style="grid-column:1/-1;padding:24px;color:#6A6A72;font-size:13px;">${paused ? "Every announced fighter is drafted. New fights will show up here." : "No fighters match."}</div>`}</div></div>${searched.length > poolLimit ? `<button id="moreBtn" class="more-btn h-font">SHOW MORE FIGHTERS (${searched.length - poolLimit} LEFT)</button>` : ""}`, { cls: "lg", pad: "0" });
 
   /* ---- header ---- */
@@ -1498,7 +1541,7 @@ function renderDraft(){
       <div class="division-strip">${divisionStripHtml}</div>
       <div class="h-font" style="font-size:12px;letter-spacing:2px;color:#7A7A82;margin-bottom:12px;">AVAILABLE &mdash; ${esc(poolHeading)}</div>
       ${poolTable}
-      <div class="footnote">STATS SHOWN ARE PER-FIGHT CAREER AVERAGES FROM SYNCED FIGHT DATA &middot; SIG STR = SIGNIFICANT STRIKES LANDED &middot; TD = TAKEDOWNS LANDED &middot; KD = KNOCKDOWNS &middot; CTRL = CONTROL TIME &middot; FINISHES = CAREER KO/TKO + SUBMISSION WINS &middot; ★ = ADD TO / REMOVE FROM YOUR QUEUE</div>
+      <div class="footnote">STATS SHOWN ARE PER-FIGHT CAREER AVERAGES FROM SYNCED FIGHT DATA &middot; ${isBk() ? "PUNCHES = PUNCHES LANDED &middot; ACC % = PUNCH ACCURACY" : "SIG STR = SIGNIFICANT STRIKES LANDED &middot; TD = TAKEDOWNS LANDED"} &middot; KD = KNOCKDOWNS &middot; CTRL = CONTROL TIME &middot; FINISHES = CAREER KO/TKO + SUBMISSION WINS &middot; ★ = ADD TO / REMOVE FROM YOUR QUEUE</div>
     </div></div>`;
 
   document.getElementById("boardLinkBtn").addEventListener("click", () => { screen = "board"; lastSig = ""; render(); });
@@ -1674,7 +1717,7 @@ function renderProfile(){
   recomputeRanks();
   const divRank = divRankById[f.id] || 0;
   const finishRate = f.wins ? Math.round(((f.finishes || 0) / f.wins) * 100) + "%" : "—";
-  const cs = [["SIG STR / FIGHT", fmtNum(f.avg_sig_strikes)], ["TAKEDOWNS / FIGHT", fmtNum(f.avg_takedowns)], ["KNOCKDOWNS / FIGHT", fmtNum(f.avg_knockdowns, 2)], ["CONTROL / FIGHT", fmtCtrl(f.avg_control_seconds)],
+  const cs = [[f._bk ? "PUNCHES / FIGHT" : "SIG STR / FIGHT", fmtNum(f.avg_sig_strikes)], [f._bk ? "ACCURACY %" : "TAKEDOWNS / FIGHT", fmtNum(f.avg_takedowns, f._bk ? 0 : 1)], ["KNOCKDOWNS / FIGHT", fmtNum(f.avg_knockdowns, 2)], ["CONTROL / FIGHT", fmtCtrl(f.avg_control_seconds)],
     ["SUB A / FIGHT", fmtNum(f.avg_sub_attempts)], ["REVERSALS / FIGHT", fmtNum(f.avg_reversals, 2)], ["TD DEFENSE", fmtPct(f.td_def_pct)], ["FINISH RATE", finishRate],
     ["FINISHES", f.finishes ?? "—"], ["WINS", f.wins ?? "—"], ["FIGHTS / YEAR", fmtFightsPerYear(f)], ["PROJ FANTASY PTS", fmtNum(projectedFPById[f.id], 1)]];
   const form = formById[f.id] || [], perf = perfById[f.id];
@@ -1771,7 +1814,7 @@ async function refresh(force){
   if (!room || room.preview) { const { data: lg } = await sb.from("leagues").select("*").eq("id", LEAGUE_ID).maybeSingle(); if (lg) L = lg; await loadTeams(); }
   await Promise.all([loadRoomState(), loadMine()]);
   soundCheck();
-  if (room && room.pool) { const miss = room.pool.filter((id) => !fightersById[id]); if (miss.length) { const { data } = await sb.from("fighters").select(STAT_COLS).in("id", miss); (data || []).forEach((f) => { fighters.push(f); fightersById[f.id] = f; projectedFPById[f.id] = projectedFantasyPoints(f); }); } }
+  if (!isBk() && room && room.pool) { const miss = room.pool.filter((id) => !fightersById[id]); if (miss.length) { const { data } = await sb.from("fighters").select(STAT_COLS).in("id", miss); (data || []).forEach((f) => { fighters.push(f); fightersById[f.id] = f; projectedFPById[f.id] = projectedFantasyPoints(f); }); } }
   const sig = signature();
   if (force || sig !== lastSig) { lastSig = sig; render(); if (modal) renderModal(); }
 }
