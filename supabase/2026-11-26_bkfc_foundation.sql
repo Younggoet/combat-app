@@ -3,3 +3,5 @@
 -- bkfc_team_pts, bkfc_refresh_scores, bkfc_start_next_draft (3 cards per block from bkfc_events).
 -- cr_refresh_scores and cr_start_next_draft hand off to the bkfc_ versions when the league's sport is 'bkfc'.
 -- Schedule, bracket, standings and the two-champion season are shared with UFC (cr_make_schedule, cr_make_bracket).
+-- Migration "bkfc_real_draft": view cr_fighters (UFC + BKFC fighters), bkfc_start_draft, and cr_start_draft/cr_advance/cr_make_pick/cr_free_add/cr_refresh_pool patched for BKFC.
+-- Migration "cr_fighter_fks_allow_bkfc": dropped the fighter_id foreign keys on cr_picks, cr_rosters, cr_queue, cr_claims, cr_trades, cr_pick_trades (they pointed at UFC fighters only).
