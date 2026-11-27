@@ -1052,7 +1052,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.i
 document.addEventListener('click',async e=>{let el=e.target.closest('[data-a]');if(el&&el.dataset.a==='fprof'&&el.closest('#sheet'))el=el.parentElement.closest('[data-a]');if(!el)return;const a=el.dataset.a,v=el.dataset.v,c=Z.c,flow=['name','start','type','size','draft'];track('tap',{a:a});if((['doadd','tr_new','tr_send_offer','tr_acc_go'].includes(a)||(a==='tr_act'&&v==='accept'))&&Z.win&&Z.win.reason==='frozen'){toast('Roster moves are closed until Tuesday');return}
   try{
   if(a==='go'){if(v==='home'){await loadMine();}go(v)}
-  else if(a==='start'){Z.c={name:'',start:'new',sz:2,dt:'snake',sport:Z.hubSport==='bkfc'?'bkfc':'ufc'};Z.step='name';go('create')}
+  else if(a==='start'){if(Z.hubSport==='bkfc'){location.href='bkfc-setup.html?league=1';return}Z.c={name:'',start:'new',sz:2,dt:'snake',sport:Z.hubSport==='bkfc'?'bkfc':'ufc'};Z.step='name';go('create')}
   else if(a==='cback'){if(v==='exit'){go('home')}else{const i=flow.indexOf(Z.step);Z.step=flow[Math.max(0,i-1)];render();scrollTo(0,0)}}
   else if(a==='cnext'){if(Z.step==='name'&&!c.name.trim()){Z.err='Name your league first';render();return}Z.err='';Z.step=v;render();scrollTo(0,0)}
   else if(a==='csel'){const k=el.dataset.k;if(k==='sz')c.sz=+v;else if(k==='start'){c.start=v;const l=Z.leagues.find(x=>x.id===v);if(l){c.sz=Math.max(0,SIZES.findIndex(s=>s[0]===l.team_count&&s[1]===l.fighters_per_team));c.dt=l.draft_type==='auction'?'snake':l.draft_type}}else c[k]=v;render()}
@@ -1168,7 +1168,7 @@ setInterval(async()=>{
 setInterval(()=>{const c=$('#clk');if(!c||!Z.room||!Z.room.current_pick_deadline)return;const t=Math.max(0,Math.ceil((new Date(Z.room.current_pick_deadline)-Date.now())/1000));c.textContent=t}, 250);
 document.addEventListener('input',e=>{if(e.target.id==='rs'){Z.rq=e.target.value;const l=$('#plist');if(l)l.innerHTML=poolRows()}});
 
-async function runIntent(i){if(i==='create'){Z.c={name:'',start:'new',sz:2,dt:'snake',sport:Z.sportQ==='bkfc'?'bkfc':'ufc'};Z.step='name';go('create')}else if(i==='lobby'){Z.f='all';await loadPublic();await loadMine();go('lobby')}else go('home')}
+async function runIntent(i){if(i==='create'&&Z.sportQ==='bkfc'){location.href='bkfc-setup.html?league=1';return}if(i==='create'){Z.c={name:'',start:'new',sz:2,dt:'snake',sport:Z.sportQ==='bkfc'?'bkfc':'ufc'};Z.step='name';go('create')}else if(i==='lobby'){Z.f='all';await loadPublic();await loadMine();go('lobby')}else go('home')}
 /* ---------- start ---------- */
 (async()=>{
   try{

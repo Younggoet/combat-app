@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BKFC mock draft setup · Combat</title>
+<title>BKFC setup · Combat</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="auth.js"></script>
@@ -57,12 +57,13 @@ input[type=text]:focus{border-color:#D4AF37}
     ['auction','AUCTION','Auction','Every team gets a budget and bids on fighters. Highest bid wins.']];
   var CLOCKS=[30,60,90,120,180];
   var rev=function(dt,rd){return dt==='linear'?false:dt==='3rr'?(rd===1?false:rd===2?true:((rd-3)%2===0)):(rd%2===0)};
+  var LG=/[?&]league=1/.test(location.search);
   var S={step:0,name:'My BKFC League',team:'My Team',sz:1,dt:'snake',clock:90,pos:'random',pool:58};
-  try{var old=JSON.parse(sessionStorage.getItem('bkfcSetupDraft')||'null');if(old)Object.assign(S,old)}catch(e){}
+  try{var old=LG?null:JSON.parse(sessionStorage.getItem('bkfcSetupDraft')||'null');if(old)Object.assign(S,old)}catch(e){}
   var STEPS=['League name','League size','Draft type','Draft settings','Review'];
   var app=document.getElementById('app'),nx=document.getElementById('next'),pv=document.getElementById('prev');
   var esc=function(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
-  function head(t,s){return '<div class="top"><button class="pill" data-a="exit">← BACK</button><div class="o gold" style="font-weight:700;font-size:20px;letter-spacing:1px">COMBAT</div><div class="o lab" style="font-size:13px;letter-spacing:2px;color:#9A9AA2">BKFC MOCK DRAFT</div><div class="dots">'+STEPS.map(function(_,i){return '<i class="'+(i<=S.step?'on':'')+'"></i>'}).join('')+'</div></div><h1>'+t+'</h1><p class="sub">'+s+'</p>'}
+  function head(t,s){return '<div class="top"><button class="pill" data-a="exit">← BACK</button><div class="o gold" style="font-weight:700;font-size:20px;letter-spacing:1px">COMBAT</div><div class="o lab" style="font-size:13px;letter-spacing:2px;color:#9A9AA2">'+(LG?'BKFC LEAGUE':'BKFC MOCK DRAFT')+'</div><div class="dots">'+STEPS.map(function(_,i){return '<i class="'+(i<=S.step?'on':'')+'"></i>'}).join('')+'</div></div><h1>'+t+'</h1><p class="sub">'+s+'</p>'}
   function order(dt,T,rd){var o=[];for(var i=1;i<=T;i++)o.push(rev(dt,rd)?T-i+1:i);return o}
   function miniGrid(dt,T,mine){
     var R=Math.min(4,SIZES[S.sz][1]);var h='<div class="mini" style="grid-template-columns:repeat('+T+',1fr)">';
@@ -71,9 +72,9 @@ input[type=text]:focus{border-color:#D4AF37}
   function r(){
     var T=SIZES[S.sz][0],F=SIZES[S.sz][1],need=T*F,left=S.pool-need,h='';
     if(S.step===0){
-      h=head('Name your league','This is a practice draft. Nothing is saved to a real league.')+
+      h=head('Name your league',(LG?'You are the commissioner. Friends join with an invite code.':'This is a practice draft. Nothing is saved to a real league.'))+
       '<div class="lbl">LEAGUE NAME</div><input type="text" id="nm" maxlength="40" value="'+esc(S.name)+'">'+
-      '<div class="lbl">YOUR TEAM NAME</div><input type="text" id="tm" maxlength="30" value="'+esc(S.team)+'">'+
+      (LG?'':'<div class="lbl">YOUR TEAM NAME</div><input type="text" id="tm" maxlength="30" value="'+esc(S.team)+'">')+
       '<div class="lbl">FORMAT</div><div class="rope" style="padding:16px 20px"><div class="o" style="font-size:18px;letter-spacing:1px">BKFC Card Redraft · Block 1</div><div class="tiny" style="margin-top:4px">Draft from the next 3 BKFC cards. Rosters clear and redraft each block.</div></div>';
     }
     if(S.step===1){
@@ -86,18 +87,17 @@ input[type=text]:focus{border-color:#D4AF37}
       '<div style="margin-top:22px"><div class="o" style="font-size:22px">'+d[2]+'</div><div style="margin-top:6px;color:#C4C1B8;line-height:1.5">'+d[3]+'</div><div class="tiny" style="margin-top:8px">Rows are the first '+Math.min(4,F)+' rounds. Numbers are draft slots.</div></div>';
     }
     if(S.step===3){
-      h=head('Draft settings','How the practice draft runs. The other '+(T-1)+' teams are bots that take the best projected fighter left.')+
+      h=head('Draft settings',(LG?'How your league drafts. Open spots fill when friends join; the commissioner starts the draft.':'How the practice draft runs. The other '+(T-1)+' teams are bots that take the best projected fighter left.'))+
       '<div class="lbl">PICK CLOCK</div><div style="display:flex;gap:8px;flex-wrap:wrap">'+CLOCKS.map(function(c){return '<button class="chip '+(S.clock===c?'on':'')+'" data-a="clock" data-v="'+c+'">'+c+' sec</button>'}).join('')+'</div><div class="tiny" style="margin-top:8px">If your clock runs out, the best projected fighter left is picked for you.</div>'+
-      '<div class="lbl">YOUR DRAFT POSITION</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="chip '+(S.pos==='random'?'on':'')+'" data-a="pos" data-v="random">Random</button>'+Array.from({length:T},function(_,i){return '<button class="chip '+(S.pos===i+1?'on':'')+'" data-a="pos" data-v="'+(i+1)+'">'+(i+1)+'</button>'}).join('')+'</div>'+
-      '<div class="lbl">SCORING</div><div class="rope" style="padding:6px 20px">'+[['Punch landed','0.2'],['Knockdown','8'],['Round won','3'],['Win','5'],['KO / TKO / stoppage','+15'],['Decision win','+3'],['Accuracy bonus (60%+ of 30+ thrown)','+3']].map(function(x){return '<div class="row"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>'}).join('')+'</div><div class="tiny" style="margin-top:8px">Scoring is the same for every BKFC league.</div>';
+      (LG?'':'<div class="lbl">YOUR DRAFT POSITION</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="chip '+(S.pos==='random'?'on':'')+'" data-a="pos" data-v="random">Random</button>'+Array.from({length:T},function(_,i){return '<button class="chip '+(S.pos===i+1?'on':'')+'" data-a="pos" data-v="'+(i+1)+'">'+(i+1)+'</button>'}).join('')+'</div>')+'<div class="lbl">SCORING</div><div class="rope" style="padding:6px 20px">'+[['Punch landed','0.2'],['Knockdown','8'],['Round won','3'],['Win','5'],['KO / TKO / stoppage','+15'],['Decision win','+3'],['Accuracy bonus (60%+ of 30+ thrown)','+3']].map(function(x){return '<div class="row"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>'}).join('')+'</div><div class="tiny" style="margin-top:8px">Scoring is the same for every BKFC league.</div>';
     }
     if(S.step===4){
       var d2=DTS.filter(function(x){return x[0]===S.dt})[0];
-      h=head('Ready to draft','Check your settings, then start.')+'<div class="rope" style="padding:6px 20px">'+[['League',esc(S.name)],['Your team',esc(S.team)],['Format','BKFC Card Redraft · Block 1'],['Size',T+' teams × '+F+' fighters'],['Draft type',d2[2]],['Pick clock',S.clock+' seconds'],['Your position',S.pos==='random'?'Random':'Pick '+S.pos],['Total picks',need],['Fighter pool',S.pool+' fighters']].map(function(x){return '<div class="row"><span>'+x[0]+'</span><b style="text-align:right">'+x[1]+'</b></div>'}).join('')+'</div>'+(left<0?'<p style="color:#FF6A78;margin-top:14px">This size needs more fighters than the pool has. Go back and pick a smaller setup.</p>':'');
+      h=head(LG?'Ready to create':'Ready to draft',LG?'Check your settings, then create the league.':'Check your settings, then start.')+'<div class="rope" style="padding:6px 20px">'+[['League',esc(S.name)],LG?['Commissioner','You']:['Your team',esc(S.team)],['Format','BKFC Card Redraft · Block 1'],['Size',T+' teams × '+F+' fighters'],['Draft type',d2[2]],['Pick clock',S.clock+' seconds'],LG?['Draft order','Random when the draft starts']:['Your position',S.pos==='random'?'Random':'Pick '+S.pos],['Total picks',need],['Fighter pool',S.pool+' fighters']].map(function(x){return '<div class="row"><span>'+x[0]+'</span><b style="text-align:right">'+x[1]+'</b></div>'}).join('')+'</div>'+(left<0?'<p style="color:#FF6A78;margin-top:14px">This size needs more fighters than the pool has. Go back and pick a smaller setup.</p>':'');
     }
     app.innerHTML=h;
     pv.style.display=S.step?'':'none';
-    nx.textContent=S.step===4?'START MOCK DRAFT':'NEXT';nx.disabled=S.step===4&&left<0;
+    nx.textContent=S.step===4?(LG?'CREATE LEAGUE':'START MOCK DRAFT'):'NEXT';nx.disabled=S.step===4&&left<0;
     try{sessionStorage.setItem('bkfcSetupDraft',JSON.stringify(S))}catch(e){}
   }
   function grab(){var a=document.getElementById('nm'),b=document.getElementById('tm');if(a)S.name=a.value.trim()||'My BKFC League';if(b)S.team=b.value.trim()||'My Team'}
@@ -110,9 +110,33 @@ input[type=text]:focus{border-color:#D4AF37}
     r();
   });
   pv.onclick=function(){grab();if(S.step>0)S.step--;r();scrollTo(0,0)};
+  var busy=false;
+  function genCode(){var a='ABCDEFGHJKLMNPQRSTUVWXYZ',s='',r=crypto.getRandomValues(new Uint8Array(6));for(var i=0;i<6;i++)s+=a[r[i]%a.length];return s}
+  async function makeLeague(T,F){
+    if(busy)return;busy=true;nx.disabled=true;nx.textContent='CREATING...';
+    var fail=function(m){busy=false;nx.disabled=false;nx.textContent='CREATE LEAGUE';var e=document.getElementById('err');if(!e){e=document.createElement('p');e.id='err';e.style.cssText='color:#FF6A78;margin-top:14px';app.appendChild(e)}e.textContent=m};
+    try{
+      var A=window.CombatAuth,sb=A&&A.client;if(!sb)return fail('Could not reach the server. Try again.');
+      var user=await A.getUser();
+      if(!user){location.href='login.html?redirect='+encodeURIComponent('bkfc-setup.html?league=1');return}
+      var prof=null;try{prof=await A.getProfile(user.id)}catch(e){}
+      var dn=(prof&&prof.display_name)||'';
+      var L=null;
+      for(var i=0;i<5&&!L;i++){
+        var row={name:S.name,commissioner_user_id:user.id,team_count:T,fighters_per_team:F,draft_type:S.dt,waiver_type:'standard',faab_budget:200,join_code:genCode(),is_public:false,status:'setup',pick_seconds:S.clock,format:'card_redraft',sport:'bkfc'};
+        var r1=await sb.from('leagues').insert(row).select().single();
+        if(!r1.error)L=r1.data;else if(!/join_code|duplicate|unique/i.test(r1.error.message))throw r1.error;
+      }
+      if(!L)return fail('Could not make an invite code. Try again.');
+      var r2=await sb.from('teams').insert({league_id:L.id,name:'Team '+(dn||'Commissioner'),owner_user_id:user.id,claimed_at:new Date().toISOString()});
+      if(r2.error){await sb.from('leagues').delete().eq('id',L.id);throw r2.error}
+      location.href='league.html?open='+L.id;
+    }catch(e){fail((e&&e.message)||"Couldn't create the league. Try again.")}
+  }
   nx.onclick=function(){grab();
     if(S.step<4){S.step++;r();scrollTo(0,0);return}
     var T=SIZES[S.sz][0],F=SIZES[S.sz][1];
+    if(LG){makeLeague(T,F);return}
     var cfg={name:S.name,team:S.team,teams:T,fpt:F,dt:S.dt,clock:S.clock,pos:S.pos==='random'?1+Math.floor(Math.random()*T):S.pos};
     try{sessionStorage.setItem('bkfcSetup',JSON.stringify(cfg))}catch(e){}
     location.href='bkfc-draft.html';

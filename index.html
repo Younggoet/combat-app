@@ -81,10 +81,10 @@
       if(r.error)throw new Error("Could not save your profile");
       return 'Profile saved'};
   })();
-  ME.open=function(l){location.href='league.html?open='+l.id};ME.join=function(o){location.href='league.html?hub=1&sport='+(o==='bkfc'?'bkfc':'ufc')};ME.viewAll=ME.join;ME.create=function(o){location.href='league.html?create=1'+(o==='bkfc'?'&sport=bkfc':'')};
+  ME.open=function(l){location.href='league.html?open='+l.id};ME.join=function(o){location.href='league.html?hub=1&sport='+(o==='bkfc'?'bkfc':'ufc')};ME.viewAll=ME.join;ME.create=function(o){location.href=o==='bkfc'?'bkfc-setup.html?league=1':'league.html?create=1'};
   window.__ME=ME;
   var desk=window.matchMedia('(min-width:900px)').matches;
-  var CREATE="(location.href='league.html?create=1'+(typeof org!=='undefined'&&org==='bkfc'?'&sport=bkfc':''))",LOBBY="(location.href='league.html?lobby=1')";
+  var CREATE="(location.href=(typeof org!=='undefined'&&org==='bkfc')?'bkfc-setup.html?league=1':'league.html?create=1')",LOBBY="(location.href='league.html?lobby=1')";
   function patch(s){
     s=s.replace(/const SLIDES = \[[\s\S]*?\n    \];/,"const SLIDES = (window.__SLIDES&&window.__SLIDES.length)?window.__SLIDES:[{k:'UFC',kicker:'UFC',title:'Cards are being booked',sub:'Fights show up here once they are announced',c:'#FF3B4E',c2:'#FF8A5B'}];");
     s=s.replace(/(name:'(?:Bayou Brawlers|Octagon Alley|Late Stoppage Club)'[^\n]*?pick:\s*\(\)\s*=>\s*)this\.setState\(\{\s*page:\s*'username'\s*\}\)/g,'$1'+LOBBY);
