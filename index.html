@@ -41,8 +41,8 @@
   }catch(e){slides=[]}
   window.__SLIDES=slides;
   window.__PUBLIC=[];
-  try{var sb2=window.CombatAuth&&window.CombatAuth.client;if(sb2){var pr=await sb2.from('leagues').select('id,name,team_count,teams(id)').eq('is_public',true).eq('archived',false).eq('status','setup').not('team_count','is',null).order('created_at',{ascending:false}).limit(6);
-    window.__PUBLIC=(pr.data||[]).map(function(l){return {name:l.name,meta:'Card Redraft \u00b7 '+((l.teams||[]).length)+'/'+l.team_count+' teams'}})}}catch(e){}
+  try{var sb2=window.CombatAuth&&window.CombatAuth.client;if(sb2){var pr=await sb2.from('leagues').select('id,name,team_count,sport,teams(id)').eq('is_public',true).eq('archived',false).eq('status','setup').not('team_count','is',null).order('created_at',{ascending:false}).limit(6);
+    window.__PUBLIC=(pr.data||[]).map(function(l){return {name:l.name,sport:l.sport||'ufc',meta:(l.sport==='bkfc'?'BKFC ':'')+'Card Redraft \u00b7 '+((l.teams||[]).length)+'/'+l.team_count+' teams'}})}}catch(e){}
   /* signed-in players with a Combat username: their leagues on the homepage */
   var ME={signedIn:false,label:'SIGN IN',leagues:[],signGo:function(){location.href='login.html?redirect=index.html'},create:function(){location.href='league.html?create=1'},join:function(){location.href='league.html?lobby=1'},viewAll:function(){location.href='league.html'},open:function(l){location.href='league.html?open='+encodeURIComponent(l.id)}};
   try{
@@ -57,7 +57,7 @@
         var ls=((tr.data||[]).map(function(r){return r.leagues})).filter(function(l){return l.team_count&&!l.archived}).sort(function(x,y){return y.created_at.localeCompare(x.created_at)});
         var ids=ls.map(function(l){return l.id}),cnt={};
         if(ids.length){var tc=await sb3.from('teams').select('league_id').in('league_id',ids);(tc.data||[]).forEach(function(x){cnt[x.league_id]=(cnt[x.league_id]||0)+1})}
-        ME.leagues=ls.map(function(l){return {id:l.id,name:l.name,meta:'Card Redraft \u00b7 '+(l.status==='setup'?'Setting up':l.status==='drafting'?'Drafting':'In season')+' \u00b7 '+(cnt[l.id]||1)+'/'+l.team_count+' teams',when:l.draft_time?'Draft '+new Date(l.draft_time).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Draft time not set'}});
+        ME.leagues=ls.map(function(l){return {id:l.id,name:l.name,sport:l.sport||'ufc',meta:(l.sport==='bkfc'?'BKFC ':'')+'Card Redraft \u00b7 '+(l.status==='setup'?'Setting up':l.status==='drafting'?'Drafting':'In season')+' \u00b7 '+(cnt[l.id]||1)+'/'+l.team_count+' teams',when:l.draft_time?'Draft '+new Date(l.draft_time).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Draft time not set'}});
       }
     }
   }catch(e){}
@@ -81,17 +81,19 @@
       if(r.error)throw new Error("Could not save your profile");
       return 'Profile saved'};
   })();
+  ME.open=function(l){location.href='league.html?open='+l.id};ME.join=function(){location.href='league.html'};ME.viewAll=function(){location.href='league.html'};ME.create=function(){location.href='league.html?create=1'};
   window.__ME=ME;
   var desk=window.matchMedia('(min-width:900px)').matches;
-  var CREATE="(location.href='league.html?create=1')",LOBBY="(location.href='league.html?lobby=1')";
+  var CREATE="(location.href='league.html?create=1'+(typeof org!=='undefined'&&org==='bkfc'?'&sport=bkfc':''))",LOBBY="(location.href='league.html?lobby=1')";
   function patch(s){
     s=s.replace(/const SLIDES = \[[\s\S]*?\n    \];/,"const SLIDES = (window.__SLIDES&&window.__SLIDES.length)?window.__SLIDES:[{k:'UFC',kicker:'UFC',title:'Cards are being booked',sub:'Fights show up here once they are announced',c:'#FF3B4E',c2:'#FF8A5B'}];");
     s=s.replace(/(name:'(?:Bayou Brawlers|Octagon Alley|Late Stoppage Club)'[^\n]*?pick:\s*\(\)\s*=>\s*)this\.setState\(\{\s*page:\s*'username'\s*\}\)/g,'$1'+LOBBY);
-    s=s.replace(/cur\.leagues \? \[[\s\S]*?\] : \[\];/,"cur.leagues ? (window.__PUBLIC||[]).map(l => ({ name:l.name, meta:l.meta, pick:() => "+LOBBY+" })) : [];");
+    s=s.replace(/cur\.leagues \? \[[\s\S]*?\] : \[\];/,"cur.leagues ? (window.__PUBLIC||[]).filter(l => (l.sport||'ufc') === (org==='bkfc'?'bkfc':'ufc')).map(l => ({ name:l.name, meta:l.meta, pick:() => "+LOBBY+" })) : [];");
     s=s.replace("kicker:'UFC FIGHT NIGHT · DOHA'","kicker:((window.__SLIDES||[])[0]||{kicker:'UFC'}).kicker").replace("title:'Prochazka vs Stirling'","title:((window.__SLIDES||[])[0]||{title:'Cards are being booked'}).title").replace("sub:'Light heavyweight main event · Block 1 card'","sub:((window.__SLIDES||[])[0]||{sub:''}).sub").replace("status:'Block 1 scoring live Saturday'","status:'Next card'");
     s=s.replace('orgName:cur.name,','showMock: org === \'ufc\' || org === \'bkfc\', mockLabel: org === \'bkfc\' ? \'BKFC MOCK DRAFT\' : \'UFC MOCK DRAFT\', mockColor: org === \'bkfc\' ? \'#FF8A1F\' : \'#FF3B4E\', mockGo: () => { if (org === \'bkfc\') location.href = \'bkfc-setup.html\'; else '+CREATE+' }, orgName:cur.name,');
     s=s.replace(/this\.setState\(\{\s*page:\s*'username'\s*\}\)/g,CREATE);
-    s=s.replace(/go: \(\) => \{\}/g,"go: () => { if (k === 'ufc') "+CREATE+"; if (k === 'bkfc') location.href='league.html?create=1&sport=bkfc'; }");
+    s=s.replace('const myLeagues = ME.leagues.map(','const myLeagues = ME.leagues.filter(l => (l.sport||\'ufc\') === (org===\'bkfc\'?\'bkfc\':\'ufc\')).map(');
+    s=s.replace(/go: \(\) => \{\}/g,"go: () => { if (k === 'ufc') (location.href='league.html?create=1'); if (k === 'bkfc') location.href='league.html?create=1&sport=bkfc'; }");
     return s;
   }
   var inst=await DCRuntime.mount({url:desk?'mock/Desktop.dc.html':'mock/Main.dc.html',root:document.getElementById('app'),patch:patch,patchText:function(t){var MOCK='<sc-if value="{{ showMock }}" hint-placeholder-val="{{ true }}"><div style="margin-top:12px;padding:16px;background:#0F1A33;border:1px solid rgba(212,175,55,.45);border-radius:14px;display:flex;flex-direction:column;gap:10px"><div style="font-family:\'Orbitron\',\'Chakra Petch\',sans-serif;font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase">Try a mock draft</div><div style="font-size:13px;color:#9FB2D6;line-height:1.4">Practice before your league drafts. No league needed.</div><button class="lift" onClick="{{ mockGo }}" style="align-self:flex-start;min-height:44px;padding:0 22px;border:0;background:{{ mockColor }};color:#0A1124;font-family:\'Orbitron\',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);cursor:pointer">{{ mockLabel }}</button></div></sc-if>';

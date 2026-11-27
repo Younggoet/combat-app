@@ -251,18 +251,9 @@ button:focus-visible{outline:2px solid #D4AF37;outline-offset:2px}
         <div style="font-size:13px;color:#9FB2D6">{{ orgName }}</div>
       </div>
       <sc-if value="{{ hasLeagues }}" hint-placeholder-val="{{ true }}">
-        <div style="position:relative;display:flex;gap:14px;align-items:center;padding:14px 16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-left:3px solid {{accent}};border-radius:4px 14px 14px 4px">
-          <div style="flex:1;min-width:0">
-            <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:17px">its gon be good</div>
-            <div style="font-size:13px;color:#9FB2D6;margin-top:2px">Dynasty · Card redraft · Block 1</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:20px;color:{{accent}}">Block 1</div>
-            <div style="font-size:12px;color:#9FB2D6">Doha is live Saturday</div>
-          </div>
-        </div>
-        <button class="lift" style="margin-top:10px;width:100%;min-height:48px;border:1px dashed rgba(120,170,255,.35);background:transparent;color:#C9D8F5;border-radius:12px;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.05em">Join or create a league</button>
-      </sc-if>
+<sc-for list="{{ myLeagues }}" as="l" hint-placeholder-count="2"><div style="position:relative;display:flex;gap:14px;align-items:center;padding:14px 16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-left:3px solid {{accent}};border-radius:4px 14px 14px 4px;cursor:pointer" onClick="{{ l.open }}"><div style="flex:1;min-width:0"><div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:17px">{{ l.name }}</div><div style="font-size:13px;color:#9FB2D6;margin-top:2px">{{ l.meta }}</div></div><div style="text-align:right;font-size:13px;color:#9FB2D6">{{ l.when }}</div></div></sc-for>
+<button class="lift" onClick="{{ mineJoin }}" style="margin-top:10px;width:100%;min-height:48px;border:1px dashed rgba(120,170,255,.35);background:transparent;color:#C9D8F5;border-radius:12px;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.05em">Join or create a league</button>
+          </sc-if>
       <sc-if value="{{ noLeagues }}" hint-placeholder-val="{{ false }}">
         <div style="padding:22px 18px;background:#0F1A33;border:1px dashed {{accentLine}};border-radius:14px;display:flex;flex-direction:column;gap:10px">
           <div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px">{{ emptyTitle }}</div>
@@ -654,9 +645,9 @@ class Component extends DCLogic {
               kicker:'UFC FIGHT NIGHT · DOHA', title:'Prochazka vs Stirling', sub:'Light heavyweight main event · Block 1 card', status:'Block 1 scoring live Saturday', cta:'CREATE A LEAGUE', leagues:true,
               modes:[['Card Redraft','Draft each card, score live by fight. Block by block.','Live'],['Face-Off','Two players, one card. Pick fighters head to head.','Coming soon']] },
       bkfc: { label:'BKFC', name:'BKFC', c:'#FF8A1F', c2:'#FFC23D', soft:'rgba(255,138,31,.22)', line:'rgba(255,138,31,.35)',
-              kicker:'BKFC · NEXT EVENT', title:'Fight Night Hershey', sub:'Dec 4 · Pague vs Richman · 13 bouts so far', status:'Fantasy opens soon', cta:'GET NOTIFIED', leagues:false,
+              kicker:'BKFC · NEXT EVENT', title:'Fight Night Hershey', sub:'Dec 4 · Pague vs Richman · 13 bouts so far', status:'Card Redraft is open', cta:'CREATE A LEAGUE', leagues:true,
               eTitle:'No BKFC leagues yet', eBody:'Punch-based scoring is planned for BKFC. Be first to know when leagues open.',
-              modes:[['Card Redraft','Blocks of 3 cards. Punches, knockdowns, round wins and finishes score.','Planned'],['Face-Off','Two players, one card. Pick fighters head to head.','Coming soon']] },
+              modes:[['Card Redraft','Blocks of 3 cards. Punches, knockdowns, round wins and finishes score.','Live'],['Face-Off','Two players, one card. Pick fighters head to head.','Coming soon']] },
       raf:  { label:'RAF',  name:'RAF',  c:'#A87BFF', c2:'#5CC8FF', soft:'rgba(168,123,255,.22)', line:'rgba(168,123,255,.35)',
               kicker:'RAF · NEXT EVENT', title:'RAF 15', sub:'Nov 28 · Cejudo vs Song · Chicago · 13 bouts', status:'Results-based fantasy planned', cta:'GET NOTIFIED', leagues:false,
               eTitle:'No RAF leagues yet', eBody:'Wrestling scores on takedowns, match points, win and method. Be first to know when leagues open.',
