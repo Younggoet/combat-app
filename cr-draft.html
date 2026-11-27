@@ -754,7 +754,7 @@ function tapeFighter(f, right){
   if (f.avg_sig_strikes !== null && f.avg_sig_strikes !== undefined) c.push(tapeCell(Number(f.avg_sig_strikes).toFixed(1), f._bk ? "PUNCHES" : "SIG STR"));
   if (f.avg_takedowns !== null && f.avg_takedowns !== undefined) c.push(tapeCell(Number(f.avg_takedowns).toFixed(1), f._bk ? "ACC %" : "TD"));
   const w = f.histWins != null ? f.histWins : f.wins;
-  if (w) c.push(tapeCell(Math.round(((f.finishes || 0) / w) * 100) + "%", "FINISH"));
+  if (w) c.push(tapeCell(Math.min(100, Math.round(((f.finishes || 0) / ((f.finishes > f.wins && f.pro_wins >= f.finishes) ? f.pro_wins : w)) * 100)) + "%", "FINISH"));
   return `<div style="display:flex;flex-direction:column;gap:8px;align-items:${right ? "flex-end" : "flex-start"};">${octagonRingAvatar(f, fighterDc(f), 56)}<div style="display:flex;flex-wrap:wrap;gap:4px;line-height:1;justify-content:${right ? "flex-end" : "flex-start"};">${c.join("")}</div></div>`;
 }
 function fmtRank(rank){
@@ -1363,7 +1363,7 @@ function renderDraft(){
           return `<div style="text-align:center;min-width:58px;"><div class="h-font form-badge" style="font-size:20px;font-weight:700;color:${c};border:2px solid ${c};padding:4px 0;">${r.result}</div><div style="font-size:11px;color:#B8B5AE;margin-top:4px;">${esc(fmtMethod(r.method))}</div><div style="font-size:10px;color:#8C8982;">${esc(opp ? opp.full_name.split(" ").slice(-1)[0] : "")}</div></div>`;
         }).join("") : `<div style="font-size:13px;color:#8C8982;">No fight history on file.</div>`;
     const myDivCount = picks.filter((p) => p.team_id === userTeamId && (fightersById[p.fighter_id] || {}).announced_weight_class === spotlight.announced_weight_class).length;
-    const finishRate = spotlight.wins ? Math.round(((spotlight.finishes || 0) / spotlight.wins) * 100) + "%" : "—";
+    const finishRate = spotlight.wins ? Math.min(100, Math.round(((spotlight.finishes || 0) / ((spotlight.finishes > spotlight.wins && spotlight.pro_wins >= spotlight.finishes) ? spotlight.pro_wins : spotlight.wins)) * 100)) + "%" : "—";
     const divFitText = myDivCount === 0 ? `You have no ${esc(spotlight.announced_weight_class || "")} fighters yet`
       : myDivCount >= 3 ? `Heads up: you already own ${myDivCount} ${esc(spotlight.announced_weight_class || "")} fighters`
       : `You own ${myDivCount} ${esc(spotlight.announced_weight_class || "")} fighter${myDivCount > 1 ? "s" : ""}`;

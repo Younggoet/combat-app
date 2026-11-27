@@ -429,6 +429,7 @@ const rosterOf=tid=>Z.ros.filter(r=>r.team_id===tid&&r.block_no===cb()).map(r=>r
 const boutOf=fid=>Z.bouts.find(b=>b.fighter_a===fid||b.fighter_b===fid);
 const oppOf=fid=>{const b=boutOf(fid);return b?(b.fighter_a===fid?b.fighter_b:b.fighter_a):null};
 const fpts=fid=>{const b=boutOf(fid);return b&&(b.status==='completed'||b.status==='live')?(Z.perf[fid]||0):null};
+const finW=f=>(f.finishes>f.wins&&f.pro_wins>=f.finishes)?f.pro_wins:f.wins;
 const finProj=f=>{if(!(Z.L&&Z.L.finish_bonus))return 0;const n=k=>Number(f[k])||0,g=f.pro_wins!=null?n('pro_wins')+n('pro_losses'):n('wins')+n('losses');return g>0&&f.finishes!=null?10*Math.min(1,n('finishes')/g):0};
 const projFP=f=>{if(!f||f.avg_sig_strikes==null)return null;const n=k=>Number(f[k])||0;return finProj(f)+n('avg_sig_strikes')*.1+n('avg_takedowns')*2+n('avg_knockdowns')*8+n('avg_control_seconds')/60+n('avg_sub_attempts')+n('avg_reversals')*6+(Number(f.td_def_pct==null?.64:f.td_def_pct)*3*.5)};
 const fSL=(f,j)=>fLine(f,j,1);
@@ -541,7 +542,7 @@ const fbg=f=>{const c=CCN[f.nationality]||'';return c&&FL[c]?`url(${FD(c)})`:''}
 /* ---------- tale of the tape (a bout's two fighters side by side) ---------- */
 function tapeHtml(bid){const b=Z.bouts.find(x=>x.id===bid);if(!b)return '';const A=Z.fmap[b.fighter_a]||{},B=Z.fmap[b.fighter_b]||{},done=b.status==='completed';
   const age=f=>f.date_of_birth?Math.floor((Date.now()-new Date(f.date_of_birth).getTime())/31557600000):(f.age_years!=null?f.age_years:null),inch=f=>f.reach_cm?Math.round(f.reach_cm/2.54):null,hin=f=>f.height_cm?Math.round(f.height_cm/2.54):null;
-  const pf=f=>recS(f),wp=f=>f.wins!=null&&(f.wins+(f.losses||0))?f.wins/(f.wins+(f.losses||0)):null,fr=f=>f.wins?Math.round((f.finishes||0)/f.wins*100):null;
+  const pf=f=>recS(f),wp=f=>f.wins!=null&&(f.wins+(f.losses||0))?f.wins/(f.wins+(f.losses||0)):null,fr=f=>{const w=finW(f);return w?Math.min(100,Math.round((f.finishes||0)/w*100)):null};
   const n1=(v,d)=>v==null?null:Number(v).toFixed(d==null?1:d);
   // [label, a display, b display, a numeric, b numeric, higher is better?]
   const R=[['AGE',age(A),age(B)],['HEIGHT',hin(A)&&ftIn(A.height_cm),hin(B)&&ftIn(B.height_cm),hin(A),hin(B),1],['WEIGHT',LBSM[A.announced_weight_class]&&LBSM[A.announced_weight_class]+' lbs',LBSM[B.announced_weight_class]&&LBSM[B.announced_weight_class]+' lbs'],['REACH',inch(A)&&inch(A)+'"',inch(B)&&inch(B)+'"',inch(A),inch(B),1],['STANCE',A.stance,B.stance],['RECORD',pf(A),pf(B),wp(A),wp(B),1],['FINISH RATE',fr(A)==null?null:fr(A)+'%',fr(B)==null?null:fr(B)+'%',fr(A),fr(B),1],['COUNTRY',A.nationality,B.nationality],['TEAM',A.team,B.team],['OVERALL RANK',rkAll(b.fighter_a)&&'#'+rkAll(b.fighter_a),rkAll(b.fighter_b)&&'#'+rkAll(b.fighter_b),rkAll(b.fighter_a)&&-rkAll(b.fighter_a),rkAll(b.fighter_b)&&-rkAll(b.fighter_b),1],[A.announced_weight_class&&A.announced_weight_class===B.announced_weight_class?A.announced_weight_class.toUpperCase()+' RANK':'DIVISION RANK',rkDiv(b.fighter_a)&&'#'+rkDiv(b.fighter_a),rkDiv(b.fighter_b)&&'#'+rkDiv(b.fighter_b),rkDiv(b.fighter_a)&&-rkDiv(b.fighter_a),rkDiv(b.fighter_b)&&-rkDiv(b.fighter_b),A.announced_weight_class===B.announced_weight_class?1:0]];
@@ -559,7 +560,7 @@ function fpHtml(id){const f=Z.fmap[id];if(!f)return '';const col=ccol(f),cc=CCN[
   const box=(l,v,c)=>octTile(l,v,c,'l');
   const age=f.date_of_birth?Math.floor((Date.now()-new Date(f.date_of_birth).getTime())/31557600000):(f.age_years!=null?f.age_years:'—');
   const ht=f.height_cm?(()=>{const t=Math.round(f.height_cm/2.54);return Math.floor(t/12)+"'"+(t%12)+'"'})():'—',rch=f.reach_cm?Math.round(f.reach_cm/2.54)+'"':'—';
-  const fr=f.wins?Math.round((f.finishes||0)/f.wins*100)+'%':'—',p=projFP(f);
+  const fr=finW(f)?Math.min(100,Math.round((f.finishes||0)/finW(f)*100))+'%':'—',p=projFP(f);
   const mates=Object.values(Z.fmap).filter(x=>x.announced_weight_class===f.announced_weight_class).sort((a,b)=>(b.current_rating||0)-(a.current_rating||0)),dr=mates.findIndex(x=>x.id===id)+1;
   const cs=[['SIG STR / FIGHT',f.avg_sig_strikes!=null?Number(f.avg_sig_strikes).toFixed(1):'—'],['TAKEDOWNS / FIGHT',f.avg_takedowns!=null?Number(f.avg_takedowns).toFixed(1):'—'],['KNOCKDOWNS / FIGHT',f.avg_knockdowns!=null?Number(f.avg_knockdowns).toFixed(2):'—'],['CONTROL / FIGHT',f.avg_control_seconds!=null?mmss(f.avg_control_seconds):'—'],['SUB A / FIGHT',f.avg_sub_attempts!=null?Number(f.avg_sub_attempts).toFixed(1):'—'],['REVERSALS / FIGHT',f.avg_reversals!=null?Number(f.avg_reversals).toFixed(2):'—'],['TD DEFENSE',f.td_def_pct!=null?Math.round(f.td_def_pct*100)+'%':'—'],['FINISH RATE',fr],['FINISHES',f.finishes??'—'],['WINS',f.wins??'—'],['PROJ FANTASY PTS',p==null?'—':p.toFixed(1)]];
   const lg=(Z.fpd||{})[id],log=(lg||[]).map(r=>`<tr><td class="dim">${esc(fmtD(r.date).replace(/^\w+, /,''))}</td><td style="font-weight:600;text-align:left">${esc(r.opp||'—')}</td><td style="color:${r.res==='W'?'var(--green)':r.res==='L'?'var(--redl)':'var(--dim)'};font-weight:700">${esc(r.res||'—')}</td><td>${esc(r.method||'—')}</td><td class="h gold" style="font-size:16px">${r.pts==null?'—':Number(r.pts).toFixed(1)}</td></tr>`).join('');
@@ -821,7 +822,7 @@ function fLine0(f,j,sm){if(!f)return '';const c=[];
   if(!sm&&LBSM[f.announced_weight_class])c.push(cell(LBSM[f.announced_weight_class],'LBS'));
   if(f.avg_sig_strikes!=null)c.push(cell(Number(f.avg_sig_strikes).toFixed(1),'SIG STR'));
   if(f.avg_takedowns!=null)c.push(cell(Number(f.avg_takedowns).toFixed(1),'TD'));
-  if(f.wins)c.push(cell(Math.round((f.finishes||0)/f.wins*100)+'%','FINISH'));
+  if(finW(f))c.push(cell(Math.min(100,Math.round((f.finishes||0)/finW(f)*100))+'%','FINISH'));
   return `<div style="display:flex;flex-wrap:wrap;gap:${sm?4:6}px;margin-top:${sm?6:8}px;line-height:1;justify-content:${j==='r'?'flex-end':j==='c'?'center':'flex-start'}">${c.join('')}</div>`}
 function deskTbl(b){const h=h2h(b,0);return h?`<div style="padding:6px 24px 20px">${h}</div>`:''}
 function fdSide(id,right){const f=Z.fmap[id]||{},col=ccol(f),av=fgv(f,56,1),tx=`<div style="display:flex;flex-direction:column;gap:4px;align-items:${right?'flex-end':'flex-start'};min-width:0;${right?'text-align:right':''}"><div class="h" style="font-size:20px;font-weight:700;line-height:1.1;cursor:pointer" data-a="fprof" data-v="${id}">${esc(f.full_name||'Fighter')}</div>${fLine(f,right?"r":"")}${ownPill(id,right)}</div>`;
