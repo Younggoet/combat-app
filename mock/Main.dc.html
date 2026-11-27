@@ -252,7 +252,7 @@ button:focus-visible{outline:2px solid #D4AF37;outline-offset:2px}
       </div>
       <sc-if value="{{ hasLeagues }}" hint-placeholder-val="{{ true }}">
 <sc-for list="{{ myLeagues }}" as="l" hint-placeholder-count="2"><div style="position:relative;display:flex;gap:14px;align-items:center;padding:14px 16px;background:#0F1A33;border:1px solid rgba(120,170,255,.16);border-left:3px solid {{accent}};border-radius:4px 14px 14px 4px;cursor:pointer" onClick="{{ l.open }}"><div style="flex:1;min-width:0"><div style="font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:17px">{{ l.name }}</div><div style="font-size:13px;color:#9FB2D6;margin-top:2px">{{ l.meta }}</div></div><div style="text-align:right;font-size:13px;color:#9FB2D6">{{ l.when }}</div></div></sc-for>
-<button class="lift" onClick="{{ mineJoin }}" style="margin-top:10px;width:100%;min-height:48px;border:1px dashed rgba(120,170,255,.35);background:transparent;color:#C9D8F5;border-radius:12px;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.05em">Join or create a league</button>
+<button class="lift" onClick="{{ mineJoin }}" style="margin-top:10px;min-height:48px;width:100%;border:0;background:{{accent}};color:#0A1124;font-family:'Orbitron','Chakra Petch',sans-serif;font-weight:800;font-size:13px;letter-spacing:.1em;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">JOIN OR CREATE A LEAGUE</button>
           </sc-if>
       <sc-if value="{{ noLeagues }}" hint-placeholder-val="{{ false }}">
         <div style="padding:22px 18px;background:#0F1A33;border:1px dashed {{accentLine}};border-radius:14px;display:flex;flex-direction:column;gap:10px">
@@ -897,7 +897,7 @@ class Component extends DCLogic {
       { name:'Octagon Alley', meta:'Card Redraft · Setting up · 5/10 teams', when:'Draft time not set' }
     ] };
     const myLeagues = ME.leagues.map(l => ({ name: l.name, meta: l.meta, when: l.when || '', open: () => (ME.open ? ME.open(l) : this.setState({ page: 'leagues' })) }));
-    const mineVals = { showMine: !!ME.signedIn, myLeagues, noMine: !myLeagues.length, viewAll: () => (ME.viewAll ? ME.viewAll() : this.setState({ page: 'leagues' })), mineCreate: () => (ME.create ? ME.create() : this.setState({ page: 'username' })), mineJoin: () => (ME.join ? ME.join() : this.setState({ page: 'leagues' })), signLabel: ME.label || 'SIGN IN', signGo: () => (ME.signGo ? ME.signGo() : null) };
+    const mineVals = { showMine: !!ME.signedIn, myLeagues, noMine: !myLeagues.length, viewAll: () => (ME.viewAll ? ME.viewAll(org) : this.setState({ page: 'leagues' })), mineCreate: () => (ME.create ? ME.create(org) : this.setState({ page: 'username' })), mineJoin: () => (ME.join ? ME.join(org) : this.setState({ page: 'leagues' })), signLabel: ME.label || 'SIGN IN', signGo: () => (ME.signGo ? ME.signGo() : null) };
     const pf0 = (ME.profile) || { shape: 'octagon', color: '#FF3B4E', photo: '', name: 'Rasta Willy', fav: '', fighter: '', bio: '' };
     if (!this.state.pf) this.state.pf = { ...pf0, msg: '' };
     const PF = this.state.pf;

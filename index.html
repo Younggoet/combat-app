@@ -81,7 +81,7 @@
       if(r.error)throw new Error("Could not save your profile");
       return 'Profile saved'};
   })();
-  ME.open=function(l){location.href='league.html?open='+l.id};ME.join=function(){location.href='league.html'};ME.viewAll=function(){location.href='league.html'};ME.create=function(){location.href='league.html?create=1'};
+  ME.open=function(l){location.href='league.html?open='+l.id};ME.join=function(o){location.href='league.html?hub=1&sport='+(o==='bkfc'?'bkfc':'ufc')};ME.viewAll=ME.join;ME.create=function(o){location.href='league.html?create=1'+(o==='bkfc'?'&sport=bkfc':'')};
   window.__ME=ME;
   var desk=window.matchMedia('(min-width:900px)').matches;
   var CREATE="(location.href='league.html?create=1'+(typeof org!=='undefined'&&org==='bkfc'?'&sport=bkfc':''))",LOBBY="(location.href='league.html?lobby=1')";
