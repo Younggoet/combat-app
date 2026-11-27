@@ -15,6 +15,8 @@ body{margin:0;background:#0A1124}
 button{font-family:inherit;cursor:pointer}
 button:focus-visible{outline:2px solid #D4AF37;outline-offset:2px}
 .lift:hover{filter:brightness(1.12)}
+body[data-org="bkfc"] .lift{clip-path:none!important;border-radius:999px!important}
+body[data-org="bkfc"] .lift>span{clip-path:none!important;border-radius:999px!important}
 .scroll::-webkit-scrollbar{display:none}
 </style>
 </helmet>
@@ -659,6 +661,7 @@ button:focus-visible{outline:2px solid #D4AF37;outline-offset:2px}
 class Component extends DCLogic {
   constructor(props) { super(props); this.state = { page: 'home', tab: 'fantasy', slide: 0, follow: { UFC: true }, org: 'ufc', filter: 'all', fightTab: 'events' }; }
   renderVals() {
+    try { document.body.dataset.org = (this.state.page === 'leagues' && this.state.org === 'bkfc') ? 'bkfc' : ''; } catch (e) {}
     const { page, tab, org, filter, fightTab } = this.state;
     const O = {
       ufc:  { label:'UFC',  name:'UFC',  c:'#FF3B4E', c2:'#FF8A5B', soft:'rgba(255,59,78,.22)',  line:'rgba(255,59,78,.35)',

@@ -17,6 +17,9 @@ body{min-height:100vh;background:radial-gradient(circle at 0% 0%,rgba(44,230,255
 .ob{--c:16px;padding:1.5px;background:var(--ol);clip-path:var(--P)}
 .ob{min-width:0}.ob>.i{min-width:0;--c:calc(var(--oc,16px) - 1px);clip-path:var(--P);background:var(--fill,linear-gradient(155deg,rgba(212,175,55,.12),rgba(0,0,0,0) 60%),#0F1A33);padding:var(--pad,14px);height:100%}
 .ob.sm{--oc:16px}.ob.sm{--c:16px}.ob.md{--c:20px;--oc:20px}.ob.lg{--c:22px;--oc:22px}
+body[data-sp="bkfc"] .ob,body[data-sp="bkfc"] .ob>.i,body[data-sp="bkfc"] .bub,body[data-sp="bkfc"] .bub>div,body[data-sp="bkfc"] .dkcard,body[data-sp="bkfc"] .dkcard::after,body[data-sp="bkfc"] .fi,body[data-sp="bkfc"] .sheet .pn{clip-path:none!important;border-radius:22px}
+body[data-sp="bkfc"] .btn,body[data-sp="bkfc"] .chip,body[data-sp="bkfc"] .ibtn,body[data-sp="bkfc"] .tag,body[data-sp="bkfc"] .chipm,body[data-sp="bkfc"] .sw{clip-path:none!important;border-radius:999px}
+body[data-sp="bkfc"] .oc{clip-path:none!important;border-radius:50%}
 .oc{clip-path:polygon(29.29% 0,70.71% 0,100% 29.29%,100% 70.71%,70.71% 100%,29.29% 100%,0 70.71%,0 29.29%)}
 .fav{width:var(--s);height:var(--s);padding:3px;flex:none;background:radial-gradient(circle at 35% 28%,#fff,var(--dc) 55%,#000 130%);cursor:pointer}
 .fav>i{display:block;width:100%;height:100%;background:#0F0F12}
@@ -994,7 +997,7 @@ window.addEventListener('error',e=>track('error',{m:String(e.message||'error').s
 window.addEventListener('unhandledrejection',e=>track('error',{m:String((e.reason&&e.reason.message)||e.reason||'rejection').slice(0,160)}));
 setTimeout(()=>track('session',{w:innerWidth}),1500);
 function navSave(){try{if(Z.v==='league'&&Z.L){localStorage.setItem('cb_nav',JSON.stringify({lid:Z.L.id,tab:Z.tab,fs:Z.fs,ls:Z.ls,dt:Z.dt,card:Z.card,ps:Z.ps,sub:Z.sub,dv:Z.dv}))}else if(Z.v==='home'){localStorage.removeItem('cb_nav')}}catch(e){}}
-function render(){navSave();const v=Z.v;
+function render(){navSave();const v=Z.v;try{document.body.dataset.sp=((v==='create'?(Z.c&&Z.c.sport):(Z.L&&Z.L.sport&&v!=='home'&&v!=='lobby'?Z.L.sport:Z.hubSport))==='bkfc')?'bkfc':''}catch(e){}
   {$('#app').innerHTML=v==='boot'?sBoot():v==='signin'?sSignin():v==='name'?sName():v==='home'?sHome():v==='create'?sCreate():v==='league'?sLeague():v==='lobby'?sLobby():v==='join'?sJoin():'';const cf=$('#cfeed');if(cf)cf.scrollTop=cf.scrollHeight}
   const n=$('#cln');if(n)n.addEventListener('input',()=>{Z.c.name=n.value});
   const u=$('#un');if(u)u.addEventListener('input',()=>{Z.dn=u.value});
